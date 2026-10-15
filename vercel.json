@@ -1,15 +1,15 @@
 {
-    "versão" : 2,
-    "construções" : [
-        {
-        "src" : "server.js",
-        "use" : "@vercel/node"
-        }
-    ],
-    "rotas" : [
-        {
-        "src" : "/(.*)",
-        "destino" : "/server.js"
-        }
-    ]
- }
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/server.js"
+    }
+  ]
+}
