@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block page_title %}Gerenciar Equipe{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            
+            <h4 class="fw-bold mb-4 text-center text-dark">
+                <i class="bi bi-person-plus-fill text-warning me-2"></i> Adicionar Colaborador
+            </h4>
+
+            <!-- Mensagens de Sucesso ou Erro -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show small" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Formulário -->
+            <form method="POST" action="{{ url_for('usuarios') }}">
+                
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Nome Completo</label>
+                    <input type="text" name="nome" class="form-control shadow-sm" required placeholder="Ex: João da Silva">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">E-mail Corporativo (Google)</label>
+                    <input type="email" name="email" class="form-control shadow-sm" required placeholder="joao@lello.com.br">
+                    <small class="text-muted" style="font-size: 0.75rem;">O colaborador usará este e-mail para fazer login via Google.</small>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Filial / Equipe</label>
+                        <input type="text" name="filial" class="form-control shadow-sm" required placeholder="Ex: (10) Centro Adm.">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Perfil de Acesso</label>
+                        <select name="perfil" class="form-select shadow-sm" required>
+                            <option value="Corretor" selected>Corretor</option>
+                            <option value="Agente de Visita">Agente de Visita</option>
+                            <option value="Gerente Filial">Gerente Filial</option>
+                            <option value="Gerente Geral">Gerente Geral</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-warning w-100 fw-bold py-2 shadow-sm text-dark">
+                    <i class="bi bi-check-circle me-1"></i> Cadastrar Colaborador
+                </button>
+                
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

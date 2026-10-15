@@ -106,6 +106,37 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+@app.route('/usuarios', methods=['GET', 'POST'])
+def usuarios():
+    # 1. Trava de Segurança: Verifica se é Admin
+    if session.get('user_perfil') != 'Admin':
+        flash('Acesso negado. Apenas administradores podem acessar esta página.', 'danger')
+        return redirect(url_for('home'))
+
+    # 2. Se o formulário for enviado (POST), cria o usuário no Firestore
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        nome = request.form.get('nome', '').strip()
+        filial = request.form.get('filial', '').strip()
+        perfil = request.form.get('perfil', '').strip()
+
+        dados_usuario = {
+            "nome": nome,
+            "email": email,
+            "filial": filial,
+            "perfil": perfil,
+            "ativo": True,
+            "nome_exibicao": nome # Cria um nome de exibição padrão igual ao nome
+        }
+        
+        # Salva no banco de dados usando o e-mail como ID
+        db.collection("usuarios").document(email).set(dados_usuario)
+        flash(f'Usuário {nome} adicionado com sucesso com perfil de {perfil}!', 'success')
+        return redirect(url_for('usuarios'))
+
+    # 3. Se for só para acessar a página (GET), mostra o HTML
+    return render_template('usuarios.html')
+
 # --- BLOQUEIO DE ROTAS ---
 @app.before_request
 def bloquear_rotas():

@@ -19,6 +19,14 @@
             <li class="nav-item"><a href="{{ url_for('home') }}" class="nav-link"><i class="bi bi-grid-1x2"></i> Dashboard</a></li>
             <li class="nav-item"><a href="{{ url_for('visitas') }}" class="nav-link"><i class="bi bi-calendar-check"></i> Gestão de Visitas</a></li>
             <li class="nav-item"><a href="{{ url_for('indicacao') }}" class="nav-link"><i class="bi bi-person-plus"></i> Indicações</a></li>
+            
+            {% if session.get('user_perfil') == 'Admin' %}
+            <li class="nav-item">
+                <a href="{{ url_for('usuarios') }}" class="nav-link text-warning">
+                    <i class="bi bi-people-fill"></i> Gerenciar Equipe
+                </a>
+            </li>
+            {% endif %}
         </ul>
     </div>
 
