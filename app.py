@@ -37,18 +37,14 @@ if not firebase_admin._apps:
             
         cred = credentials.Certificate(cred_dict)
 
-    # Cenário 2: Localhost procurando sdk_Firebase.JSON
-    elif os.path.exists(os.path.join(BASE_DIR, "sdk_Firebase.JSON")):
-        cred = credentials.Certificate(os.path.join(BASE_DIR, "sdk_Firebase.JSON"))
-
-    # Cenário 3: Localhost procurando firebase_key.json
+    # Cenário 2: Localhost procurando firebase_key.json (Arquivo correto)
     elif os.path.exists(os.path.join(BASE_DIR, "firebase_key.json")):
         cred = credentials.Certificate(os.path.join(BASE_DIR, "firebase_key.json"))
 
     else:
         raise FileNotFoundError(
             "Credenciais não encontradas. Configure a variável FIREBASE_CREDENTIALS na Vercel "
-            "ou mantenha o arquivo sdk_Firebase.JSON localmente."
+            "ou mantenha o arquivo firebase_key.json localmente."
         )
 
     firebase_admin.initialize_app(cred)
