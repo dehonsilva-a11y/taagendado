@@ -2,6 +2,7 @@ import os
 import json
 import base64
 import time
+from datetime import timedelta
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
@@ -20,6 +21,7 @@ app = Flask(
 app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(BASE_DIR, 'static'), prefix='static/')
 
 app.secret_key = os.getenv('SECRET_KEY', 'AIzaSyA4WPItplXhSjkEP9P9tx_XMNijrbd89XY')
+app.permanent_session_lifetime = timedelta(minutes=15)
 
 # 2. Conexão flexível e resiliente com o Firebase Admin
 if not firebase_admin._apps:
@@ -83,7 +85,8 @@ def auth_google():
         user_data = user_doc.to_dict() or {}
         
         if not user_data.get('ativo', True):
-            return jsonify({'status': 'error', 'message': 'Acesso negado: Seu usuário foi desativado.'}), 403
+            # Alteramos de 'error' para 'bloqueado'
+            return jsonify({'status': 'bloqueado', 'message': 'Usuário desativado.'}), 403
 
         # 2. Formata o nome para exibição
         nome_completo = user_data.get('nome', decoded_token.get('name', 'Usuário')).title()
@@ -96,6 +99,8 @@ def auth_google():
         session['user_nome'] = nome_exibicao
         session['user_filial'] = user_data.get('filial', 'Matriz')
         session['user_perfil'] = user_data.get('perfil', 'Corretor')
+        session.permanent = True 
+        session['user_id'] = decoded_token['uid']
         
         return jsonify({'status': 'success'})
     except Exception as e:
@@ -105,6 +110,10 @@ def auth_google():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+@app.route('/bloqueado')
+def bloqueado():
+    return render_template('bloqueado.html')
 
 @app.route('/usuarios', methods=['GET', 'POST'])
 def usuarios():
@@ -134,16 +143,60 @@ def usuarios():
         flash(f'Usuário {nome} adicionado com sucesso com perfil de {perfil}!', 'success')
         return redirect(url_for('usuarios'))
 
-    # 3. Se for só para acessar a página (GET), mostra o HTML
-    return render_template('usuarios.html')
+    # 3. Busca todos os usuários cadastrados para mostrar na tabela
+    lista_usuarios = []
+    try:
+        docs = db.collection('usuarios').stream()
+        for doc in docs:
+            user_data = doc.to_dict()
+            # Garante que o email principal está nos dados
+            if 'email' not in user_data:
+                user_data['email'] = doc.id
+            lista_usuarios.append(user_data)
+            
+        # Opcional: Ordena a lista por nome em ordem alfabética
+        lista_usuarios = sorted(lista_usuarios, key=lambda x: x.get('nome', ''))
+    except Exception as e:
+        flash(f'Erro ao carregar usuários: {e}', 'danger')
+
+    # 4. Envia a lista para o HTML
+    return render_template('usuarios.html', lista_usuarios=lista_usuarios)
 
 # --- BLOQUEIO DE ROTAS ---
 @app.before_request
 def bloquear_rotas():
-    rotas_livres = ['login', 'auth_google', 'static']
-    if request.endpoint and request.endpoint not in rotas_livres and 'user_id' not in session:
-        return redirect(url_for('login'))
-
+    # Renova os 15 minutos a cada clique (Sliding Expiration)
+    session.modified = True 
+    
+    rotas_livres = ['login', 'auth_google', 'static', 'bloqueado']
+    if request.endpoint and request.endpoint not in rotas_livres:
+        # 1. Verifica se tem sessão (se expirou os 15min inativo, ele cai aqui)
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+            
+        email = session.get('user_email')
+        agora = time.time()
+        
+        # 2. Verifica a cada 60 segundos se o usuário foi demitido/inativado
+        if email:
+            if email not in MEMORIA_CACHE:
+                MEMORIA_CACHE[email] = {}
+                
+            if (agora - MEMORIA_CACHE[email].get('tempo_status', 0)) > 60:
+                user_doc = db.collection('usuarios').document(email).get()
+                if user_doc.exists:
+                    dados = user_doc.to_dict() or {}
+                    MEMORIA_CACHE[email]['ativo'] = dados.get('ativo', False)
+                    MEMORIA_CACHE[email]['tempo_status'] = agora
+                else:
+                    MEMORIA_CACHE[email]['ativo'] = False
+                    MEMORIA_CACHE[email]['tempo_status'] = agora
+            
+            # 3. Se foi desativado no painel, expulsa do sistema imediatamente
+            if not MEMORIA_CACHE[email].get('ativo'):
+                session.clear()
+                return render_template('bloqueado.html')
+            
 # --- ROTAS DO SISTEMA ---
 
 @app.route('/')
@@ -156,20 +209,66 @@ def injetar_dados_usuario():
     email = session.get('user_email')
     if email:
         agora = time.time()
-        if email in MEMORIA_CACHE and (agora - MEMORIA_CACHE[email]['tempo']) < 600:
-            foto = MEMORIA_CACHE[email]['foto']
+        
+        # Correção: O .get('tempo', 0) impede o KeyError se a chave não existir
+        if email in MEMORIA_CACHE and (agora - MEMORIA_CACHE[email].get('tempo', 0)) < 600:
+            foto = MEMORIA_CACHE[email].get('foto', '')
         else:
             user_doc = db.collection('usuarios').document(email).get()
             if user_doc.exists:
                 data = user_doc.to_dict() or {}
                 foto = data.get('foto', '')
-                MEMORIA_CACHE[email] = {'foto': foto, 'tempo': agora}
+                
+                # Garante que a chave do email existe no cache antes de salvar a foto
+                if email not in MEMORIA_CACHE:
+                    MEMORIA_CACHE[email] = {}
+                MEMORIA_CACHE[email]['foto'] = foto
+                MEMORIA_CACHE[email]['tempo'] = agora
                 
     return dict(current_user_foto=foto)
 
 @app.route('/indicacao')
 def indicacao():
     return render_template('indicacao.html')
+
+@app.route('/editar_usuario', methods=['POST'])
+def editar_usuario():
+    if session.get('user_perfil') != 'Admin':
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('home'))
+
+    email = request.form.get('email', '').strip().lower() # O e-mail será nossa chave intocável
+    nome = request.form.get('nome', '').strip()
+    filial = request.form.get('filial', '').strip()
+    perfil = request.form.get('perfil', '').strip()
+    ativo = request.form.get('ativo') == 'true' # Converte texto para booleano (True/False)
+
+    if not email:
+        flash('Erro ao tentar editar: e-mail não identificado.', 'danger')
+        return redirect(url_for('usuarios'))
+
+    # Busca o usuário no Firestore e atualiza
+    user_ref = db.collection("usuarios").document(email)
+    if user_ref.get().exists:
+        user_ref.update({
+            "nome": nome,
+            "filial": filial,
+            "perfil": perfil,
+            "ativo": ativo
+        })
+        
+        # --- CORTA O ACESSO IMEDIATAMENTE NA MEMÓRIA ---
+        if email not in MEMORIA_CACHE:
+            MEMORIA_CACHE[email] = {}
+        MEMORIA_CACHE[email]['ativo'] = ativo
+        MEMORIA_CACHE[email]['tempo_status'] = time.time()
+        # -----------------------------------------------
+
+        flash(f'Dados de {nome} atualizados com sucesso!', 'success')
+    else:
+        flash('Usuário não encontrado no banco de dados.', 'danger')
+
+    return redirect(url_for('usuarios'))
 
 @app.route('/perfil', methods=['GET', 'POST'])
 def perfil():

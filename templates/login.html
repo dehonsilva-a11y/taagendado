@@ -48,6 +48,13 @@
         <i class="bi bi-buildings-fill text-primary mb-3" style="font-size: 3rem;"></i>
         <h3 class="fw-bold mb-2">Acesso ao Sistema</h3>
         <p class="text-muted small mb-4">Faça login com seu e-mail corporativo.</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} small fw-bold">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
         <!-- Botão de Login do Google -->
         <button id="btnGoogle" onclick="fazerLoginGoogle()" class="btn btn-google w-100 py-2 d-flex justify-content-center align-items-center">
@@ -107,6 +114,10 @@
 
                 if (resposta.ok && dados && dados.status === 'success') {
                     window.location.href = "/";
+                } else if (dados && dados.status === 'bloqueado') {
+                    // Se estiver bloqueado, desloga a pessoa do Firebase e manda pra tela de bloqueio
+                    await firebase.auth().signOut();
+                    window.location.href = "/bloqueado"; 
                 } else {
                     const mensagem = dados?.message || 'Falha na validação do acesso.';
                     alert(mensagem);

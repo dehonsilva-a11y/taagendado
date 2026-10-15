@@ -2,13 +2,14 @@
 {% block page_title %}Gerenciar Equipe{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-12 col-md-8 col-lg-6">
-        <div class="card border-0 shadow-sm rounded-4 p-4">
-            
-            <h4 class="fw-bold mb-4 text-center text-dark">
+<div class="row mt-4 g-4">
+    
+    <!-- Lado Esquerdo: Formulário de Cadastro -->
+    <div class="col-12 col-xl-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+            <h5 class="fw-bold mb-4 text-dark border-bottom pb-3">
                 <i class="bi bi-person-plus-fill text-warning me-2"></i> Adicionar Colaborador
-            </h4>
+            </h5>
 
             <!-- Mensagens de Sucesso ou Erro -->
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -22,44 +23,198 @@
                 {% endif %}
             {% endwith %}
 
-            <!-- Formulário -->
             <form method="POST" action="{{ url_for('usuarios') }}">
-                
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-muted">Nome Completo</label>
                     <input type="text" name="nome" class="form-control shadow-sm" required placeholder="Ex: João da Silva">
                 </div>
-
                 <div class="mb-3">
-                    <label class="form-label small fw-bold text-muted">E-mail Corporativo (Google)</label>
-                    <input type="email" name="email" class="form-control shadow-sm" required placeholder="joao@lello.com.br">
-                    <small class="text-muted" style="font-size: 0.75rem;">O colaborador usará este e-mail para fazer login via Google.</small>
+                    <label class="form-label small fw-bold text-muted">E-mail Corporativo</label>
+                    <input type="email" name="email" class="form-control shadow-sm" required placeholder="joao.silva@lello.com.br">
                 </div>
-
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold text-muted">Filial / Equipe</label>
-                        <input type="text" name="filial" class="form-control shadow-sm" required placeholder="Ex: (10) Centro Adm.">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold text-muted">Perfil de Acesso</label>
-                        <select name="perfil" class="form-select shadow-sm" required>
-                            <option value="Corretor" selected>Corretor</option>
-                            <option value="Agente de Visita">Agente de Visita</option>
-                            <option value="Gerente Filial">Gerente Filial</option>
-                            <option value="Gerente Geral">Gerente Geral</option>
-                            <option value="Admin">Admin</option>
-                        </select>
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Filial / Equipe</label>
+                    <select name="filial" class="form-select shadow-sm" required>
+                        <option value="" disabled selected>Selecione a filial...</option>
+                        <option value="(10) Centro Adm.">(10) Centro Adm.</option>
+                        <option value="(11) Mooca">(11) Mooca</option>
+                        <option value="(16) ABC">(16) ABC</option>
+                        <option value="(19) Tatuapé">(19) Tatuapé</option>
+                        <option value="(27) Norte">(27) Norte</option>
+                        <option value="(29) Pinheiros">(29) Pinheiros</option>
+                        <option value="(31) Vila Mariana">(31) Vila Mariana</option>
+                    </select>
                 </div>
-
-                <button type="submit" class="btn btn-warning w-100 fw-bold py-2 shadow-sm text-dark">
-                    <i class="bi bi-check-circle me-1"></i> Cadastrar Colaborador
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted">Perfil de Acesso</label>
+                    <select name="perfil" class="form-select shadow-sm" required>
+                        <option value="Corretor" selected>Corretor</option>
+                        <option value="Agente de Visita">Agente de Visita</option>
+                        <option value="Gerente Filial">Gerente Filial</option>
+                        <option value="Gerente Geral">Gerente Geral</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-warning w-100 fw-bold py-2 shadow-sm text-dark mt-2">
+                    <i class="bi bi-check-circle me-1"></i> Cadastrar
                 </button>
-                
             </form>
-
         </div>
     </div>
+
+    <!-- Lado Direito: Tabela de Usuários -->
+    <div class="col-12 col-xl-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-people-fill text-primary me-2"></i> Colaboradores Cadastrados
+                </h5>
+                <span class="badge bg-primary rounded-pill fs-6">{{ lista_usuarios|length }}</span>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="small text-muted text-uppercase">Nome</th>
+                            <th class="small text-muted text-uppercase">E-mail</th>
+                            <th class="small text-muted text-uppercase">Filial</th>
+                            <th class="small text-muted text-uppercase">Perfil</th>
+                            <th class="small text-muted text-uppercase text-center">Status</th>
+                            <th class="small text-muted text-uppercase text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in lista_usuarios %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark" style="font-size: 0.95rem;">{{ u.nome_exibicao or u.nome }}</div>
+                            </td>
+                            <td class="text-secondary small">{{ u.email }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ u.filial }}</span></td>
+                            <td>
+                                {% if u.perfil == 'Admin' %}
+                                    <span class="badge bg-danger">{{ u.perfil }}</span>
+                                {% elif u.perfil == 'Corretor' %}
+                                    <span class="badge bg-success">{{ u.perfil }}</span>
+                                {% else %}
+                                    <span class="badge bg-info text-dark">{{ u.perfil }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if u.ativo %}
+                                    <i class="bi bi-check-circle-fill text-success fs-5" title="Ativo"></i>
+                                {% else %}
+                                    <i class="bi bi-x-circle-fill text-danger fs-5" title="Inativo"></i>
+                                {% endif %}
+                            </td>
+                            <!-- O botão de ações precisa estar na última coluna! -->
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-primary border-0" 
+                                        onclick="abrirModalEditar('{{ u.email }}', '{{ u.nome }}', '{{ u.filial }}', '{{ u.perfil }}', '{{ u.ativo }}')"
+                                        title="Editar Colaborador">
+                                    <i class="bi bi-pencil-square fs-6"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Nenhum colaborador encontrado no sistema.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<!-- Modal de Edição de Usuário -->
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      
+      <div class="modal-header bg-light border-0">
+        <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-2"></i> Editar Colaborador</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- Aqui o formulário manda os dados para a rota editar_usuario -->
+      <form method="POST" action="{{ url_for('editar_usuario') }}">
+          <div class="modal-body p-4">
+              
+              <!-- E-mail (Bloqueado pois é o ID no Firebase) -->
+              <div class="mb-3">
+                  <label class="form-label small fw-bold text-muted">E-mail Corporativo</label>
+                  <input type="email" name="email" id="editEmail" class="form-control bg-light text-secondary" readonly>
+                  <small class="text-muted" style="font-size: 0.70rem;">O e-mail não pode ser alterado pois é a chave de acesso.</small>
+              </div>
+
+              <div class="mb-3">
+                  <label class="form-label small fw-bold text-muted">Nome Completo</label>
+                  <input type="text" name="nome" id="editNome" class="form-control shadow-sm" required>
+              </div>
+
+              <div class="mb-3">
+                  <label class="form-label small fw-bold text-muted">Filial / Equipe</label>
+                  <select name="filial" id="editFilial" class="form-select shadow-sm" required>
+                      <option value="(10) Centro Adm.">(10) Centro Adm.</option>
+                      <option value="(11) Mooca">(11) Mooca</option>
+                      <option value="(16) ABC">(16) ABC</option>
+                      <option value="(19) Tatuapé">(19) Tatuapé</option>
+                      <option value="(27) Norte">(27) Norte</option>
+                      <option value="(29) Pinheiros">(29) Pinheiros</option>
+                      <option value="(31) Vila Mariana">(31) Vila Mariana</option>
+                  </select>
+              </div>
+
+              <div class="row g-3 mb-2">
+                  <div class="col-6">
+                      <label class="form-label small fw-bold text-muted">Perfil de Acesso</label>
+                      <select name="perfil" id="editPerfil" class="form-select shadow-sm" required>
+                          <option value="Corretor">Corretor</option>
+                          <option value="Agente de Visita">Agente de Visita</option>
+                          <option value="Gerente Filial">Gerente Filial</option>
+                          <option value="Gerente Geral">Gerente Geral</option>
+                          <option value="Admin">Admin</option>
+                      </select>
+                  </div>
+                  <div class="col-6">
+                      <label class="form-label small fw-bold text-muted">Status</label>
+                      <select name="ativo" id="editAtivo" class="form-select shadow-sm" required>
+                          <option value="true" class="text-success fw-bold">Ativo (Liberado)</option>
+                          <option value="false" class="text-danger fw-bold">Inativo (Bloqueado)</option>
+                      </select>
+                  </div>
+              </div>
+
+          </div>
+          
+          <div class="modal-footer border-0 bg-light">
+            <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary fw-bold shadow-sm"><i class="bi bi-save me-1"></i> Salvar Alterações</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Script para preencher o Modal com os dados corretos ao clicar -->
+<script>
+function abrirModalEditar(email, nome, filial, perfil, ativo) {
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editNome').value = nome;
+    document.getElementById('editFilial').value = filial;
+    document.getElementById('editPerfil').value = perfil;
+    
+    // Transforma o texto 'True'/'False' do Python no value correto do HTML
+    const valorAtivo = String(ativo).toLowerCase() === 'true' ? 'true' : 'false';
+    document.getElementById('editAtivo').value = valorAtivo;
+    
+    // Mostra o Modal do Bootstrap
+    var myModal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
+    myModal.show();
+}
+</script>
 {% endblock %}
