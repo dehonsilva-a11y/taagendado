@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block page_title %}Gestão de Visitas{% endblock %}
+
+{% block content %}
+<div class="accordion" id="accordionVisitas">
+    {% for status, imoveis in grupos.items() %}
+    <div class="accordion-item shadow-sm">
+        <h2 class="accordion-header" id="heading-{{ loop.index }}">
+            <button class="accordion-button fw-bold text-dark bg-white {% if loop.index != 1 %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}">
+                {{ status }} <span class="badge bg-secondary ms-3">{{ imoveis|length }}</span>
+            </button>
+        </h2>
+        <div id="collapse-{{ loop.index }}" class="accordion-collapse collapse {% if loop.index == 1 %}show{% endif %}" data-bs-parent="#accordionVisitas">
+            <div class="accordion-body p-0">
+                {% if imoveis|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover m-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>ID Imóvel</th>
+                                <th>Endereço Completo</th>
+                                <th>Valor Interm.</th>
+                                <th>Comissão</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for imovel in imoveis %}
+                            <tr>
+                                <td class="fw-bold">{{ imovel.id_imovel }}</td>
+                                <td>{{ imovel.endereco }}, {{ imovel.bairro }}</td>
+                                <td>{{ imovel.valor_int_str }}</td>
+                                <td class="text-success fw-bold">{{ imovel.valor_comissao_str }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

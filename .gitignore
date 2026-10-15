@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+firebase_key.json
+banco.db
+.env

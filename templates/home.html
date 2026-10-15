@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block page_title %}Dashboard Inicial{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 text-center p-4 h-100">
+            <div class="card-body">
+                <i class="bi bi-calendar-check text-primary fs-1 mb-3"></i>
+                <h5 class="fw-bold">Gestão de Visitas</h5>
+                <p class="text-muted small">Acompanhe seus agendamentos, clientes e faturamentos de comissão.</p>
+                <a href="{{ url_for('visitas') }}" class="btn btn-outline-primary mt-2">Acessar Visitas</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 text-center p-4 h-100">
+            <div class="card-body">
+                <i class="bi bi-person-plus text-success fs-1 mb-3"></i>
+                <h5 class="fw-bold">Indicações</h5>
+                <p class="text-muted small">Gerencie e cadastre novas indicações de clientes e imóveis.</p>
+                <a href="{{ url_for('indicacao') }}" class="btn btn-outline-success mt-2">Ver Indicações</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 text-center p-4 h-100">
+            <div class="card-body">
+                <i class="bi bi-house-door text-warning fs-1 mb-3"></i>
+                <h5 class="fw-bold">Minha Carteira</h5>
+                <p class="text-muted small">Visualize todos os imóveis sob sua responsabilidade (Em breve).</p>
+                <button class="btn btn-outline-warning mt-2" disabled>Em breve</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
