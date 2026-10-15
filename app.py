@@ -1,35 +1,56 @@
 import os
 import json
+import base64
 import time
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 
+# 1. Definição de caminhos absolutos para Vercel e Localhost
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MEMORIA_CACHE = {}
 
-app = Flask(__name__)
-# Lê SECRET_KEY do ambiente ou usa a chave padrão de fallback
+# Inicialização do Flask garantindo que templates e static sejam encontrados no serverless
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, 'templates'),
+    static_folder=os.path.join(BASE_DIR, 'static')
+)
 app.secret_key = os.getenv('SECRET_KEY', 'AIzaSyA4WPItplXhSjkEP9P9tx_XMNijrbd89XY')
 
-# 1. Conexão híbrida e resiliente com o Firebase Admin
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
+# 2. Conexão flexível e resiliente com o Firebase Admin
 if not firebase_admin._apps:
-    # Cenário 1: Produção na Vercel (lê da variável de ambiente)
-    if os.getenv("FIREBASE_CREDENTIALS"):
-        cred_dict = json.loads(os.getenv("FIREBASE_CREDENTIALS"))
+    raw_creds = os.getenv("FIREBASE_CREDENTIALS", "").strip()
+    
+    # Cenário 1: Produção na Vercel (aceita JSON puro ou codificado em Base64)
+    if raw_creds:
+        if not raw_creds.startswith('{'):
+            try:
+                raw_creds = base64.b64decode(raw_creds).decode('utf-8')
+            except Exception as e:
+                raise ValueError(f"Falha ao decodificar Base64 de FIREBASE_CREDENTIALS: {e}")
+        
+        try:
+            cred_dict = json.loads(raw_creds)
+        except Exception as e:
+            raise ValueError(f"Erro ao processar JSON da variável FIREBASE_CREDENTIALS: {e}")
+            
         cred = credentials.Certificate(cred_dict)
-    # Cenário 2: Localhost com o arquivo sdk_Firebase.JSON
+
+    # Cenário 2: Localhost procurando sdk_Firebase.JSON
     elif os.path.exists(os.path.join(BASE_DIR, "sdk_Firebase.JSON")):
         cred = credentials.Certificate(os.path.join(BASE_DIR, "sdk_Firebase.JSON"))
-    # Cenário 3: Localhost com o arquivo firebase_key.json
+
+    # Cenário 3: Localhost procurando firebase_key.json
     elif os.path.exists(os.path.join(BASE_DIR, "firebase_key.json")):
         cred = credentials.Certificate(os.path.join(BASE_DIR, "firebase_key.json"))
+
     else:
         raise FileNotFoundError(
-            "Chave de credenciais não encontrada. Configure a variável "
-            "FIREBASE_CREDENTIALS na Vercel ou mantenha o arquivo sdk_Firebase.JSON localmente."
+            "Credenciais não encontradas. Configure a variável FIREBASE_CREDENTIALS na Vercel "
+            "ou mantenha o arquivo sdk_Firebase.JSON localmente."
         )
+
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
@@ -222,7 +243,7 @@ def visitas():
 
     return render_template('visitas.html', grupos=grupos)
 
-# Exportação WSGI para a Vercel
+# Exportação obrigatória para a Vercel
 application = app
 
 if __name__ == '__main__':
