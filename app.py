@@ -5,6 +5,7 @@ import time
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
+from whitenoise import WhiteNoise
 
 # 1. Definição de caminhos absolutos para Vercel e Localhost
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -16,6 +17,8 @@ app = Flask(
     template_folder=os.path.join(BASE_DIR, 'templates'),
     static_folder=os.path.join(BASE_DIR, 'static')
 )
+app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(BASE_DIR, 'static'), prefix='static/')
+
 app.secret_key = os.getenv('SECRET_KEY', 'AIzaSyA4WPItplXhSjkEP9P9tx_XMNijrbd89XY')
 
 # 2. Conexão flexível e resiliente com o Firebase Admin
