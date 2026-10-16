@@ -1,6 +1,25 @@
+# Cache do Python
 __pycache__/
 *.pyc
-firebase_key.json
-banco.db
+*.pyo
+*.pyd
+
+# Ambientes Virtuais
+venv/
+env/
+
+# Configurações do VS Code
+.vscode/
+
+# Arquivos de Senhas e Chaves (NUNCA SUBIR PARA O GITHUB)
 .env
+firebase_key.json
+config/firebase_key.json
+scripts/sdk_Firebase.JSON
 sdk_Firebase.JSON
+
+# Banco de dados locais (se houver)
+banco.db
+
+# Logs
+*.log

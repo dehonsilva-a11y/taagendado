@@ -11,7 +11,6 @@
                 <i class="bi bi-person-plus-fill text-warning me-2"></i> Adicionar Colaborador
             </h5>
 
-            <!-- Mensagens de Sucesso ou Erro -->
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
@@ -23,7 +22,7 @@
                 {% endif %}
             {% endwith %}
 
-            <form method="POST" action="{{ url_for('usuarios') }}">
+            <form method="POST" action="{{ url_for('main.usuarios') }}">
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-muted">Nome Completo</label>
                     <input type="text" name="nome" class="form-control shadow-sm" required placeholder="Ex: João da Silva">
@@ -69,38 +68,73 @@
                 <h5 class="fw-bold text-dark mb-0">
                     <i class="bi bi-people-fill text-primary me-2"></i> Colaboradores Cadastrados
                 </h5>
-                <span class="badge bg-primary rounded-pill fs-6">{{ lista_usuarios|length }}</span>
+                <button class="btn btn-outline-primary btn-sm fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#painelFiltros">
+                    <i class="bi bi-funnel-fill me-1"></i> Filtros
+                </button>
+            </div>
+            
+            <!-- Painel de Filtros (Escondido por padrão) -->
+            <div class="collapse mb-4 {% if current_filters.search or current_filters.filial or current_filters.perfil or current_filters.status != 'ativo' %}show{% endif %}" id="painelFiltros">
+                <div class="card card-body bg-light border-0 shadow-sm">
+                    <form method="GET" action="{{ url_for('main.usuarios') }}" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted">Pesquisar</label>
+                            <input type="text" name="search" class="form-control form-control-sm shadow-sm" placeholder="Digite e aperte Enter..." value="{{ current_filters.search }}" onchange="this.form.submit()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold text-muted">Filial</label>
+                            <select name="filial" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()">
+                                <option value="">Todas as Filiais</option>
+                                <option value="(10) Centro Adm." {% if current_filters.filial == '(10) Centro Adm.' %}selected{% endif %}>(10) Centro Adm.</option>
+                                <option value="(11) Mooca" {% if current_filters.filial == '(11) Mooca' %}selected{% endif %}>(11) Mooca</option>
+                                <option value="(16) ABC" {% if current_filters.filial == '(16) ABC' %}selected{% endif %}>(16) ABC</option>
+                                <option value="(19) Tatuapé" {% if current_filters.filial == '(19) Tatuapé' %}selected{% endif %}>(19) Tatuapé</option>
+                                <option value="(27) Norte" {% if current_filters.filial == '(27) Norte' %}selected{% endif %}>(27) Norte</option>
+                                <option value="(29) Pinheiros" {% if current_filters.filial == '(29) Pinheiros' %}selected{% endif %}>(29) Pinheiros</option>
+                                <option value="(31) Vila Mariana" {% if current_filters.filial == '(31) Vila Mariana' %}selected{% endif %}>(31) Vila Mariana</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold text-muted">Perfil</label>
+                            <select name="perfil" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                <option value="Admin" {% if current_filters.perfil == 'Admin' %}selected{% endif %}>Admin</option>
+                                <option value="Gerente Geral" {% if current_filters.perfil == 'Gerente Geral' %}selected{% endif %}>Ger. Geral</option>
+                                <option value="Gerente Filial" {% if current_filters.perfil == 'Gerente Filial' %}selected{% endif %}>Ger. Filial</option>
+                                <option value="Agente de Visita" {% if current_filters.perfil == 'Agente de Visita' %}selected{% endif %}>Ag. de Visita</option>
+                                <option value="Corretor" {% if current_filters.perfil == 'Corretor' %}selected{% endif %}>Corretor</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold text-muted">Status</label>
+                            <select name="status" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()">
+                                <option value="ativo" {% if current_filters.status == 'ativo' %}selected{% endif %} class="text-success fw-bold">Ativos</option>
+                                <option value="inativo" {% if current_filters.status == 'inativo' %}selected{% endif %} class="text-danger fw-bold">Inativos</option>
+                                <option value="todos" {% if current_filters.status == 'todos' %}selected{% endif %}>Todos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 text-end">
+                            <a href="{{ url_for('main.usuarios') }}" class="btn btn-sm btn-outline-danger w-100 shadow-sm" title="Limpar Filtros"><i class="bi bi-eraser-fill"></i></a>
+                        </div>
+                    </form>
+                </div>
             </div>
             
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
+                            <th class="small text-muted text-uppercase text-center">Status</th>
                             <th class="small text-muted text-uppercase">Nome</th>
                             <th class="small text-muted text-uppercase">E-mail</th>
                             <th class="small text-muted text-uppercase">Filial</th>
                             <th class="small text-muted text-uppercase">Perfil</th>
-                            <th class="small text-muted text-uppercase text-center">Status</th>
                             <th class="small text-muted text-uppercase text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for u in lista_usuarios %}
                         <tr>
-                            <td>
-                                <div class="fw-bold text-dark" style="font-size: 0.95rem;">{{ u.nome_exibicao or u.nome }}</div>
-                            </td>
-                            <td class="text-secondary small">{{ u.email }}</td>
-                            <td><span class="badge bg-light text-dark border">{{ u.filial }}</span></td>
-                            <td>
-                                {% if u.perfil == 'Admin' %}
-                                    <span class="badge bg-danger">{{ u.perfil }}</span>
-                                {% elif u.perfil == 'Corretor' %}
-                                    <span class="badge bg-success">{{ u.perfil }}</span>
-                                {% else %}
-                                    <span class="badge bg-info text-dark">{{ u.perfil }}</span>
-                                {% endif %}
-                            </td>
                             <td class="text-center">
                                 {% if u.ativo %}
                                     <i class="bi bi-check-circle-fill text-success fs-5" title="Ativo"></i>
@@ -108,10 +142,15 @@
                                     <i class="bi bi-x-circle-fill text-danger fs-5" title="Inativo"></i>
                                 {% endif %}
                             </td>
-                            <!-- O botão de ações precisa estar na última coluna! -->
+                            <td>
+                                <div class="fw-bold text-dark" style="font-size: 0.95rem;">{{ u.nome_exibicao or u.nome }}</div>
+                            </td>
+                            <td class="text-secondary small">{{ u.email }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ u.filial }}</span></td>
+                            <td><span class="badge bg-light text-dark border">{{ u.perfil }}</span></td>
                             <td class="text-center">
                                 <button class="btn btn-sm btn-outline-primary border-0" 
-                                        onclick="abrirModalEditar('{{ u.email }}', '{{ u.nome }}', '{{ u.filial }}', '{{ u.perfil }}', '{{ u.ativo }}')"
+                                        onclick="abrirModalEditar('{{ u.email }}', '{{ u.nome }}', '{{ u.nome_exibicao }}', '{{ u.filial }}', '{{ u.perfil }}', '{{ u.ativo }}')"
                                         title="Editar Colaborador">
                                     <i class="bi bi-pencil-square fs-6"></i>
                                 </button>
@@ -127,7 +166,6 @@
             </div>
         </div>
     </div>
-
 </div>
 
 <!-- Modal de Edição de Usuário -->
@@ -140,20 +178,24 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <!-- Aqui o formulário manda os dados para a rota editar_usuario -->
-      <form method="POST" action="{{ url_for('editar_usuario') }}">
+      <form method="POST" action="{{ url_for('main.editar_usuario') }}">
+          <input type="hidden" name="email_original" id="editEmailOriginal">
+          
           <div class="modal-body p-4">
-              
-              <!-- E-mail (Bloqueado pois é o ID no Firebase) -->
               <div class="mb-3">
                   <label class="form-label small fw-bold text-muted">E-mail Corporativo</label>
-                  <input type="email" name="email" id="editEmail" class="form-control bg-light text-secondary" readonly>
-                  <small class="text-muted" style="font-size: 0.70rem;">O e-mail não pode ser alterado pois é a chave de acesso.</small>
+                  <input type="email" name="email" id="editEmail" class="form-control shadow-sm" required placeholder="email@lello.com.br">
+                  <small class="text-muted" style="font-size: 0.70rem;">O e-mail pode ser alterado. Ele é usado como acesso ao sistema.</small>
               </div>
 
               <div class="mb-3">
                   <label class="form-label small fw-bold text-muted">Nome Completo</label>
                   <input type="text" name="nome" id="editNome" class="form-control shadow-sm" required>
+              </div>
+              
+              <div class="mb-3">
+                  <label class="form-label small fw-bold text-muted">Nome de Exibição</label>
+                  <input type="text" name="nome_exibicao" id="editNomeExibicao" class="form-control shadow-sm" required placeholder="Ex: João Silva">
               </div>
 
               <div class="mb-3">
@@ -188,31 +230,34 @@
                       </select>
                   </div>
               </div>
-
           </div>
           
-          <div class="modal-footer border-0 bg-light">
-            <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-primary fw-bold shadow-sm"><i class="bi bi-save me-1"></i> Salvar Alterações</button>
+          <div class="modal-footer border-0 bg-light d-flex justify-content-between">
+            <div>
+                <button type="submit" formaction="{{ url_for('main.excluir_usuario') }}" onclick="return confirm('ATENÇÃO: Tem certeza que deseja excluir este colaborador definitivamente? Esta ação não pode ser desfeita.');" class="btn btn-outline-danger fw-bold shadow-sm">
+                    <i class="bi bi-trash me-1"></i> Excluir
+                </button>
+            </div>
+            <div>
+                <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary fw-bold shadow-sm"><i class="bi bi-save me-1"></i> Salvar</button>
+            </div>
           </div>
       </form>
     </div>
   </div>
 </div>
 
-<!-- Script para preencher o Modal com os dados corretos ao clicar -->
 <script>
-function abrirModalEditar(email, nome, filial, perfil, ativo) {
+function abrirModalEditar(email, nome, nome_exibicao, filial, perfil, ativo) {
+    document.getElementById('editEmailOriginal').value = email;
     document.getElementById('editEmail').value = email;
     document.getElementById('editNome').value = nome;
+    document.getElementById('editNomeExibicao').value = (nome_exibicao && nome_exibicao !== 'None') ? nome_exibicao : nome;
     document.getElementById('editFilial').value = filial;
     document.getElementById('editPerfil').value = perfil;
-    
-    // Transforma o texto 'True'/'False' do Python no value correto do HTML
     const valorAtivo = String(ativo).toLowerCase() === 'true' ? 'true' : 'false';
     document.getElementById('editAtivo').value = valorAtivo;
-    
-    // Mostra o Modal do Bootstrap
     var myModal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
     myModal.show();
 }
