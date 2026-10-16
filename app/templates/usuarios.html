@@ -11,17 +11,6 @@
                 <i class="bi bi-person-plus-fill text-warning me-2"></i> Adicionar Colaborador
             </h5>
 
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-dismissible fade show small" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
             <form method="POST" action="{{ url_for('main.usuarios') }}">
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-muted">Nome Completo</label>
@@ -49,14 +38,45 @@
                     <select name="perfil" class="form-select shadow-sm" required>
                         <option value="Corretor" selected>Corretor</option>
                         <option value="Agente de Visita">Agente de Visita</option>
-                        <option value="Gerente Filial">Gerente Filial</option>
-                        <option value="Gerente Geral">Gerente Geral</option>
-                        <option value="Admin">Admin</option>
+                        
+                        <!-- Gerente Geral pode criar Gerentes de Filial -->
+                        {% if session.get('user_perfil') in ['Admin', 'Gerente Geral'] %}
+                            <option value="Gerente Filial">Gerente Filial</option>
+                        {% endif %}
+                        
+                        <!-- Só Admin cria Gerente Geral e Admin -->
+                        {% if session.get('user_perfil') == 'Admin' %}
+                            <option value="Gerente Geral">Gerente Geral</option>
+                            <option value="Admin">Admin</option>
+                        {% endif %}
                     </select>
                 </div>
+                
+                <!-- NOVO: Switch para enviar e-mail (Ligado por padrão) -->
+                <div class="form-check form-switch mb-4">
+                    <input class="form-check-input shadow-sm cursor-pointer" type="checkbox" role="switch" id="enviarEmailCheck" name="enviar_email" value="sim" checked>
+                    <label class="form-check-label small fw-bold text-muted cursor-pointer" for="enviarEmailCheck" style="cursor: pointer;">
+                        Enviar e-mail de boas-vindas
+                    </label>
+                </div>
+
                 <button type="submit" class="btn btn-warning w-100 fw-bold py-2 shadow-sm text-dark mt-2">
                     <i class="bi bi-check-circle me-1"></i> Cadastrar
                 </button>
+                
+                <!-- MENSAGENS DE ALERTA ABAIXO DO BOTÃO -->
+                {% with messages = get_flashed_messages(category_filter=['success', 'danger', 'info', 'warning'], with_categories=true) %}
+                    {% if messages %}
+                        <div class="mt-3" id="areaAlertas">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show small alert-temporario shadow-sm" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
             </form>
         </div>
     </div>
@@ -64,13 +84,24 @@
     <!-- Lado Direito: Tabela de Usuários -->
     <div class="col-12 col-xl-8">
         <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-                <h5 class="fw-bold text-dark mb-0">
-                    <i class="bi bi-people-fill text-primary me-2"></i> Colaboradores Cadastrados
-                </h5>
-                <button class="btn btn-outline-primary btn-sm fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#painelFiltros">
-                    <i class="bi bi-funnel-fill me-1"></i> Filtros
+            <!-- Cabeçalho da Lista / Botões -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-people-fill text-primary me-2"></i> Lista de Colaboradores
+                    </h5>
+                    <!-- Botão de Filtro de volta! -->
+                    <button class="btn btn-sm btn-outline-secondary shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#painelFiltros" aria-expanded="false" aria-controls="painelFiltros">
+                        <i class="bi bi-funnel-fill me-1"></i> Filtros
+                    </button>
+                </div>
+                
+                {% if session.get('user_perfil') == 'Admin' %}
+                <!-- Botão de Importar agora chama o Modal -->
+                <button class="btn btn-sm btn-outline-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalImportar" title="Importar planilha CSV de usuários">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Importar em Massa
                 </button>
+                {% endif %}
             </div>
             
             <!-- Painel de Filtros (Escondido por padrão) -->
@@ -207,7 +238,34 @@
                         {% endfor %}
                     </tbody>
                 </table>
-            </div>
+            </div> <!-- Fim do table-responsive -->
+
+            <!-- NAVEGAÇÃO DE PAGINAÇÃO -->
+            {% if total_paginas > 1 %}
+            <nav class="mt-4 d-flex justify-content-center">
+                <ul class="pagination pagination-sm shadow-sm">
+                    <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                        <a class="page-link text-dark" href="{{ url_for('main.usuarios', page=page-1, search=current_filters.search, filial=current_filters.filial, perfil=current_filters.perfil, status=current_filters.status) }}">
+                            <i class="bi bi-chevron-left"></i> Anterior
+                        </a>
+                    </li>
+                    
+                    {% for p in range(1, total_paginas + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link {% if p == page %}bg-primary border-primary text-white{% else %}text-dark{% endif %}" href="{{ url_for('main.usuarios', page=p, search=current_filters.search, filial=current_filters.filial, perfil=current_filters.perfil, status=current_filters.status) }}">
+                            {{ p }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                    
+                    <li class="page-item {% if page == total_paginas %}disabled{% endif %}">
+                        <a class="page-link text-dark" href="{{ url_for('main.usuarios', page=page+1, search=current_filters.search, filial=current_filters.filial, perfil=current_filters.perfil, status=current_filters.status) }}">
+                            Próxima <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -264,7 +322,7 @@
 
               <div class="mb-3">
                   <label class="form-label small fw-bold text-muted">Filial / Equipe</label>
-                  <select name="filial" id="editFilial" class="form-select shadow-sm" required>
+                  <select name="filial" id="editFilial" class="form-select shadow-sm" required {% if session.get('user_perfil') != 'Admin' %}disabled{% endif %}>
                       <option value="(10) Centro Adm.">(10) Centro Adm.</option>
                       <option value="(11) Mooca">(11) Mooca</option>
                       <option value="(16) ABC">(16) ABC</option>
@@ -279,12 +337,15 @@
                   <div class="col-6">
                       <label class="form-label small fw-bold text-muted">Perfil de Acesso</label>
                       <select name="perfil" id="editPerfil" class="form-select shadow-sm" required>
-                          <option value="Corretor">Corretor</option>
-                          <option value="Agente de Visita">Agente de Visita</option>
-                          <option value="Gerente Filial">Gerente Filial</option>
-                          <option value="Gerente Geral">Gerente Geral</option>
-                          <option value="Admin">Admin</option>
-                      </select>
+                        <option value="Corretor" selected>Corretor</option>
+                        <option value="Agente de Visita">Agente de Visita</option>
+                        <!-- Só o Admin vê esses cargos chefes -->
+                        {% if session.get('user_perfil') == 'Admin' %}
+                            <option value="Gerente Filial">Gerente Filial</option>
+                            <option value="Gerente Geral">Gerente Geral</option>
+                            <option value="Admin">Admin</option>
+                        {% endif %}
+                    </select>
                   </div>
                   <div class="col-6">
                       <label class="form-label small fw-bold text-muted">Status</label>
@@ -299,9 +360,11 @@
           <div class="modal-footer border-0 bg-light d-flex justify-content-between">
             <div>
                 <!-- Botão Excluir só com ícone e title -->
-                <button type="submit" formaction="{{ url_for('main.excluir_usuario') }}" onclick="return confirm('ATENÇÃO: Tem certeza que deseja excluir este colaborador definitivamente? Esta ação não pode ser desfeita.');" class="btn btn-outline-danger fw-bold shadow-sm" title="Excluir Colaborador">
+                {% if session.get('user_perfil') == 'Admin' %}
+                <button type="submit" formaction="{{ url_for('main.excluir_usuario') }}" onclick="return confirm('ATENÇÃO: Tem certeza?');" class="btn btn-outline-danger fw-bold shadow-sm" title="Excluir Colaborador">
                     <i class="bi bi-trash"></i>
                 </button>
+                {% endif %}
                 
                 <!-- Botão Reenviar Convite só com ícone e title -->
                 <button type="submit" formaction="{{ url_for('main.reenviar_convite') }}" class="btn btn-outline-info fw-bold shadow-sm ms-2" title="Reenviar Convite por E-mail">
@@ -318,18 +381,109 @@
   </div>
 </div>
 
+<!-- Modal de Importação em Massa -->
+<div class="modal fade" id="modalImportar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      
+      <div class="modal-header bg-light border-0">
+        <h5 class="modal-title fw-bold text-dark"><i class="bi bi-file-earmark-excel text-success me-2"></i> Importar Colaboradores</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- Importante: enctype multipart para upload de arquivos -->
+      <form method="POST" action="{{ url_for('main.importar_usuarios') }}" enctype="multipart/form-data">
+          <div class="modal-body p-4">
+              <div class="alert alert-info small shadow-sm border-0 mb-4">
+                  <i class="bi bi-info-circle-fill me-1"></i>
+                  O arquivo deve ser criado no Excel e salvo no formato <b>CSV (separado por vírgulas)</b>. <br><br>
+                  A primeira linha (cabeçalho) deve conter exatamente estas 5 colunas: <br>
+                  <code class="bg-white px-2 py-1 rounded border mt-2 d-inline-block">nome, email, filial, perfil, enviar_email</code><br><br>
+                  <small class="text-secondary">
+                      <i class="bi bi-lightbulb-fill text-warning"></i> 
+                      Dica: Na coluna <b>enviar_email</b>, digite <b>sim</b> para mandar o convite na hora, ou <b>nao</b> para cadastrar silenciosamente.
+                  </small>
+              </div>
+
+              <div class="mb-3">
+                  <label class="form-label small fw-bold text-muted">Selecione o arquivo (.csv)</label>
+                  <input type="file" name="arquivo_csv" class="form-control shadow-sm" accept=".csv" required>
+              </div>
+          </div>
+          
+          <div class="modal-footer border-0 bg-light">
+            <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-success fw-bold shadow-sm"><i class="bi bi-upload me-1"></i> Iniciar Importação</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
+// Pega os dados de quem está mexendo no sistema
+const emailLogado = "{{ session.get('user_email') }}";
+const perfilLogado = "{{ session.get('user_perfil') }}";
+
 function abrirModalEditar(email, nome, nome_exibicao, filial, perfil, ativo, foto) {
     document.getElementById('editEmailOriginal').value = email;
-    document.getElementById('editEmail').value = email;
+    
+    const inputEmail = document.getElementById('editEmail');
+    inputEmail.value = email;
+    
     document.getElementById('editNome').value = nome;
     document.getElementById('editNomeExibicao').value = (nome_exibicao && nome_exibicao !== 'None') ? nome_exibicao : nome;
     document.getElementById('editFilial').value = filial;
-    document.getElementById('editPerfil').value = perfil;
     
     const valorAtivo = String(ativo).toLowerCase() === 'true' ? 'true' : 'false';
     document.getElementById('editAtivo').value = valorAtivo;
     
+    // Tratamento do Perfil (corrige o bug do campo em branco)
+    const selectPerfil = document.getElementById('editPerfil');
+    let opcaoExiste = false;
+    for (let i = 0; i < selectPerfil.options.length; i++) {
+        if (selectPerfil.options[i].value === perfil) {
+            opcaoExiste = true;
+            break;
+        }
+    }
+    // Se o cargo dele não tiver na lista, adiciona dinamicamente só pra ele ver
+    if (!opcaoExiste) {
+        selectPerfil.add(new Option(perfil, perfil));
+    }
+    selectPerfil.value = perfil;
+
+    // --- TRAVAS VISUAIS SE ELE ESTIVER EDITANDO A SI MESMO ---
+    const isSelf = (email.toLowerCase() === emailLogado.toLowerCase());
+    const isAdmin = (perfilLogado === 'Admin');
+    const selectAtivo = document.getElementById('editAtivo'); // Puxa o campo de Status
+
+    if (isSelf && !isAdmin) {
+        // Trava o E-mail
+        inputEmail.readOnly = true;
+        inputEmail.classList.add('bg-light', 'text-muted');
+        
+        // Trava o Perfil (Impede o clique)
+        selectPerfil.style.pointerEvents = "none";
+        selectPerfil.classList.add('bg-light', 'text-muted');
+        
+        // NOVO: Trava o Status (Impede o clique)
+        selectAtivo.style.pointerEvents = "none";
+        selectAtivo.classList.add('bg-light', 'text-muted');
+    } else {
+        // Libera tudo se for outra pessoa ou se for Admin
+        inputEmail.readOnly = false;
+        inputEmail.classList.remove('bg-light', 'text-muted');
+        
+        selectPerfil.style.pointerEvents = "auto";
+        selectPerfil.classList.remove('bg-light', 'text-muted');
+        
+        // NOVO: Libera o Status
+        selectAtivo.style.pointerEvents = "auto";
+        selectAtivo.classList.remove('bg-light', 'text-muted');
+    }
+    
+    // Tratamento visual da Foto
     const campoFoto = document.getElementById('editFoto');
     const previewFoto = document.getElementById('previewFoto');
     const placeholderFoto = document.getElementById('placeholderFoto');
@@ -338,7 +492,6 @@ function abrirModalEditar(email, nome, nome_exibicao, filial, perfil, ativo, fot
     if (foto && foto !== 'None' && foto.trim() !== '') {
         campoFoto.value = foto;
         previewFoto.src = foto;
-        // Mostra imagem, esconde icone
         previewFoto.classList.remove('d-none');
         previewFoto.classList.add('d-block');
         placeholderFoto.classList.remove('d-flex');
@@ -346,7 +499,6 @@ function abrirModalEditar(email, nome, nome_exibicao, filial, perfil, ativo, fot
     } else {
         campoFoto.value = '';
         previewFoto.src = '';
-        // Mostra icone, esconde imagem
         previewFoto.classList.remove('d-block');
         previewFoto.classList.add('d-none');
         placeholderFoto.classList.remove('d-none');
@@ -357,6 +509,7 @@ function abrirModalEditar(email, nome, nome_exibicao, filial, perfil, ativo, fot
     myModal.show();
 }
 
+// Preview da foto na hora de selecionar o arquivo
 document.getElementById('inputFileFoto').addEventListener('change', function(event) {
     const file = event.target.files[0];
     if (file) {
@@ -376,6 +529,18 @@ document.getElementById('inputFileFoto').addEventListener('change', function(eve
         };
         reader.readAsDataURL(file);
     }
+});
+
+// Remove os alertas de sucesso/erro da tela após 10 segundos
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        let alertas = document.querySelectorAll('.alert-temporario');
+        alertas.forEach(function(alerta) {
+            // Usa a animação de Fade do Bootstrap para sumir bonito
+            let bsAlert = new bootstrap.Alert(alerta);
+            bsAlert.close();
+        });
+    }, 10000); // 10000 ms = 10 segundos
 });
 </script>
 {% endblock %}

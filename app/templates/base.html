@@ -28,14 +28,33 @@
             <i class="bi bi-buildings-fill text-primary me-2"></i> Lello Imóveis
         </div>
         <ul class="nav flex-column list-unstyled w-100">
+            <!-- Dashboard sempre aparece para todos -->
             <li class="nav-item"><a href="{{ url_for('main.home') }}" class="nav-link"><i class="bi bi-grid-1x2"></i> Dashboard</a></li>
-            <li class="nav-item"><a href="{{ url_for('main.visitas') }}" class="nav-link"><i class="bi bi-calendar-check"></i> Gestão de Visitas</a></li>
-            <li class="nav-item"><a href="{{ url_for('main.indicacao') }}" class="nav-link"><i class="bi bi-person-plus"></i> Indicações</a></li>
             
-            {% if session.get('user_perfil') == 'Admin' %}
+            <!-- Mostra se tiver permissão ou se for Admin -->
+            {% if 'visitas' in minhas_permissoes or session.get('user_perfil') == 'Admin' %}
+            <li class="nav-item"><a href="{{ url_for('main.visitas') }}" class="nav-link"><i class="bi bi-calendar-check"></i> Gestão de Visitas</a></li>
+            {% endif %}
+
+            <!-- Mostra se tiver permissão ou se for Admin -->
+            {% if 'indicacao' in minhas_permissoes or session.get('user_perfil') == 'Admin' %}
+            <li class="nav-item"><a href="{{ url_for('main.indicacao') }}" class="nav-link"><i class="bi bi-person-plus"></i> Indicações</a></li>
+            {% endif %}
+            
+            <!-- Mostra se tiver permissão (ex: Gerente Filial) ou se for Admin -->
+            {% if 'usuarios' in minhas_permissoes or session.get('user_perfil') == 'Admin' %}
             <li class="nav-item">
                 <a href="{{ url_for('main.usuarios') }}" class="nav-link text-warning">
                     <i class="bi bi-people-fill"></i> Gerenciar Equipe
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- Matriz de Acessos: EXCLUSIVA do Admin Supremo -->
+            {% if session.get('user_perfil') == 'Admin' %}
+            <li class="nav-item">
+                <a href="{{ url_for('main.permissoes') }}" class="nav-link text-danger">
+                    <i class="bi bi-shield-lock-fill"></i> Matriz de Acessos
                 </a>
             </li>
             {% endif %}
@@ -74,6 +93,27 @@
 
     <div class="main-content">
         {% block content %}{% endblock %}
+    </div>
+    <!-- Toast Container (Balões flutuantes no topo direito) -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080; margin-top: 60px;">
+        {% with floating_msgs = get_flashed_messages(category_filter=['floating_info', 'floating_success', 'floating_danger'], with_categories=true) %}
+            {% if floating_msgs %}
+                {% for category, message in floating_msgs %}
+                    {% set bs_cat = category.split('_')[1] %}
+                    <div class="toast align-items-center text-bg-{{ bs_cat }} border-0 mb-2 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="d-flex">
+                            <div class="toast-body fw-bold">
+                                {% if bs_cat == 'danger' %}<i class="bi bi-shield-x me-2 fs-5 align-middle"></i>
+                                {% elif bs_cat == 'success' %}<i class="bi bi-check-circle me-2 fs-5 align-middle"></i>
+                                {% else %}<i class="bi bi-info-circle me-2 fs-5 align-middle"></i>{% endif %}
+                                <span class="align-middle">{{ message }}</span>
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
