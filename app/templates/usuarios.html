@@ -143,17 +143,61 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <div class="fw-bold text-dark" style="font-size: 0.95rem;">{{ u.nome_exibicao or u.nome }}</div>
+                                <div class="d-flex align-items-center">
+                                    <div class="position-relative me-3">
+                                        <!-- Fotografia ou Ícone de substituição -->
+                                        {% if u.foto and u.foto != 'None' and u.foto | trim != '' %}
+                                            <img src="{{ u.foto }}" alt="Foto" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover; border: 2px solid #fff; outline: 1px solid #dee2e6;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center shadow-sm" style="width: 38px; height: 38px; border: 1px dashed #adb5bd;">
+                                                <i class="bi bi-person text-secondary fs-5"></i>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <!-- Ícone do Dispositivo (Verde/Vermelho) -->
+                                        <span class="position-absolute bottom-0 end-0 bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 18px; height: 18px; transform: translate(25%, 25%); border: 1px solid #dee2e6;">
+                                            {% if u.is_online %}
+                                                {% if u.dispositivo == 'celular' %}
+                                                    <i class="bi bi-phone-fill text-success" style="font-size: 0.65rem;" title="Online no Celular"></i>
+                                                {% else %}
+                                                    <i class="bi bi-pc-display-horizontal text-success" style="font-size: 0.60rem;" title="Online no PC"></i>
+                                                {% endif %}
+                                            {% else %}
+                                                {% if u.dispositivo == 'celular' %}
+                                                    <i class="bi bi-phone-fill text-danger" style="font-size: 0.65rem;" title="Offline (Último acesso: Celular)"></i>
+                                                {% else %}
+                                                    <i class="bi bi-pc-display-horizontal text-danger" style="font-size: 0.60rem;" title="Offline (Último acesso: PC)"></i>
+                                                {% endif %}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Nome do Colaborador -->
+                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">{{ u.nome_exibicao or u.nome }}</div>
+                                </div>
                             </td>
                             <td class="text-secondary small">{{ u.email }}</td>
                             <td><span class="badge bg-light text-dark border">{{ u.filial }}</span></td>
                             <td><span class="badge bg-light text-dark border">{{ u.perfil }}</span></td>
                             <td class="text-center">
-                                <button class="btn btn-sm btn-outline-primary border-0" 
-                                        onclick="abrirModalEditar('{{ u.email }}', '{{ u.nome }}', '{{ u.nome_exibicao }}', '{{ u.filial }}', '{{ u.perfil }}', '{{ u.ativo }}')"
-                                        title="Editar Colaborador">
-                                    <i class="bi bi-pencil-square fs-6"></i>
-                                </button>
+                                <div class="d-flex justify-content-center align-items-center gap-2">
+                                    <!-- Botão Editar -->
+                                    <button class="btn btn-sm btn-outline-primary border-0" 
+                                            onclick="abrirModalEditar('{{ u.email }}', '{{ u.nome }}', '{{ u.nome_exibicao }}', '{{ u.filial }}', '{{ u.perfil }}', '{{ u.ativo }}', '{{ u.foto }}')"
+                                            title="Editar Colaborador">
+                                        <i class="bi bi-pencil-square fs-6"></i>
+                                    </button>
+                                    
+                                    <!-- Botão Simular Acesso -->
+                                    {% if u.email != session.get('user_email') and u.ativo %}
+                                    <form method="POST" action="{{ url_for('main.simular_acesso') }}" class="m-0">
+                                        <input type="hidden" name="email_alvo" value="{{ u.email }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-success border-0" title="Simular Acesso deste Usuário">
+                                            <i class="bi bi-box-arrow-in-right fs-6"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% else %}
@@ -188,14 +232,34 @@
                   <small class="text-muted" style="font-size: 0.70rem;">O e-mail pode ser alterado. Ele é usado como acesso ao sistema.</small>
               </div>
 
-              <div class="mb-3">
-                  <label class="form-label small fw-bold text-muted">Nome Completo</label>
-                  <input type="text" name="nome" id="editNome" class="form-control shadow-sm" required>
+              <div class="row g-3 mb-3">
+                  <div class="col-6">
+                      <label class="form-label small fw-bold text-muted">Nome Completo</label>
+                      <input type="text" name="nome" id="editNome" class="form-control shadow-sm" required>
+                  </div>
+                  <div class="col-6">
+                      <label class="form-label small fw-bold text-muted">Nome de Exibição</label>
+                      <input type="text" name="nome_exibicao" id="editNomeExibicao" class="form-control shadow-sm" required placeholder="Ex: João Silva">
+                  </div>
               </div>
               
-              <div class="mb-3">
-                  <label class="form-label small fw-bold text-muted">Nome de Exibição</label>
-                  <input type="text" name="nome_exibicao" id="editNomeExibicao" class="form-control shadow-sm" required placeholder="Ex: João Silva">
+              <!-- NOVO CAMPO: Foto com Pré-visualização -->
+              <div class="mb-4 text-center">
+                  <label class="form-label small fw-bold text-muted d-block mb-3">Foto do Perfil</label>
+                  
+                  <div class="position-relative d-inline-block mb-2">
+                      <!-- Imagem (escondida por padrão via d-none) -->
+                      <img id="previewFoto" src="" alt="Foto" class="rounded-circle shadow-sm d-none" style="width: 110px; height: 110px; object-fit: cover; border: 3px solid #0d6efd;">
+                      
+                      <!-- Ícone padrão -->
+                      <div id="placeholderFoto" class="rounded-circle shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 110px; height: 110px; border: 2px dashed #adb5bd; margin: 0 auto;">
+                          <i class="bi bi-person text-secondary" style="font-size: 3rem;"></i>
+                      </div>
+                  </div>
+
+                  <!-- Botão de arquivo e campo oculto -->
+                  <input type="file" id="inputFileFoto" class="form-control form-control-sm shadow-sm w-75 mx-auto" accept="image/*">
+                  <input type="hidden" name="foto" id="editFoto">
               </div>
 
               <div class="mb-3">
@@ -234,8 +298,14 @@
           
           <div class="modal-footer border-0 bg-light d-flex justify-content-between">
             <div>
-                <button type="submit" formaction="{{ url_for('main.excluir_usuario') }}" onclick="return confirm('ATENÇÃO: Tem certeza que deseja excluir este colaborador definitivamente? Esta ação não pode ser desfeita.');" class="btn btn-outline-danger fw-bold shadow-sm">
-                    <i class="bi bi-trash me-1"></i> Excluir
+                <!-- Botão Excluir só com ícone e title -->
+                <button type="submit" formaction="{{ url_for('main.excluir_usuario') }}" onclick="return confirm('ATENÇÃO: Tem certeza que deseja excluir este colaborador definitivamente? Esta ação não pode ser desfeita.');" class="btn btn-outline-danger fw-bold shadow-sm" title="Excluir Colaborador">
+                    <i class="bi bi-trash"></i>
+                </button>
+                
+                <!-- Botão Reenviar Convite só com ícone e title -->
+                <button type="submit" formaction="{{ url_for('main.reenviar_convite') }}" class="btn btn-outline-info fw-bold shadow-sm ms-2" title="Reenviar Convite por E-mail">
+                    <i class="bi bi-envelope-paper"></i>
                 </button>
             </div>
             <div>
@@ -249,17 +319,63 @@
 </div>
 
 <script>
-function abrirModalEditar(email, nome, nome_exibicao, filial, perfil, ativo) {
+function abrirModalEditar(email, nome, nome_exibicao, filial, perfil, ativo, foto) {
     document.getElementById('editEmailOriginal').value = email;
     document.getElementById('editEmail').value = email;
     document.getElementById('editNome').value = nome;
     document.getElementById('editNomeExibicao').value = (nome_exibicao && nome_exibicao !== 'None') ? nome_exibicao : nome;
     document.getElementById('editFilial').value = filial;
     document.getElementById('editPerfil').value = perfil;
+    
     const valorAtivo = String(ativo).toLowerCase() === 'true' ? 'true' : 'false';
     document.getElementById('editAtivo').value = valorAtivo;
+    
+    const campoFoto = document.getElementById('editFoto');
+    const previewFoto = document.getElementById('previewFoto');
+    const placeholderFoto = document.getElementById('placeholderFoto');
+    document.getElementById('inputFileFoto').value = ''; 
+    
+    if (foto && foto !== 'None' && foto.trim() !== '') {
+        campoFoto.value = foto;
+        previewFoto.src = foto;
+        // Mostra imagem, esconde icone
+        previewFoto.classList.remove('d-none');
+        previewFoto.classList.add('d-block');
+        placeholderFoto.classList.remove('d-flex');
+        placeholderFoto.classList.add('d-none');
+    } else {
+        campoFoto.value = '';
+        previewFoto.src = '';
+        // Mostra icone, esconde imagem
+        previewFoto.classList.remove('d-block');
+        previewFoto.classList.add('d-none');
+        placeholderFoto.classList.remove('d-none');
+        placeholderFoto.classList.add('d-flex');
+    }
+    
     var myModal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
     myModal.show();
 }
+
+document.getElementById('inputFileFoto').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64 = e.target.result;
+            document.getElementById('editFoto').value = base64;
+            
+            const preview = document.getElementById('previewFoto');
+            const placeholder = document.getElementById('placeholderFoto');
+            
+            preview.src = base64;
+            preview.classList.remove('d-none');
+            preview.classList.add('d-block');
+            placeholder.classList.remove('d-flex');
+            placeholder.classList.add('d-none');
+        };
+        reader.readAsDataURL(file);
+    }
+});
 </script>
 {% endblock %}

@@ -4,13 +4,13 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 def enviar_email_boas_vindas(email_destino, nome_usuario, perfil_usuario):
-    # Puxa estritamente das variáveis de ambiente (sem fallback hardcoded)
     EMAIL_REMETENTE = os.getenv('EMAIL_SISTEMA')
     SENHA_APP = os.getenv('SENHA_EMAIL_SISTEMA') 
 
-    # Se a variável não existir, cancela o envio silenciosamente
+    print(f"--- TENTANDO ENVIAR E-MAIL PARA {email_destino} ---")
+
     if not EMAIL_REMETENTE or not SENHA_APP:
-        print("Aviso: Credenciais de e-mail não configuradas no .env. E-mail ignorado.")
+        print("❌ ERRO: As variáveis EMAIL_SISTEMA e SENHA_EMAIL_SISTEMA não foram encontradas no arquivo .env!")
         return
 
     assunto = "Bem-vindo ao sistema Tá Agendado!"
@@ -34,10 +34,12 @@ def enviar_email_boas_vindas(email_destino, nome_usuario, perfil_usuario):
     msg.attach(MIMEText(corpo_html, 'html'))
 
     try:
+        print(f"Conectando ao servidor do Google usando {EMAIL_REMETENTE}...")
         servidor = smtplib.SMTP('smtp.gmail.com', 587)
         servidor.starttls()
         servidor.login(EMAIL_REMETENTE, SENHA_APP)
         servidor.send_message(msg)
         servidor.quit()
+        print("✅ E-mail enviado com sucesso pelo servidor!")
     except Exception as e:
-        print(f"Erro ao enviar e-mail: {e}")
+        print(f"❌ Erro crítico ao enviar e-mail pelo Gmail: {e}")
