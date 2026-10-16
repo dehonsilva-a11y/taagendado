@@ -1,3 +1,4 @@
+import os
 import time
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify
 from firebase_admin import auth as firebase_auth
@@ -9,7 +10,18 @@ auth_bp = Blueprint('auth', __name__)
 def login():
     if 'user_id' in session:
         return redirect(url_for('main.home'))
-    return render_template('login.html')
+        
+    # Puxa as configurações do .env para mandar para o HTML
+    firebase_config = {
+        "apiKey": os.getenv("FIREBASE_API_KEY"),
+        "authDomain": os.getenv("FIREBASE_AUTH_DOMAIN"),
+        "projectId": os.getenv("FIREBASE_PROJECT_ID"),
+        "storageBucket": os.getenv("FIREBASE_STORAGE_BUCKET"),
+        "messagingSenderId": os.getenv("FIREBASE_MESSAGING_SENDER_ID"),
+        "appId": os.getenv("FIREBASE_APP_ID")
+    }
+    
+    return render_template('login.html', firebase_config=firebase_config)
 
 @auth_bp.route('/auth_google', methods=['POST'])
 def auth_google():

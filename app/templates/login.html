@@ -71,15 +71,15 @@
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
 
+    <!-- 1. Passamos os dados do Flask para uma tag de dados limpa e invisível -->
+    <script id="firebase-config-data" type="application/json">
+        {{ firebase_config | tojson | safe }}
+    </script>
+
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyA4WPItplXhSjkEP9P9tx_XMNijrbd89XY",
-            authDomain: "taagendado-9c7ab.firebaseapp.com",
-            projectId: "taagendado-9c7ab",
-            storageBucket: "taagendado-9c7ab.firebasestorage.app",
-            messagingSenderId: "379315225586",
-            appId: "1:379315225586:web:03ef20ab29f06f394fa16b"
-        };
+        // 2. O Javascript lê a tag acima e converte para objeto (sem alertar erros no VS Code)
+        const configData = document.getElementById('firebase-config-data').textContent;
+        const firebaseConfig = JSON.parse(configData);
 
         firebase.initializeApp(firebaseConfig);
         const provider = new firebase.auth.GoogleAuthProvider();
@@ -96,14 +96,13 @@
         }
 
         async function fazerLoginGoogle() {
+            // ... (mantenha o restante da função fazerLoginGoogle exatamente igual)
             alternarCarregamento(true);
 
             try {
-                // 1. Abre a janela de autenticação do Google
                 const result = await firebase.auth().signInWithPopup(provider);
                 const token = await result.user.getIdToken();
 
-                // 2. Envia o token para validação no backend Flask (/auth_google)
                 const resposta = await fetch('/auth_google', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -115,7 +114,6 @@
                 if (resposta.ok && dados && dados.status === 'success') {
                     window.location.href = "/";
                 } else if (dados && dados.status === 'bloqueado') {
-                    // Se estiver bloqueado, desloga a pessoa do Firebase e manda pra tela de bloqueio
                     await firebase.auth().signOut();
                     window.location.href = "/bloqueado"; 
                 } else {
@@ -124,17 +122,13 @@
                     await firebase.auth().signOut();
                     alternarCarregamento(false);
                 }
-
             } catch (error) {
                 console.error("Erro no login:", error);
-                
-                // Mensagens informativas para erros comuns de autenticação
                 if (error.code === 'auth/unauthorized-domain') {
                     alert('Este domínio ainda não foi autorizado no Firebase Console. Adicione o link da Vercel em Authentication > Settings > Authorized domains.');
                 } else if (error.code !== 'auth/popup-closed-by-user') {
                     alert(`Não foi possível autenticar: ${error.message}`);
                 }
-                
                 alternarCarregamento(false);
             }
         }

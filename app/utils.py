@@ -4,10 +4,13 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 def enviar_email_boas_vindas(email_destino, nome_usuario, perfil_usuario):
-    EMAIL_REMETENTE = os.getenv('EMAIL_SISTEMA', 'robertty.almeida@lello.com.br')
-    SENHA_APP = os.getenv('SENHA_EMAIL_SISTEMA', 'ngrqyaapvorkshpm') 
+    # Puxa estritamente das variáveis de ambiente (sem fallback hardcoded)
+    EMAIL_REMETENTE = os.getenv('EMAIL_SISTEMA')
+    SENHA_APP = os.getenv('SENHA_EMAIL_SISTEMA') 
 
-    if not EMAIL_REMETENTE or not SENHA_APP or EMAIL_REMETENTE == 'seu-email-aqui@gmail.com':
+    # Se a variável não existir, cancela o envio silenciosamente
+    if not EMAIL_REMETENTE or not SENHA_APP:
+        print("Aviso: Credenciais de e-mail não configuradas no .env. E-mail ignorado.")
         return
 
     assunto = "Bem-vindo ao sistema Tá Agendado!"

@@ -6,12 +6,14 @@ from flask import Flask
 import firebase_admin
 from firebase_admin import credentials, firestore
 from whitenoise import WhiteNoise
+from dotenv import load_dotenv
 
-# Caminho absoluto apontando para a raiz do projeto
+# Carrega as variáveis do arquivo .env automaticamente (se ele existir localmente)
+load_dotenv()
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MEMORIA_CACHE = {}
 
-# 1. Conexão flexível com o Firebase Admin
 if not firebase_admin._apps:
     raw_creds = os.getenv("FIREBASE_CREDENTIALS", "").strip()
     
@@ -34,10 +36,14 @@ db = firestore.client()
 def create_app():
     app = Flask(__name__)
     app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(BASE_DIR, 'app', 'static'), prefix='static/')
-    app.secret_key = os.getenv('SECRET_KEY', 'AIzaSyA4WPItplXhSjkEP9P9tx_XMNijrbd89XY')
+    
+    # Puxa o SECRET_KEY limpo do ambiente. Se não achar, o sistema avisa na hora.
+    app.secret_key = os.getenv('SECRET_KEY')
+    if not app.secret_key:
+        raise ValueError("ERRO FATAL: A variável SECRET_KEY não foi encontrada no ambiente ou .env!")
+        
     app.permanent_session_lifetime = timedelta(minutes=15)
 
-    # Registro das Rotas (Blueprints)
     from app.auth import auth_bp
     from app.routes import main_bp
     
