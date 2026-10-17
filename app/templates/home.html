@@ -1,39 +1,73 @@
 {% extends 'base.html' %}
-{% block page_title %}Dashboard Inicial{% endblock %}
+{% block title %}Início · Lello{% endblock %}
+{% block page_title %}Início{% endblock %}
 
 {% block content %}
-<div class="row g-4">
-    <div class="col-12 col-md-4">
-        <div class="card border-0 shadow-sm rounded-4 text-center p-4 h-100">
-            <div class="card-body">
-                <i class="bi bi-calendar-check text-primary fs-1 mb-3"></i>
-                <h5 class="fw-bold">Gestão de Visitas</h5>
-                <p class="text-muted small">Acompanhe seus agendamentos, clientes e faturamentos de comissão.</p>
-                <a href="{{ url_for('main.visitas') }}" class="btn btn-outline-primary mt-2">Acessar Visitas</a>
-            </div>
-        </div>
+{% set is_admin = session.get('user_perfil') == 'Admin' %}
+{% set primeiro_nome = (session.get('user_nome') or '').split(' ')[0] %}
+{% set pode_visitas = 'visitas' in minhas_permissoes or is_admin %}
+{% set pode_indicacao = 'indicacao' in minhas_permissoes or is_admin %}
+{% set pode_equipe = 'usuarios' in minhas_permissoes or is_admin %}
+
+<section class="hero mb-4">
+    <p class="hero-kicker mb-1"><span data-today></span></p>
+    <h2 class="hero-title">Olá, {{ primeiro_nome }}</h2>
+    <p class="hero-sub mb-0">{{ session.get('user_filial') }}. Veja suas visitas e indicações.</p>
+    {% if pode_visitas %}
+    <a href="{{ url_for('main.visitas') }}" class="btn btn-white btn-lg mt-4 px-4 fw-semibold">
+        <i class="bi bi-calendar-check me-2"></i> Ver minhas visitas
+    </a>
+    {% endif %}
+</section>
+
+<div class="row g-3">
+    {% if pode_visitas %}
+    <div class="col-12 col-md-6 col-xl-4">
+        <a href="{{ url_for('main.visitas') }}" class="shortcut">
+            <span class="ico"><i class="bi bi-calendar-check"></i></span>
+            <span>
+                <h3>Gestão de visitas</h3>
+                <p>Agendamentos, clientes e comissões.</p>
+            </span>
+            <i class="bi bi-chevron-right go"></i>
+        </a>
     </div>
-    
-    <div class="col-12 col-md-4">
-        <div class="card border-0 shadow-sm rounded-4 text-center p-4 h-100">
-            <div class="card-body">
-                <i class="bi bi-person-plus text-success fs-1 mb-3"></i>
-                <h5 class="fw-bold">Indicações</h5>
-                <p class="text-muted small">Gerencie e cadastre novas indicações de clientes e imóveis.</p>
-                <a href="{{ url_for('main.indicacao') }}" class="btn btn-outline-success mt-2">Ver Indicações</a>
-            </div>
+    {% endif %}
+
+    {% if pode_indicacao %}
+    <div class="col-12 col-md-6 col-xl-4">
+        <a href="{{ url_for('main.indicacao') }}" class="shortcut">
+            <span class="ico"><i class="bi bi-person-plus"></i></span>
+            <span>
+                <h3>Indicações</h3>
+                <p>Registre e acompanhe novas indicações.</p>
+            </span>
+            <i class="bi bi-chevron-right go"></i>
+        </a>
+    </div>
+    {% endif %}
+
+    <div class="col-12 col-md-6 col-xl-4">
+        <div class="shortcut is-soon" aria-disabled="true">
+            <span class="ico"><i class="bi bi-house-door"></i></span>
+            <span>
+                <h3>Minha carteira</h3>
+                <p>Seus imóveis em um só lugar. <span class="chip chip-muted ms-1">Em breve</span></p>
+            </span>
         </div>
     </div>
 
-    <div class="col-12 col-md-4">
-        <div class="card border-0 shadow-sm rounded-4 text-center p-4 h-100">
-            <div class="card-body">
-                <i class="bi bi-house-door text-warning fs-1 mb-3"></i>
-                <h5 class="fw-bold">Minha Carteira</h5>
-                <p class="text-muted small">Visualize todos os imóveis sob sua responsabilidade (Em breve).</p>
-                <button class="btn btn-outline-warning mt-2" disabled>Em breve</button>
-            </div>
-        </div>
+    {% if pode_equipe %}
+    <div class="col-12 col-md-6 col-xl-4">
+        <a href="{{ url_for('main.usuarios') }}" class="shortcut">
+            <span class="ico"><i class="bi bi-people"></i></span>
+            <span>
+                <h3>Gerenciar equipe</h3>
+                <p>Cadastre e edite colaboradores.</p>
+            </span>
+            <i class="bi bi-chevron-right go"></i>
+        </a>
     </div>
+    {% endif %}
 </div>
 {% endblock %}

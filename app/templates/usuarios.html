@@ -1,133 +1,121 @@
 {% extends 'base.html' %}
-{% block page_title %}Gerenciar Equipe{% endblock %}
+{% block title %}Equipe · Lello{% endblock %}
+{% block page_title %}Gerenciar equipe{% endblock %}
 
 {% block content %}
-<div class="row mt-4 g-4">
-    
-    <!-- Lado Esquerdo: Formulário de Cadastro -->
+{% set filiais = ['(10) Centro Adm.', '(11) Mooca', '(16) ABC', '(19) Tatuapé', '(27) Norte', '(29) Pinheiros', '(31) Vila Mariana'] %}
+{% set eh_admin = session.get('user_perfil') == 'Admin' %}
+
+<!-- Mensagens do cadastro / edição -->
+{% with messages = get_flashed_messages(category_filter=['success', 'danger', 'info', 'warning'], with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show alert-temporario shadow-sm mb-4" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+    {% endfor %}
+{% endwith %}
+
+<div class="row g-4">
+
+    <!-- Lado Esquerdo: Novo colaborador -->
     <div class="col-12 col-xl-4">
-        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
-            <h5 class="fw-bold mb-4 text-dark border-bottom pb-3">
-                <i class="bi bi-person-plus-fill text-warning me-2"></i> Adicionar Colaborador
-            </h5>
+        <!-- Botão mobile para abrir o painel -->
+        <button class="btn btn-primary btn-lg w-100 d-xl-none mb-3 shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#painelNovo" aria-expanded="false" aria-controls="painelNovo">
+            <i class="bi bi-person-plus me-2"></i> Adicionar Colaborador
+        </button>
 
-            <form method="POST" action="{{ url_for('main.usuarios') }}">
-                <div class="mb-3">
-                    <label class="form-label small fw-bold text-muted">Nome Completo</label>
-                    <input type="text" name="nome" class="form-control shadow-sm" required placeholder="Ex: João da Silva">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-bold text-muted">E-mail Corporativo</label>
-                    <input type="email" name="email" class="form-control shadow-sm" required placeholder="joao.silva@lello.com.br">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-bold text-muted">Filial / Equipe</label>
-                    <select name="filial" class="form-select shadow-sm" required>
-                        <option value="" disabled selected>Selecione a filial...</option>
-                        <option value="(10) Centro Adm.">(10) Centro Adm.</option>
-                        <option value="(11) Mooca">(11) Mooca</option>
-                        <option value="(16) ABC">(16) ABC</option>
-                        <option value="(19) Tatuapé">(19) Tatuapé</option>
-                        <option value="(27) Norte">(27) Norte</option>
-                        <option value="(29) Pinheiros">(29) Pinheiros</option>
-                        <option value="(31) Vila Mariana">(31) Vila Mariana</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="form-label small fw-bold text-muted">Perfil de Acesso</label>
-                    <select name="perfil" class="form-select shadow-sm" required>
-                        <option value="Corretor" selected>Corretor</option>
-                        <option value="Agente de Visita">Agente de Visita</option>
-                        
-                        <!-- Gerente Geral pode criar Gerentes de Filial -->
-                        {% if session.get('user_perfil') in ['Admin', 'Gerente Geral'] %}
-                            <option value="Gerente Filial">Gerente Filial</option>
-                        {% endif %}
-                        
-                        <!-- Só Admin cria Gerente Geral e Admin -->
-                        {% if session.get('user_perfil') == 'Admin' %}
-                            <option value="Gerente Geral">Gerente Geral</option>
-                            <option value="Admin">Admin</option>
-                        {% endif %}
-                    </select>
-                </div>
-                
-                <!-- NOVO: Switch para enviar e-mail (Ligado por padrão) -->
-                <div class="form-check form-switch mb-4">
-                    <input class="form-check-input shadow-sm cursor-pointer" type="checkbox" role="switch" id="enviarEmailCheck" name="enviar_email" value="sim" checked>
-                    <label class="form-check-label small fw-bold text-muted cursor-pointer" for="enviarEmailCheck" style="cursor: pointer;">
-                        Enviar e-mail de boas-vindas
-                    </label>
-                </div>
+        <div class="collapse d-xl-block" id="painelNovo">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                <h5 class="fw-bold mb-4 text-dark border-bottom pb-3">
+                    <i class="bi bi-person-plus-fill text-danger me-2"></i> Adicionar Colaborador
+                </h5>
 
-                <button type="submit" class="btn btn-warning w-100 fw-bold py-2 shadow-sm text-dark mt-2">
-                    <i class="bi bi-check-circle me-1"></i> Cadastrar
-                </button>
-                
-                <!-- MENSAGENS DE ALERTA ABAIXO DO BOTÃO -->
-                {% with messages = get_flashed_messages(category_filter=['success', 'danger', 'info', 'warning'], with_categories=true) %}
-                    {% if messages %}
-                        <div class="mt-3" id="areaAlertas">
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }} alert-dismissible fade show small alert-temporario shadow-sm" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
-            </form>
+                <form method="POST" action="{{ url_for('main.usuarios') }}">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted" for="novoNome">Nome completo</label>
+                        <input type="text" id="novoNome" name="nome" class="form-control shadow-sm" required placeholder="Ex: João da Silva">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted" for="novoEmail">E-mail corporativo</label>
+                        <input type="email" id="novoEmail" name="email" class="form-control shadow-sm" required placeholder="joao.silva@lello.com.br">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted" for="novaFilial">Filial / equipe</label>
+                        <select id="novaFilial" name="filial" class="form-select shadow-sm" required>
+                            <option value="" disabled selected>Selecione a filial...</option>
+                            {% for f in filiais %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted" for="novoPerfil">Perfil de acesso</label>
+                        <select id="novoPerfil" name="perfil" class="form-select shadow-sm" required>
+                            <option value="Corretor" selected>Corretor</option>
+                            <option value="Agente de Visita">Agente de Visita</option>
+                            {% if session.get('user_perfil') in ['Admin', 'Gerente Geral'] %}
+                                <option value="Gerente Filial">Gerente Filial</option>
+                            {% endif %}
+                            {% if eh_admin %}
+                                <option value="Gerente Geral">Gerente Geral</option>
+                                <option value="Admin">Admin</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input shadow-sm cursor-pointer" type="checkbox" role="switch" id="enviarEmailCheck" name="enviar_email" value="sim" checked>
+                        <label class="form-check-label small fw-bold text-muted cursor-pointer" for="enviarEmailCheck" style="cursor: pointer;">
+                            Enviar e-mail de boas-vindas
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm mt-2">
+                        <i class="bi bi-check-circle me-1"></i> Cadastrar
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Lado Direito: Tabela de Usuários -->
+    <!-- Lado Direito: Lista de Colaboradores -->
     <div class="col-12 col-xl-8">
         <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
-            <!-- Cabeçalho da Lista / Botões -->
+            <!-- Cabeçalho -->
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="d-flex align-items-center gap-3">
                     <h5 class="fw-bold mb-0 text-dark">
-                        <i class="bi bi-people-fill text-primary me-2"></i> Lista de Colaboradores
+                        <i class="bi bi-people-fill text-danger me-2"></i> Lista de Colaboradores
                     </h5>
-                    <!-- Botão de Filtro de volta! -->
                     <button class="btn btn-sm btn-outline-secondary shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#painelFiltros" aria-expanded="false" aria-controls="painelFiltros">
                         <i class="bi bi-funnel-fill me-1"></i> Filtros
                     </button>
                 </div>
                 
-                {% if session.get('user_perfil') == 'Admin' %}
-                <!-- Botão de Importar agora chama o Modal -->
-                <button class="btn btn-sm btn-outline-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalImportar" title="Importar planilha CSV de usuários">
+                {% if eh_admin %}
+                <button class="btn btn-sm btn-outline-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalImportar" title="Importar planilha de usuários">
                     <i class="bi bi-file-earmark-excel me-1"></i> Importar em Massa
                 </button>
                 {% endif %}
             </div>
-            
-            <!-- Painel de Filtros (Escondido por padrão) -->
+
+            <!-- Painel de Filtros -->
             <div class="collapse mb-4 {% if current_filters.search or current_filters.filial or current_filters.perfil or current_filters.status != 'ativo' %}show{% endif %}" id="painelFiltros">
                 <div class="card card-body bg-light border-0 shadow-sm">
                     <form method="GET" action="{{ url_for('main.usuarios') }}" class="row g-3 align-items-end">
                         <div class="col-md-4">
-                            <label class="form-label small fw-bold text-muted">Pesquisar</label>
-                            <input type="text" name="search" class="form-control form-control-sm shadow-sm" placeholder="Digite e aperte Enter..." value="{{ current_filters.search }}" onchange="this.form.submit()">
+                            <label class="form-label small fw-bold text-muted" for="fBusca">Pesquisar</label>
+                            <input type="text" id="fBusca" name="search" class="form-control form-control-sm shadow-sm" placeholder="Nome ou e-mail..." value="{{ current_filters.search }}" onchange="this.form.submit()">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label small fw-bold text-muted">Filial</label>
-                            <select name="filial" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()">
-                                <option value="">Todas as Filiais</option>
-                                <option value="(10) Centro Adm." {% if current_filters.filial == '(10) Centro Adm.' %}selected{% endif %}>(10) Centro Adm.</option>
-                                <option value="(11) Mooca" {% if current_filters.filial == '(11) Mooca' %}selected{% endif %}>(11) Mooca</option>
-                                <option value="(16) ABC" {% if current_filters.filial == '(16) ABC' %}selected{% endif %}>(16) ABC</option>
-                                <option value="(19) Tatuapé" {% if current_filters.filial == '(19) Tatuapé' %}selected{% endif %}>(19) Tatuapé</option>
-                                <option value="(27) Norte" {% if current_filters.filial == '(27) Norte' %}selected{% endif %}>(27) Norte</option>
-                                <option value="(29) Pinheiros" {% if current_filters.filial == '(29) Pinheiros' %}selected{% endif %}>(29) Pinheiros</option>
-                                <option value="(31) Vila Mariana" {% if current_filters.filial == '(31) Vila Mariana' %}selected{% endif %}>(31) Vila Mariana</option>
+                            <label class="form-label small fw-bold text-muted" for="fFilial">Filial</label>
+                            <select id="fFilial" name="filial" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()">
+                                <option value="">Todas</option>
+                                {% for f in filiais %}<option value="{{ f }}" {% if current_filters.filial == f %}selected{% endif %}>{{ f }}</option>{% endfor %}
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label small fw-bold text-muted">Perfil</label>
-                            <select name="perfil" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()">
+                            <label class="form-label small fw-bold text-muted" for="fPerfil">Perfil</label>
+                            <select id="fPerfil" name="perfil" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()">
                                 <option value="">Todos</option>
                                 <option value="Admin" {% if current_filters.perfil == 'Admin' %}selected{% endif %}>Admin</option>
                                 <option value="Gerente Geral" {% if current_filters.perfil == 'Gerente Geral' %}selected{% endif %}>Ger. Geral</option>
@@ -137,35 +125,37 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label small fw-bold text-muted">Status</label>
-                            <select name="status" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()">
+                            <label class="form-label small fw-bold text-muted" for="fStatus">Status</label>
+                            <select id="fStatus" name="status" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()">
                                 <option value="ativo" {% if current_filters.status == 'ativo' %}selected{% endif %} class="text-success fw-bold">Ativos</option>
                                 <option value="inativo" {% if current_filters.status == 'inativo' %}selected{% endif %} class="text-danger fw-bold">Inativos</option>
                                 <option value="todos" {% if current_filters.status == 'todos' %}selected{% endif %}>Todos</option>
                             </select>
                         </div>
                         <div class="col-md-1 text-end">
-                            <a href="{{ url_for('main.usuarios') }}" class="btn btn-sm btn-outline-danger w-100 shadow-sm" title="Limpar Filtros"><i class="bi bi-eraser-fill"></i></a>
+                            <a href="{{ url_for('main.usuarios') }}" class="btn btn-sm btn-outline-danger w-100 shadow-sm" title="Limpar Filtros" aria-label="Limpar filtros"><i class="bi bi-eraser-fill"></i></a>
                         </div>
                     </form>
                 </div>
             </div>
-            
+
+            <!-- Tabela de Usuários -->
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th class="small text-muted text-uppercase text-center">Status</th>
-                            <th class="small text-muted text-uppercase">Nome</th>
-                            <th class="small text-muted text-uppercase">E-mail</th>
-                            <th class="small text-muted text-uppercase">Filial</th>
-                            <th class="small text-muted text-uppercase">Perfil</th>
-                            <th class="small text-muted text-uppercase text-center">Ações</th>
+                            <th class="small text-muted text-uppercase text-center border-0">Status</th>
+                            <th class="small text-muted text-uppercase border-0">Nome</th>
+                            <th class="small text-muted text-uppercase border-0">Filial</th>
+                            <th class="small text-muted text-uppercase border-0">Perfil</th>
+                            <th class="small text-muted text-uppercase text-center border-0">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for u in lista_usuarios %}
+                        {% set nome_u = u.nome_exibicao or u.nome %}
                         <tr>
+                            <!-- Status -->
                             <td class="text-center">
                                 {% if u.ativo %}
                                     <i class="bi bi-check-circle-fill text-success fs-5" title="Ativo"></i>
@@ -173,57 +163,56 @@
                                     <i class="bi bi-x-circle-fill text-danger fs-5" title="Inativo"></i>
                                 {% endif %}
                             </td>
+                            
+                            <!-- Foto e Nome -->
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="position-relative me-3">
-                                        <!-- Fotografia ou Ícone de substituição -->
                                         {% if u.foto and u.foto != 'None' and u.foto | trim != '' %}
                                             <img src="{{ u.foto }}" alt="Foto" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover; border: 2px solid #fff; outline: 1px solid #dee2e6;">
                                         {% else %}
-                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center shadow-sm" style="width: 38px; height: 38px; border: 1px dashed #adb5bd;">
-                                                <i class="bi bi-person text-secondary fs-5"></i>
+                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center shadow-sm fw-bold text-muted" style="width: 38px; height: 38px; border: 1px dashed #adb5bd;">
+                                                {{ nome_u[:1]|upper }}
                                             </div>
                                         {% endif %}
                                         
-                                        <!-- Ícone do Dispositivo (Verde/Vermelho) -->
+                                        <!-- Bolinha de online/offline -->
                                         <span class="position-absolute bottom-0 end-0 bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 18px; height: 18px; transform: translate(25%, 25%); border: 1px solid #dee2e6;">
-                                            {% if u.is_online %}
-                                                {% if u.dispositivo == 'celular' %}
-                                                    <i class="bi bi-phone-fill text-success" style="font-size: 0.65rem;" title="Online no Celular"></i>
-                                                {% else %}
-                                                    <i class="bi bi-pc-display-horizontal text-success" style="font-size: 0.60rem;" title="Online no PC"></i>
-                                                {% endif %}
-                                            {% else %}
-                                                {% if u.dispositivo == 'celular' %}
-                                                    <i class="bi bi-phone-fill text-danger" style="font-size: 0.65rem;" title="Offline (Último acesso: Celular)"></i>
-                                                {% else %}
-                                                    <i class="bi bi-pc-display-horizontal text-danger" style="font-size: 0.60rem;" title="Offline (Último acesso: PC)"></i>
-                                                {% endif %}
-                                            {% endif %}
+                                            <i class="bi {{ 'bi-phone-fill' if u.dispositivo == 'celular' else 'bi-pc-display-horizontal' }} {{ 'text-success' if u.is_online else 'text-danger' }}" style="font-size: 0.65rem;" title="{{ 'Online' if u.is_online else 'Offline' }} ({{ 'Celular' if u.dispositivo == 'celular' else 'PC' }})"></i>
                                         </span>
                                     </div>
-                                    
-                                    <!-- Nome do Colaborador -->
-                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">{{ u.nome_exibicao or u.nome }}</div>
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size: 0.95rem;">{{ nome_u }}</div>
+                                        <div class="text-secondary small">{{ u.email }}</div>
+                                    </div>
                                 </div>
                             </td>
-                            <td class="text-secondary small">{{ u.email }}</td>
+                            
+                            <!-- Filial e Perfil -->
                             <td><span class="badge bg-light text-dark border">{{ u.filial }}</span></td>
                             <td><span class="badge bg-light text-dark border">{{ u.perfil }}</span></td>
+                            
+                            <!-- Ações -->
                             <td class="text-center">
                                 <div class="d-flex justify-content-center align-items-center gap-2">
-                                    <!-- Botão Editar -->
+                                    <!-- Botão de Editar com data attributes para o JS -->
                                     <button class="btn btn-sm btn-outline-primary border-0" 
-                                            onclick="abrirModalEditar('{{ u.email }}', '{{ u.nome }}', '{{ u.nome_exibicao }}', '{{ u.filial }}', '{{ u.perfil }}', '{{ u.ativo }}', '{{ u.foto }}')"
-                                            title="Editar Colaborador">
+                                            title="Editar Colaborador" aria-label="Editar"
+                                            data-email="{{ u.email }}" 
+                                            data-nome="{{ u.nome }}" 
+                                            data-nomeexibicao="{{ u.nome_exibicao or '' }}"
+                                            data-filial="{{ u.filial }}" 
+                                            data-perfil="{{ u.perfil }}" 
+                                            data-ativo="{{ 'true' if u.ativo else 'false' }}"
+                                            data-foto="{{ u.foto if u.foto and u.foto != 'None' else '' }}"
+                                            onclick="abrirModalEditar(this)">
                                         <i class="bi bi-pencil-square fs-6"></i>
                                     </button>
                                     
-                                    <!-- Botão Simular Acesso -->
                                     {% if u.email != session.get('user_email') and u.ativo %}
                                     <form method="POST" action="{{ url_for('main.simular_acesso') }}" class="m-0">
                                         <input type="hidden" name="email_alvo" value="{{ u.email }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-success border-0" title="Simular Acesso deste Usuário">
+                                        <button type="submit" class="btn btn-sm btn-outline-success border-0" title="Simular acesso" aria-label="Simular acesso">
                                             <i class="bi bi-box-arrow-in-right fs-6"></i>
                                         </button>
                                     </form>
@@ -233,23 +222,25 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">Nenhum colaborador encontrado no sistema.</td>
+                            <td colspan="5" class="text-center text-muted py-5">
+                                <i class="bi bi-people d-block fs-1 text-secondary mb-2"></i>
+                                Nenhum colaborador encontrado com esses filtros no sistema.
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-            </div> <!-- Fim do table-responsive -->
+            </div>
 
-            <!-- NAVEGAÇÃO DE PAGINAÇÃO -->
+            <!-- Paginação -->
             {% if total_paginas > 1 %}
-            <nav class="mt-4 d-flex justify-content-center">
-                <ul class="pagination pagination-sm shadow-sm">
+            <nav class="mt-4 d-flex justify-content-center" aria-label="Paginação">
+                <ul class="pagination pagination-sm shadow-sm mb-0">
                     <li class="page-item {% if page == 1 %}disabled{% endif %}">
                         <a class="page-link text-dark" href="{{ url_for('main.usuarios', page=page-1, search=current_filters.search, filial=current_filters.filial, perfil=current_filters.perfil, status=current_filters.status) }}">
                             <i class="bi bi-chevron-left"></i> Anterior
                         </a>
                     </li>
-                    
                     {% for p in range(1, total_paginas + 1) %}
                     <li class="page-item {% if p == page %}active{% endif %}">
                         <a class="page-link {% if p == page %}bg-primary border-primary text-white{% else %}text-dark{% endif %}" href="{{ url_for('main.usuarios', page=p, search=current_filters.search, filial=current_filters.filial, perfil=current_filters.perfil, status=current_filters.status) }}">
@@ -257,7 +248,6 @@
                         </a>
                     </li>
                     {% endfor %}
-                    
                     <li class="page-item {% if page == total_paginas %}disabled{% endif %}">
                         <a class="page-link text-dark" href="{{ url_for('main.usuarios', page=page+1, search=current_filters.search, filial=current_filters.filial, perfil=current_filters.perfil, status=current_filters.status) }}">
                             Próxima <i class="bi bi-chevron-right"></i>
@@ -270,277 +260,228 @@
     </div>
 </div>
 
-<!-- Modal de Edição de Usuário -->
-<div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-hidden="true">
+<!-- Modal: Editar Colaborador -->
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-labelledby="tituloEditar" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
-      
       <div class="modal-header bg-light border-0">
-        <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-2"></i> Editar Colaborador</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title fw-bold text-dark" id="tituloEditar"><i class="bi bi-pencil-square text-danger me-2"></i> Editar Colaborador</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
 
       <form method="POST" action="{{ url_for('main.editar_usuario') }}">
-          <input type="hidden" name="email_original" id="editEmailOriginal">
-          
-          <div class="modal-body p-4">
-              <div class="mb-3">
-                  <label class="form-label small fw-bold text-muted">E-mail Corporativo</label>
-                  <input type="email" name="email" id="editEmail" class="form-control shadow-sm" required placeholder="email@lello.com.br">
-                  <small class="text-muted" style="font-size: 0.70rem;">O e-mail pode ser alterado. Ele é usado como acesso ao sistema.</small>
-              </div>
+        <input type="hidden" name="email_original" id="editEmailOriginal">
 
-              <div class="row g-3 mb-3">
-                  <div class="col-6">
-                      <label class="form-label small fw-bold text-muted">Nome Completo</label>
-                      <input type="text" name="nome" id="editNome" class="form-control shadow-sm" required>
-                  </div>
-                  <div class="col-6">
-                      <label class="form-label small fw-bold text-muted">Nome de Exibição</label>
-                      <input type="text" name="nome_exibicao" id="editNomeExibicao" class="form-control shadow-sm" required placeholder="Ex: João Silva">
-                  </div>
-              </div>
-              
-              <!-- NOVO CAMPO: Foto com Pré-visualização -->
-              <div class="mb-4 text-center">
-                  <label class="form-label small fw-bold text-muted d-block mb-3">Foto do Perfil</label>
-                  
-                  <div class="position-relative d-inline-block mb-2">
-                      <!-- Imagem (escondida por padrão via d-none) -->
-                      <img id="previewFoto" src="" alt="Foto" class="rounded-circle shadow-sm d-none" style="width: 110px; height: 110px; object-fit: cover; border: 3px solid #0d6efd;">
-                      
-                      <!-- Ícone padrão -->
-                      <div id="placeholderFoto" class="rounded-circle shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 110px; height: 110px; border: 2px dashed #adb5bd; margin: 0 auto;">
-                          <i class="bi bi-person text-secondary" style="font-size: 3rem;"></i>
-                      </div>
-                  </div>
+        <div class="modal-body p-4">
+            
+            <div class="mb-3 text-center">
+                <div class="position-relative d-inline-block mb-2">
+                    <img id="previewFoto" src="" alt="Foto" class="rounded-circle shadow-sm d-none" style="width: 100px; height: 100px; object-fit: cover; border: 3px solid var(--lello-red);">
+                    <div id="placeholderFoto" class="rounded-circle shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 100px; height: 100px; border: 2px dashed #adb5bd; margin: 0 auto;">
+                        <i class="bi bi-person text-secondary" style="font-size: 3rem;"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <label for="inputFileFoto" class="btn btn-sm btn-outline-secondary rounded-pill shadow-sm"><i class="bi bi-camera me-1"></i> Trocar Foto</label>
+                    <input type="file" id="inputFileFoto" class="d-none" accept="image/*">
+                    <input type="hidden" name="foto" id="editFoto">
+                </div>
+            </div>
 
-                  <!-- Botão de arquivo e campo oculto -->
-                  <input type="file" id="inputFileFoto" class="form-control form-control-sm shadow-sm w-75 mx-auto" accept="image/*">
-                  <input type="hidden" name="foto" id="editFoto">
-              </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted" for="editEmail">E-mail corporativo</label>
+                <input type="email" name="email" id="editEmail" class="form-control shadow-sm" required placeholder="email@lello.com.br">
+            </div>
 
-              <div class="mb-3">
-                  <label class="form-label small fw-bold text-muted">Filial / Equipe</label>
-                  <select name="filial" id="editFilial" class="form-select shadow-sm" required {% if session.get('user_perfil') != 'Admin' %}disabled{% endif %}>
-                      <option value="(10) Centro Adm.">(10) Centro Adm.</option>
-                      <option value="(11) Mooca">(11) Mooca</option>
-                      <option value="(16) ABC">(16) ABC</option>
-                      <option value="(19) Tatuapé">(19) Tatuapé</option>
-                      <option value="(27) Norte">(27) Norte</option>
-                      <option value="(29) Pinheiros">(29) Pinheiros</option>
-                      <option value="(31) Vila Mariana">(31) Vila Mariana</option>
-                  </select>
-              </div>
+            <div class="row g-3 mb-3">
+                <div class="col-sm-6">
+                    <label class="form-label small fw-bold text-muted" for="editNome">Nome completo</label>
+                    <input type="text" name="nome" id="editNome" class="form-control shadow-sm" required>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label small fw-bold text-muted" for="editNomeExibicao">Nome de exibição</label>
+                    <input type="text" name="nome_exibicao" id="editNomeExibicao" class="form-control shadow-sm" required>
+                </div>
+            </div>
 
-              <div class="row g-3 mb-2">
-                  <div class="col-6">
-                      <label class="form-label small fw-bold text-muted">Perfil de Acesso</label>
-                      <select name="perfil" id="editPerfil" class="form-select shadow-sm" required>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted" for="editFilial">Filial / equipe</label>
+                <select name="filial" id="editFilial" class="form-select shadow-sm" required {% if not eh_admin %}disabled{% endif %}>
+                    {% for f in filiais %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+                </select>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <label class="form-label small fw-bold text-muted" for="editPerfil">Perfil de acesso</label>
+                    <select name="perfil" id="editPerfil" class="form-select shadow-sm" required>
                         <option value="Corretor" selected>Corretor</option>
                         <option value="Agente de Visita">Agente de Visita</option>
-                        <!-- Só o Admin vê esses cargos chefes -->
-                        {% if session.get('user_perfil') == 'Admin' %}
+                        {% if eh_admin or session.get('user_perfil') == 'Gerente Geral' %}
                             <option value="Gerente Filial">Gerente Filial</option>
+                        {% endif %}
+                        {% if eh_admin %}
                             <option value="Gerente Geral">Gerente Geral</option>
                             <option value="Admin">Admin</option>
                         {% endif %}
                     </select>
-                  </div>
-                  <div class="col-6">
-                      <label class="form-label small fw-bold text-muted">Status</label>
-                      <select name="ativo" id="editAtivo" class="form-select shadow-sm" required>
-                          <option value="true" class="text-success fw-bold">Ativo (Liberado)</option>
-                          <option value="false" class="text-danger fw-bold">Inativo (Bloqueado)</option>
-                      </select>
-                  </div>
-              </div>
-          </div>
-          
-          <div class="modal-footer border-0 bg-light d-flex justify-content-between">
-            <div>
-                <!-- Botão Excluir só com ícone e title -->
-                {% if session.get('user_perfil') == 'Admin' %}
-                <button type="submit" formaction="{{ url_for('main.excluir_usuario') }}" onclick="return confirm('ATENÇÃO: Tem certeza?');" class="btn btn-outline-danger fw-bold shadow-sm" title="Excluir Colaborador">
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label small fw-bold text-muted" for="editAtivo">Status</label>
+                    <select name="ativo" id="editAtivo" class="form-select shadow-sm" required>
+                        <option value="true" class="text-success fw-bold">Ativo (liberado)</option>
+                        <option value="false" class="text-danger fw-bold">Inativo (bloqueado)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer border-0 bg-light d-flex justify-content-between">
+            <div class="d-flex gap-2">
+                {% if eh_admin %}
+                <button type="submit" formaction="{{ url_for('main.excluir_usuario') }}" onclick="return confirm('ATENÇÃO: Deseja realmente excluir este colaborador?');" class="btn btn-outline-danger shadow-sm fw-bold" title="Excluir" aria-label="Excluir colaborador">
                     <i class="bi bi-trash"></i>
                 </button>
                 {% endif %}
-                
-                <!-- Botão Reenviar Convite só com ícone e title -->
-                <button type="submit" formaction="{{ url_for('main.reenviar_convite') }}" class="btn btn-outline-info fw-bold shadow-sm ms-2" title="Reenviar Convite por E-mail">
+                <button type="submit" formaction="{{ url_for('main.reenviar_convite') }}" class="btn btn-outline-info shadow-sm fw-bold" title="Reenviar convite por e-mail" aria-label="Reenviar convite">
                     <i class="bi bi-envelope-paper"></i>
                 </button>
             </div>
-            <div>
+            <div class="d-flex gap-2">
                 <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary fw-bold shadow-sm"><i class="bi bi-save me-1"></i> Salvar</button>
+                <button type="submit" class="btn btn-primary fw-bold shadow-sm"><i class="bi bi-check2 me-1"></i> Salvar</button>
             </div>
-          </div>
+        </div>
       </form>
     </div>
   </div>
 </div>
 
-<!-- Modal de Importação em Massa -->
-<div class="modal fade" id="modalImportar" tabindex="-1" aria-hidden="true">
+<!-- Modal: Importar planilha -->
+{% if eh_admin %}
+<div class="modal fade" id="modalImportar" tabindex="-1" aria-labelledby="tituloImportar" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
-      
       <div class="modal-header bg-light border-0">
-        <h5 class="modal-title fw-bold text-dark"><i class="bi bi-file-earmark-excel text-success me-2"></i> Importar Colaboradores</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title fw-bold text-dark" id="tituloImportar"><i class="bi bi-file-earmark-excel text-success me-2"></i> Importar Colaboradores</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
 
-      <!-- Importante: enctype multipart para upload de arquivos -->
       <form method="POST" action="{{ url_for('main.importar_usuarios') }}" enctype="multipart/form-data">
-          <div class="modal-body p-4">
-              <div class="alert alert-info small shadow-sm border-0 mb-4">
-                  <i class="bi bi-info-circle-fill me-1"></i>
-                  O arquivo deve ser criado no Excel e salvo no formato <b>CSV (separado por vírgulas)</b>. <br><br>
-                  A primeira linha (cabeçalho) deve conter exatamente estas 5 colunas: <br>
-                  <code class="bg-white px-2 py-1 rounded border mt-2 d-inline-block">nome, email, filial, perfil, enviar_email</code><br><br>
-                  <small class="text-secondary">
-                      <i class="bi bi-lightbulb-fill text-warning"></i> 
-                      Dica: Na coluna <b>enviar_email</b>, digite <b>sim</b> para mandar o convite na hora, ou <b>nao</b> para cadastrar silenciosamente.
-                  </small>
-              </div>
-
-              <div class="mb-3">
-                  <label class="form-label small fw-bold text-muted">Selecione o arquivo (.csv)</label>
-                  <input type="file" name="arquivo_csv" class="form-control shadow-sm" accept=".csv" required>
-              </div>
-          </div>
-          
-          <div class="modal-footer border-0 bg-light">
+        <div class="modal-body p-4">
+            <div class="alert alert-info small shadow-sm border-0 mb-4">
+                <i class="bi bi-info-circle-fill me-1"></i>
+                Salve o Excel no formato <b>CSV (separado por vírgulas)</b>. <br>A 1ª linha deve conter:
+                <code class="d-block bg-white px-2 py-1 rounded mt-2 border">nome, email, filial, perfil, enviar_email</code>
+                <span class="d-block mt-2 text-secondary"><i class="bi bi-lightbulb text-warning"></i> Em <b>enviar_email</b>, use <b>sim</b> para notificar ou <b>nao</b> para cadastrar silenciosamente.</span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted" for="arquivoCsv">Selecione o arquivo (.csv)</label>
+                <input type="file" id="arquivoCsv" name="arquivo_csv" class="form-control shadow-sm" accept=".csv" required>
+            </div>
+        </div>
+        <div class="modal-footer border-0 bg-light">
             <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
             <button type="submit" class="btn btn-success fw-bold shadow-sm"><i class="bi bi-upload me-1"></i> Iniciar Importação</button>
-          </div>
+        </div>
       </form>
     </div>
   </div>
 </div>
+{% endif %}
 
+<!-- Correção do JavaScript -->
 <script>
-// Pega os dados de quem está mexendo no sistema
-const emailLogado = "{{ session.get('user_email') }}";
-const perfilLogado = "{{ session.get('user_perfil') }}";
+// Pega as variáveis globais injetadas pelo Flask de forma segura
+const emailLogado = "{{ session.get('user_email', '') }}";
+const perfilLogado = "{{ session.get('user_perfil', '') }}";
 
-function abrirModalEditar(email, nome, nome_exibicao, filial, perfil, ativo, foto) {
-    document.getElementById('editEmailOriginal').value = email;
+// Função para travar os campos
+function travar(el, travado) {
+    el.style.pointerEvents = travado ? 'none' : 'auto';
+    el.classList.toggle('bg-light', travado);
+    el.classList.toggle('text-muted', travado);
+}
+
+// Lida com a exibição da foto
+function mostrarFoto(src) {
+    const preview = document.getElementById('previewFoto');
+    const placeholder = document.getElementById('placeholderFoto');
+    document.getElementById('editFoto').value = src || '';
+    if (src && src.trim() !== '' && src !== 'None') {
+        preview.src = src;
+        preview.classList.remove('d-none');
+        placeholder.classList.add('d-none');
+        placeholder.classList.remove('d-flex');
+    } else {
+        preview.removeAttribute('src');
+        preview.classList.add('d-none');
+        placeholder.classList.remove('d-none');
+        placeholder.classList.add('d-flex');
+    }
+}
+
+// Função principal de abrir o modal chamada pelos botões "Editar"
+function abrirModalEditar(btn) {
+    const d = btn.dataset;
+    document.getElementById('editEmailOriginal').value = d.email;
     
     const inputEmail = document.getElementById('editEmail');
-    inputEmail.value = email;
+    inputEmail.value = d.email;
     
-    document.getElementById('editNome').value = nome;
-    document.getElementById('editNomeExibicao').value = (nome_exibicao && nome_exibicao !== 'None') ? nome_exibicao : nome;
-    document.getElementById('editFilial').value = filial;
+    document.getElementById('editNome').value = d.nome;
+    document.getElementById('editNomeExibicao').value = d.nomeexibicao || d.nome;
+    document.getElementById('editFilial').value = d.filial;
     
-    const valorAtivo = String(ativo).toLowerCase() === 'true' ? 'true' : 'false';
-    document.getElementById('editAtivo').value = valorAtivo;
-    
-    // Tratamento do Perfil (corrige o bug do campo em branco)
+    const selectAtivo = document.getElementById('editAtivo');
+    selectAtivo.value = String(d.ativo).toLowerCase() === 'true' ? 'true' : 'false';
+
     const selectPerfil = document.getElementById('editPerfil');
     let opcaoExiste = false;
     for (let i = 0; i < selectPerfil.options.length; i++) {
-        if (selectPerfil.options[i].value === perfil) {
-            opcaoExiste = true;
-            break;
+        if (selectPerfil.options[i].value === d.perfil) {
+            opcaoExiste = true; break;
         }
     }
-    // Se o cargo dele não tiver na lista, adiciona dinamicamente só pra ele ver
     if (!opcaoExiste) {
-        selectPerfil.add(new Option(perfil, perfil));
+        selectPerfil.add(new Option(d.perfil, d.perfil));
     }
-    selectPerfil.value = perfil;
+    selectPerfil.value = d.perfil;
 
-    // --- TRAVAS VISUAIS SE ELE ESTIVER EDITANDO A SI MESMO ---
-    const isSelf = (email.toLowerCase() === emailLogado.toLowerCase());
-    const isAdmin = (perfilLogado === 'Admin');
-    const selectAtivo = document.getElementById('editAtivo'); // Puxa o campo de Status
+    // Travas se o usuário estiver editando a si mesmo e não for admin
+    const trava = (d.email.toLowerCase() === emailLogado.toLowerCase()) && (perfilLogado !== 'Admin');
+    inputEmail.readOnly = trava;
+    inputEmail.classList.toggle('bg-light', trava);
+    inputEmail.classList.toggle('text-muted', trava);
+    travar(selectPerfil, trava);
+    travar(selectAtivo, trava);
 
-    if (isSelf && !isAdmin) {
-        // Trava o E-mail
-        inputEmail.readOnly = true;
-        inputEmail.classList.add('bg-light', 'text-muted');
-        
-        // Trava o Perfil (Impede o clique)
-        selectPerfil.style.pointerEvents = "none";
-        selectPerfil.classList.add('bg-light', 'text-muted');
-        
-        // NOVO: Trava o Status (Impede o clique)
-        selectAtivo.style.pointerEvents = "none";
-        selectAtivo.classList.add('bg-light', 'text-muted');
-    } else {
-        // Libera tudo se for outra pessoa ou se for Admin
-        inputEmail.readOnly = false;
-        inputEmail.classList.remove('bg-light', 'text-muted');
-        
-        selectPerfil.style.pointerEvents = "auto";
-        selectPerfil.classList.remove('bg-light', 'text-muted');
-        
-        // NOVO: Libera o Status
-        selectAtivo.style.pointerEvents = "auto";
-        selectAtivo.classList.remove('bg-light', 'text-muted');
-    }
-    
-    // Tratamento visual da Foto
-    const campoFoto = document.getElementById('editFoto');
-    const previewFoto = document.getElementById('previewFoto');
-    const placeholderFoto = document.getElementById('placeholderFoto');
-    document.getElementById('inputFileFoto').value = ''; 
-    
-    if (foto && foto !== 'None' && foto.trim() !== '') {
-        campoFoto.value = foto;
-        previewFoto.src = foto;
-        previewFoto.classList.remove('d-none');
-        previewFoto.classList.add('d-block');
-        placeholderFoto.classList.remove('d-flex');
-        placeholderFoto.classList.add('d-none');
-    } else {
-        campoFoto.value = '';
-        previewFoto.src = '';
-        previewFoto.classList.remove('d-block');
-        previewFoto.classList.add('d-none');
-        placeholderFoto.classList.remove('d-none');
-        placeholderFoto.classList.add('d-flex');
-    }
-    
+    document.getElementById('inputFileFoto').value = '';
+    mostrarFoto(d.foto);
+
     var myModal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
     myModal.show();
 }
 
-// Preview da foto na hora de selecionar o arquivo
-document.getElementById('inputFileFoto').addEventListener('change', function(event) {
+// Redimensionamento de Foto
+document.getElementById('inputFileFoto').addEventListener('change', function (event) {
     const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const base64 = e.target.result;
-            document.getElementById('editFoto').value = base64;
-            
-            const preview = document.getElementById('previewFoto');
-            const placeholder = document.getElementById('placeholderFoto');
-            
-            preview.src = base64;
-            preview.classList.remove('d-none');
-            preview.classList.add('d-block');
-            placeholder.classList.remove('d-flex');
-            placeholder.classList.add('d-none');
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const img = new Image();
+        img.onload = function () {
+            const MAX = 300;
+            const escala = Math.min(1, MAX / Math.max(img.width, img.height));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * escala);
+            canvas.height = Math.round(img.height * escala);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            mostrarFoto(canvas.toDataURL('image/jpeg', 0.7));
         };
-        reader.readAsDataURL(file);
-    }
-});
-
-// Remove os alertas de sucesso/erro da tela após 10 segundos
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        let alertas = document.querySelectorAll('.alert-temporario');
-        alertas.forEach(function(alerta) {
-            // Usa a animação de Fade do Bootstrap para sumir bonito
-            let bsAlert = new bootstrap.Alert(alerta);
-            bsAlert.close();
-        });
-    }, 10000); // 10000 ms = 10 segundos
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
 });
 </script>
 {% endblock %}

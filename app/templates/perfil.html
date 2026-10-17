@@ -1,148 +1,109 @@
 {% extends 'base.html' %}
-{% block page_title %}Meu Perfil{% endblock %}
+{% block title %}Meu perfil · Lello{% endblock %}
+{% block page_title %}Meu perfil{% endblock %}
 
 {% block content %}
+<form method="POST" action="{{ url_for('main.perfil') }}" class="mx-auto" style="max-width: 860px;">
 
-<!-- Todo o perfil agora é um formulário gigante -->
-<form method="POST" action="{{ url_for('main.perfil') }}">
-<div class="row g-4">
-    
-    <!-- Lado Esquerdo: Foto de Perfil -->
-    <div class="col-12 col-md-4">
-        <div class="card border-0 shadow-sm rounded-4 text-center p-4 h-100">
-            <div class="card-body d-flex flex-column align-items-center justify-content-center">
-                
-                <!-- Círculo da Imagem -->
-                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mb-3 overflow-hidden shadow-sm" style="width: 130px; height: 130px; font-size: 3.5rem;">
-                    {% if user.foto %}
-                        <img src="{{ user.foto }}" id="fotoPreview" style="width: 100%; height: 100%; object-fit: cover;">
-                    {% else %}
-                        <i class="bi bi-person" id="fotoIcon"></i>
-                        <img src="" id="fotoPreview" style="width: 100%; height: 100%; object-fit: cover; display: none;">
-                    {% endif %}
-                </div>
-                
-                <h5 class="fw-bold mb-1">{{ user.nome_exibicao }}</h5>
-                <p class="text-muted small mb-4">{{ user.filial }}</p>
-                
-                <!-- Botão de Upload -->
-                <label for="uploadFoto" class="btn btn-outline-primary btn-sm w-100 fw-bold">
-                    <i class="bi bi-camera me-2"></i> Trocar Foto
-                </label>
-                <input type="file" id="uploadFoto" class="d-none" accept="image/png, image/jpeg">
-                
-                <!-- Aqui o JS vai injetar a foto em formato de texto para enviar pro Python -->
-                <input type="hidden" name="foto_base64" id="fotoBase64">
-                
-                <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">Apenas JPG ou PNG.</small>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show alert-temporario" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
             </div>
+        {% endfor %}
+    {% endwith %}
+
+    <!-- Capa com foto -->
+    <div class="profile-cover"></div>
+    <div class="surface profile-card mb-4">
+        <div class="avatar avatar-lg mx-auto">
+            {% if user.foto %}
+                <img src="{{ user.foto }}" id="fotoPreview" alt="Foto de perfil">
+            {% else %}
+                <span id="fotoIcon">{{ (user.nome_exibicao or user.nome or '?')[:1]|upper }}</span>
+                <img src="" id="fotoPreview" alt="Foto de perfil" style="display: none;">
+            {% endif %}
         </div>
+        <h2 class="h4 mt-3 mb-0">{{ user.nome_exibicao }}</h2>
+        <p class="text-muted mb-3">{{ user.filial }}</p>
+
+        <label for="uploadFoto" class="btn btn-outline-primary btn-sm px-3">
+            <i class="bi bi-camera me-2"></i> Trocar foto
+        </label>
+        <input type="file" id="uploadFoto" class="d-none" accept="image/png, image/jpeg">
+        <!-- O JS grava aqui a foto em texto (base64) para o servidor -->
+        <input type="hidden" name="foto_base64" id="fotoBase64">
+        <div class="form-text mt-2">Formatos aceitos: JPG ou PNG.</div>
     </div>
 
-    <!-- Lado Direito: Dados Pessoais -->
-    <div class="col-12 col-md-8">
-        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
-            
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-dismissible fade show small" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
+    <!-- Dados -->
+    <div class="surface surface-pad">
+        <div class="surface-head">
+            <h2><i class="bi bi-person-lines-fill"></i> Informações da conta</h2>
+        </div>
 
-            <h5 class="fw-bold text-dark border-bottom pb-2 mb-4"><i class="bi bi-person-lines-fill me-2 text-primary"></i> Informações da Conta</h5>
-            
-            <div class="row g-3 mb-4">
-                <!-- Único campo editável -->
-                <div class="col-md-12 mb-3">
-                    <label class="form-label small fw-bold text-dark">Nome de Exibição</label>
-                    <input type="text" name="nome_exibicao" class="form-control border-primary shadow-sm" value="{{ user.nome_exibicao }}" required>
-                    <small class="text-muted" style="font-size: 0.75rem;">É assim que você será visto dentro do sistema e pelos outros corretores.</small>
-                </div>
-                
-                <!-- Dados Bloqueados -->
-                <div class="col-md-6">
-                    <label class="form-label small fw-bold text-muted">Nome de Registro</label>
-                    <input type="text" class="form-control text-secondary bg-light" value="{{ user.nome }}" readonly disabled>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label small fw-bold text-muted">Filial / Equipe</label>
-                    <input type="text" class="form-control text-secondary bg-light" value="{{ user.filial }}" readonly disabled>
-                </div>
-                <div class="col-md-12 mt-3">
-                    <label class="form-label small fw-bold text-muted">E-mail Corporativo (Login)</label>
-                    <input type="email" class="form-control text-secondary bg-light" value="{{ user.email }}" readonly disabled>
-                </div>
+        <div class="mb-4">
+            <label class="form-label" for="nome_exibicao">Nome de exibição</label>
+            <input type="text" id="nome_exibicao" name="nome_exibicao" class="form-control form-control-lg" value="{{ user.nome_exibicao }}" required>
+            <div class="form-text">É assim que você aparece no sistema para os outros corretores.</div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="form-label">Nome de registro</div>
+                <div class="readonly-field"><i class="bi bi-lock"></i> {{ user.nome }}</div>
             </div>
-
-            <!-- Botão de Salvar colado na parte inferior -->
-            <div class="text-end mt-auto pt-3 border-top">
-                <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-check2-circle me-2"></i> Salvar Alterações</button>
+            <div class="col-md-6">
+                <div class="form-label">Filial / equipe</div>
+                <div class="readonly-field"><i class="bi bi-lock"></i> {{ user.filial }}</div>
             </div>
+            <div class="col-12">
+                <div class="form-label">E-mail corporativo (login)</div>
+                <div class="readonly-field"><i class="bi bi-lock"></i> {{ user.email }}</div>
+            </div>
+        </div>
+        <p class="form-text mt-3 mb-0">Nome, filial e e-mail só podem ser alterados pelo gerente.</p>
 
+        <div class="d-grid d-sm-flex justify-content-sm-end mt-4 pt-4 border-top">
+            <button type="submit" class="btn btn-primary btn-lg px-4">
+                <i class="bi bi-check2-circle me-2"></i> Salvar alterações
+            </button>
         </div>
     </div>
-</div>
 </form>
 
-<!-- Javascript para processar a foto imediatamente ao selecionar -->
 <script>
-    document.getElementById('uploadFoto').addEventListener('change', function(event) {
+    // Redimensiona a foto para 300px e converte para base64 antes de enviar
+    document.getElementById('uploadFoto').addEventListener('change', function (event) {
         const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                // Cria um objeto de imagem invisível para podermos redimensionar
-                const img = new Image();
-                img.onload = function() {
-                    // Define o tamanho máximo da foto de perfil (300x300 pixels é perfeito e super leve)
-                    const MAX_WIDTH = 300;
-                    const MAX_HEIGHT = 300;
-                    let width = img.width;
-                    let height = img.height;
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+                const MAX = 300;
+                let width = img.width, height = img.height;
+                if (width > height) {
+                    if (width > MAX) { height *= MAX / width; width = MAX; }
+                } else {
+                    if (height > MAX) { width *= MAX / height; height = MAX; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                const base64 = canvas.toDataURL('image/jpeg', 0.7);
 
-                    // Calcula a proporção para não distorcer a foto
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    } else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
-                    }
-
-                    // Desenha a imagem encolhida num "quadro" (canvas) virtual
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    // Converte a foto encolhida para Base64 (Formato JPEG com 70% de qualidade)
-                    const base64Comprimido = canvas.toDataURL('image/jpeg', 0.7);
-
-                    // 1. Mostra a foto na tela na mesma hora
-                    document.getElementById('fotoPreview').src = base64Comprimido;
-                    document.getElementById('fotoPreview').style.display = 'block';
-                    
-                    const icon = document.getElementById('fotoIcon');
-                    if(icon) icon.style.display = 'none';
-                    
-                    // 2. Coloca o texto comprimido no input escondido para o Python pegar
-                    document.getElementById('fotoBase64').value = base64Comprimido;
-                };
-                img.src = e.target.result;
+                const preview = document.getElementById('fotoPreview');
+                preview.src = base64;
+                preview.style.display = 'block';
+                const icon = document.getElementById('fotoIcon');
+                if (icon) icon.style.display = 'none';
+                document.getElementById('fotoBase64').value = base64;
             };
-            reader.readAsDataURL(file);
-        }
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     });
 </script>
-
 {% endblock %}

@@ -1,70 +1,65 @@
 {% extends 'base.html' %}
-{% block page_title %}Controle de Acessos{% endblock %}
+{% block title %}Acessos · Lello{% endblock %}
+{% block page_title %}Matriz de acessos{% endblock %}
 
 {% block content %}
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm rounded-4 p-4">
-            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-                <h5 class="fw-bold text-dark mb-0">
-                    <i class="bi bi-shield-lock-fill text-danger me-2"></i> Matriz de Permissões
-                </h5>
-                <span class="badge bg-light text-secondary border">Configure o que cada perfil pode acessar</span>
-            </div>
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show alert-temporario" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+    {% endfor %}
+{% endwith %}
 
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-dismissible fade show small" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
+<form method="POST" action="{{ url_for('main.permissoes') }}">
+    <div class="surface surface-pad">
+        <div class="surface-head">
+            <h2><i class="bi bi-shield-lock"></i> Quem acessa o quê</h2>
+            <span class="chip chip-outline"><i class="bi bi-lock"></i> Admin sempre acessa Início e Matriz</span>
+        </div>
+        <p class="text-muted">Ligue ou desligue o acesso de cada perfil a cada página. Role para o lado para ver todos os perfis.</p>
+
+        <div class="matrix-wrap">
+            <table class="matrix">
+                <thead>
+                    <tr>
+                        <th scope="col">Página</th>
+                        {% for perfil in perfis %}
+                            <th scope="col">{{ perfil }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pagina in paginas %}
+                    <tr>
+                        <td class="fw-semibold" style="color: var(--lello-wine);">
+                            <i class="bi {{ pagina.icone }} me-2" style="color: var(--lello-red);"></i>{{ pagina.nome }}
+                        </td>
+                        {% for perfil in perfis %}
+                            {% set travado = perfil == 'Admin' and pagina.id in ['home', 'permissoes'] %}
+                            <td>
+                                <div class="form-check form-switch d-flex justify-content-center m-0 p-0">
+                                    <!-- Admin nunca pode perder as funções críticas -->
+                                    <input class="form-check-input m-0 {% if travado %}is-locked{% endif %}" type="checkbox" role="switch"
+                                           name="permissoes_{{ perfil }}" value="{{ pagina.id }}"
+                                           aria-label="{{ pagina.nome }} para {{ perfil }}"
+                                           {% if pagina.id in permissoes_atuais.get(perfil, []) %}checked{% endif %}
+                                           {% if travado %}checked onclick="return false;" title="Este acesso não pode ser removido do Admin"{% endif %}>
+                                </div>
+                            </td>
+                        {% endfor %}
+                    </tr>
                     {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <form method="POST" action="{{ url_for('main.permissoes') }}">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle table-bordered text-center">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="text-start text-uppercase small text-muted">Módulo / Página</th>
-                                {% for perfil in perfis %}
-                                    <th class="small text-muted text-uppercase">{{ perfil }}</th>
-                                {% endfor %}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for pagina in paginas %}
-                            <tr>
-                                <td class="text-start fw-bold text-dark" style="font-size: 0.95rem;">
-                                    <i class="bi {{ pagina.icone }} text-primary me-2"></i> {{ pagina.nome }}
-                                </td>
-                                
-                                {% for perfil in perfis %}
-                                    <td>
-                                        <div class="form-check form-switch d-flex justify-content-center m-0">
-                                            <!-- Admin Supremo nunca pode ser bloqueado de suas funções críticas -->
-                                            <input class="form-check-input shadow-sm cursor-pointer" type="checkbox" role="switch" 
-                                                   name="permissoes_{{ perfil }}" value="{{ pagina.id }}"
-                                                   {% if pagina.id in permissoes_atuais.get(perfil, []) %}checked{% endif %}
-                                                   {% if perfil == 'Admin' and pagina.id in ['home', 'permissoes'] %}checked onclick="return false;"{% endif %}>
-                                        </div>
-                                    </td>
-                                {% endfor %}
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="d-flex justify-content-end mt-4">
-                    <button type="submit" class="btn btn-danger fw-bold shadow-sm px-4">
-                        <i class="bi bi-save me-2"></i> Salvar Matriz de Acessos
-                    </button>
-                </div>
-            </form>
+                </tbody>
+            </table>
         </div>
     </div>
-</div>
+
+    <div class="save-bar">
+        <button type="submit" class="btn btn-primary btn-lg px-4">
+            <i class="bi bi-save me-2"></i> Salvar acessos
+        </button>
+    </div>
+</form>
 {% endblock %}

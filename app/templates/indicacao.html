@@ -1,13 +1,12 @@
 {% extends 'base.html' %}
+{% block title %}Indicações · Lello{% endblock %}
 {% block page_title %}Indicações{% endblock %}
 
 {% block content %}
-<div class="card border-0 shadow-sm rounded-4 p-5 text-center mt-4">
-    <i class="bi bi-tools text-secondary mb-3" style="font-size: 3rem;"></i>
-    <h3 class="fw-bold text-dark">Módulo em Desenvolvimento</h3>
-    <p class="text-muted">A funcionalidade de registro de novas indicações será disponibilizada na próxima atualização.</p>
-    <div>
-        <a href="{{ url_for('main.home') }}" class="btn btn-primary mt-3">Voltar ao Início</a>
-    </div>
+<div class="surface empty">
+    <div class="ico"><i class="bi bi-person-plus"></i></div>
+    <h2>Indicações chegam na próxima atualização</h2>
+    <p>Em breve você vai registrar e acompanhar as indicações de clientes e imóveis por aqui.</p>
+    <a href="{{ url_for('main.home') }}" class="btn btn-primary mt-4 px-4">Voltar ao início</a>
 </div>
 {% endblock %}

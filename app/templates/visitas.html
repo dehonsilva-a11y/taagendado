@@ -1,44 +1,78 @@
 {% extends 'base.html' %}
-{% block page_title %}Gestão de Visitas{% endblock %}
+{% block title %}Visitas · Lello{% endblock %}
+{% block page_title %}Gestão de visitas{% endblock %}
+
+
 
 {% block content %}
-<div class="accordion" id="accordionVisitas">
-    {% for status, imoveis in grupos.items() %}
-    <div class="accordion-item shadow-sm">
-        <h2 class="accordion-header" id="heading-{{ loop.index }}">
-            <button class="accordion-button fw-bold text-dark bg-white {% if loop.index != 1 %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}">
-                {{ status }} <span class="badge bg-secondary ms-3">{{ imoveis|length }}</span>
-            </button>
-        </h2>
-        <div id="collapse-{{ loop.index }}" class="accordion-collapse collapse {% if loop.index == 1 %}show{% endif %}" data-bs-parent="#accordionVisitas">
-            <div class="accordion-body p-0">
-                {% if imoveis|length > 0 %}
-                <div class="table-responsive">
-                    <table class="table table-hover m-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>ID Imóvel</th>
-                                <th>Endereço Completo</th>
-                                <th>Valor Interm.</th>
-                                <th>Comissão</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for imovel in imoveis %}
-                            <tr>
-                                <td class="fw-bold">{{ imovel.id_imovel }}</td>
-                                <td>{{ imovel.endereco }}, {{ imovel.bairro }}</td>
-                                <td>{{ imovel.valor_int_str }}</td>
-                                <td class="text-success fw-bold">{{ imovel.valor_comissao_str }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% endif %}
-            </div>
-        </div>
+{# Define a cor de cada grupo pelo nome do status #}
+{% macro tom(status) -%}
+    {%- set s = status|lower -%}
+    {%- if 'realiz' in s or 'conclu' in s or 'fatur' in s or 'pago' in s -%}ok
+    {%- elif 'cancel' in s or 'recus' in s or 'perd' in s -%}bad
+    {%- elif 'pend' in s or 'fazer' in s or 'agend' in s or 'aguard' in s or 'andamento' in s -%}warn
+    {%- else -%}muted{%- endif -%}
+{%- endmacro %}
+{% set ns = namespace(total=0) %}
+{% for status, imoveis in grupos.items() %}{% set ns.total = ns.total + imoveis|length %}{% endfor %}
+
+{% if grupos|length == 0 %}
+    <div class="surface empty">
+        <div class="ico"><i class="bi bi-calendar-x"></i></div>
+        <h2>Nenhuma visita por aqui ainda</h2>
+        <p>Quando houver visitas registradas, elas aparecem agrupadas por status.</p>
     </div>
+{% else %}
+
+<!-- Resumo: toque em um status para abrir o grupo -->
+<div class="stat-strip" aria-label="Resumo por status">
+    <div class="stat stat-total">
+        <span class="n">{{ ns.total }}</span>
+        <span class="l">Total de imóveis</span>
+    </div>
+    {% for status, imoveis in grupos.items() %}
+    <button type="button" class="stat" data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}" aria-controls="collapse-{{ loop.index }}">
+        <span class="n">{{ imoveis|length }}</span>
+        <span class="l"><span class="dot dot-{{ tom(status)|trim }}"></span>{{ status }}</span>
+    </button>
     {% endfor %}
 </div>
+
+<div class="groups" id="accordionVisitas">
+    {% for status, imoveis in grupos.items() %}
+    <section class="group">
+        <h2 class="m-0" id="heading-{{ loop.index }}">
+            <button class="group-toggle {% if loop.index != 1 %}collapsed{% endif %}" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}"
+                    aria-expanded="{{ 'true' if loop.index == 1 else 'false' }}" aria-controls="collapse-{{ loop.index }}">
+                <span class="dot dot-{{ tom(status)|trim }}"></span>
+                {{ status }}
+                <span class="chip chip-{{ tom(status)|trim }} count">{{ imoveis|length }}</span>
+                <i class="bi bi-chevron-down chev"></i>
+            </button>
+        </h2>
+        <div id="collapse-{{ loop.index }}" class="collapse {% if loop.index == 1 %}show{% endif %}" data-bs-parent="#accordionVisitas" aria-labelledby="heading-{{ loop.index }}">
+            {% if imoveis|length > 0 %}
+                <div class="vhead" aria-hidden="true">
+                    <span>Imóvel</span>
+                    <span>Endereço</span>
+                    <span>Valor interm.</span>
+                    <span>Comissão</span>
+                </div>
+                {% for imovel in imoveis %}
+                <article class="vrow">
+                    <div class="v-id">{{ imovel.id_imovel }}</div>
+                    <div class="v-com"><span class="cell-label">Comissão</span>{{ imovel.valor_comissao_str }}</div>
+                    <div class="v-end">{{ imovel.endereco }}, {{ imovel.bairro }}</div>
+                    <div class="v-val"><span class="cell-label">Valor interm.:</span> {{ imovel.valor_int_str }}</div>
+                </article>
+                {% endfor %}
+            {% else %}
+                <div class="empty-inline">Nenhum imóvel neste status.</div>
+            {% endif %}
+        </div>
+    </section>
+    {% endfor %}
+</div>
+{% endif %}
 {% endblock %}
