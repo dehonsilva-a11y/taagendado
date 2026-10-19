@@ -13,7 +13,7 @@ PAGINAS_SISTEMA = [
     {'id': 'home', 'nome': 'Dashboard (Tela Inicial)', 'icone': 'bi-house'},
     {'id': 'usuarios', 'nome': 'Gerenciar Equipe', 'icone': 'bi-people'},
     {'id': 'permissoes', 'nome': 'Matriz de Acessos', 'icone': 'bi-shield-lock'},
-    # Quando criar telas novas (ex: agenda, relatorios), basta adicionar aqui!
+    {'id': 'portabilidade', 'nome': 'Portabilidade Interna', 'icone': 'bi-arrow-left-right'},
 ]
 PERFIS_SISTEMA = ['Corretor', 'Agente de Visita', 'Gerente Filial', 'Gerente Geral', 'Admin']
 
@@ -54,6 +54,10 @@ def injetar_dados_globais():
 @main_bp.route('/')
 def home():
     return render_template('home.html')
+
+@main_bp.route('/portabilidade')
+def portabilidade():
+    return render_template('portabilidade.html')
 
 @main_bp.route('/indicacao')
 def indicacao():
@@ -429,7 +433,7 @@ def registrar_atividade():
 
         endpoint = request.endpoint
         # Só analisa se for uma rota do sistema (ignora login, imagens e css)
-        if endpoint and endpoint.startswith('main.') and endpoint not in ['main.home']:
+        if endpoint and endpoint.startswith('main.') and endpoint not in ['main.home', 'main.perfil']:
             tela_acessada = endpoint.split('.')[1] 
             
             # --- NOVO: Mapeamento de rotas de ação para a tela principal ---
@@ -454,9 +458,12 @@ def registrar_atividade():
             
             # Se a tela (ou a tela mãe) não estiver na lista dele, bloqueia!
             if tela_para_validar not in acessos_permitidos and perfil_logado != 'Admin':
-                registrar_log_auditoria(f"TENTATIVA DE INVASÃO: Bloqueado na rota '{tela_acessada}'")
-                flash(f'Acesso restrito. O seu perfil ({perfil_logado}) não tem permissão para esta ação.', 'floating_danger')
-                return redirect(url_for('main.home'))
+                if tela_acessada == 'restaurar_acesso' and 'admin_original' in session:
+                    pass # allow
+                else:
+                    registrar_log_auditoria(f"TENTATIVA DE INVASÃO: Bloqueado na rota '{tela_acessada}'")
+                    flash(f'Acesso restrito. O seu perfil ({perfil_logado}) não tem permissão para esta ação.', 'floating_danger')
+                    return redirect(url_for('main.home'))
 
 @main_bp.route('/permissoes', methods=['GET', 'POST'])
 def permissoes():

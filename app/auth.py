@@ -23,8 +23,9 @@ def login():
     
     return render_template('login.html', firebase_config=firebase_config)
 
-@auth_bp.route('/auth_google', methods=['POST'])
-def auth_google():
+# Rota renomeada para processar qualquer login do Firebase (Google, Apple, etc)
+@auth_bp.route('/auth_token', methods=['POST'])
+def auth_token():
     dados = request.get_json(silent=True) or {}
     token = dados.get('idToken')
     if not token:
@@ -41,9 +42,9 @@ def auth_google():
             else:
                 raise e # Se for outro erro, repassa pra frente
                 
-        email_google = decoded_token.get('email', '').lower()
+        email_usuario = decoded_token.get('email', '').lower()
         
-        user_ref = db.collection('usuarios').document(email_google)
+        user_ref = db.collection('usuarios').document(email_usuario)
         user_doc = user_ref.get()
 
         if not user_doc.exists:
@@ -59,7 +60,7 @@ def auth_google():
 
         session.permanent = True 
         session['user_id'] = decoded_token['uid']
-        session['user_email'] = email_google
+        session['user_email'] = email_usuario
         session['user_nome'] = nome_exibicao
         session['user_filial'] = user_data.get('filial', 'Matriz')
         session['user_perfil'] = user_data.get('perfil', 'Corretor')
@@ -80,7 +81,8 @@ def bloqueado():
 @auth_bp.before_app_request
 def bloquear_rotas():
     session.modified = True 
-    rotas_livres = ['auth.login', 'auth.auth_google', 'static', 'auth.bloqueado']
+    # Atualizado para a nova rota 'auth_token'
+    rotas_livres = ['auth.login', 'auth.auth_token', 'static', 'auth.bloqueado']
     
     if request.endpoint and request.endpoint not in rotas_livres:
         if 'user_id' not in session:

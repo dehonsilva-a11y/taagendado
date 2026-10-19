@@ -9,10 +9,11 @@
 {% set pode_indicacao = 'indicacao' in minhas_permissoes or is_admin %}
 {% set pode_equipe = 'usuarios' in minhas_permissoes or is_admin %}
 
+
 <section class="hero mb-4">
     <p class="hero-kicker mb-1"><span data-today></span></p>
-    <h2 class="hero-title">Olá, {{ primeiro_nome }}</h2>
-    <p class="hero-sub mb-0">{{ session.get('user_filial') }}. Veja suas visitas e indicações.</p>
+    <h2 class="hero-title">Olá, {{ session.get('user_nome') }}</h2>
+    <p class="hero-sub mb-0">Veja suas visitas e comissões.</p>
     {% if pode_visitas %}
     <a href="{{ url_for('main.visitas') }}" class="btn btn-white btn-lg mt-4 px-4 fw-semibold">
         <i class="bi bi-calendar-check me-2"></i> Ver minhas visitas
@@ -41,6 +42,20 @@
             <span>
                 <h3>Indicações</h3>
                 <p>Registre e acompanhe novas indicações.</p>
+            </span>
+            <i class="bi bi-chevron-right go"></i>
+        </a>
+    </div>
+    {% endif %}
+
+    {% set pode_portabilidade = 'portabilidade' in minhas_permissoes or is_admin %}
+    {% if pode_portabilidade %}
+    <div class="col-12 col-md-6 col-xl-4">
+        <a href="{{ url_for('main.portabilidade') }}" class="shortcut">
+            <span class="ico"><i class="bi bi-arrow-left-right"></i></span>
+            <span>
+                <h3>Portabilidade Interna</h3>
+                <p>Acesse o portal da portabilidade.</p>
             </span>
             <i class="bi bi-chevron-right go"></i>
         </a>

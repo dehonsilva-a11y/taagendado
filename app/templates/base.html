@@ -36,7 +36,21 @@
     <aside class="app-sidebar" aria-label="Menu principal">
         <div class="sidebar-brand">
             <img src="{{ url_for('static', filename='img/lello-logo-branco.png') }}" alt="Lello">
-            <small>Portal do corretor</small>
+            <small>
+            {% set perfil = session.get('user_perfil') %}
+            
+            {% if perfil == 'Gerente Filial' %}
+                Portal do Gerente de Filial
+            {% elif perfil == 'Gerente Geral' %}
+                Portal do Gerente Geral
+            {% elif perfil == 'Agente de Visita' %}
+                Portal do Agente de Visita
+            {% elif perfil == 'Admin' %}
+                Portal do Admin
+            {% else %}
+                Portal do Corretor
+            {% endif %}
+    </small>
         </div>
         <nav>
             <ul class="side-nav">
