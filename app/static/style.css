@@ -168,7 +168,14 @@ a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
     padding: 0 16px; padding-top: env(safe-area-inset-top);
     box-sizing: content-box;
 }
-.topbar-logo img { height: 26px; width: auto; display: block; }
+.auth-brand img, 
+.sidebar-brand img, 
+.topbar-logo img {
+    max-width: 140px !important;
+    width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+}
 .topbar-title { display: none; }
 .user-chip { display: flex; align-items: center; gap: .65rem; background: none; border: 0; color: inherit; padding: 0; }
 .user-chip .who { display: none; text-align: right; line-height: 1.2; }
@@ -222,7 +229,11 @@ a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
         background: url('img/streets.svg') no-repeat right bottom / contain; opacity: .16;
     }
     .sidebar-brand { padding: 30px 28px 22px; }
-    .sidebar-brand img { height: 36px; width: auto; display: block; }
+    .sidebar-brand img {
+    max-width: 140px; /* Define um tamanho máximo elegante para o menu */
+    height: auto !important;
+    object-fit: contain;
+    }
     .sidebar-brand small { display: block; margin-top: 10px; color: rgba(255,255,255,.6); font-weight: 300; font-size: .8rem; }
     .side-nav { list-style: none; margin: 8px 0 0; padding: 0 14px; display: flex; flex-direction: column; gap: 4px; position: relative; z-index: 1; }
     .side-nav a {
@@ -434,7 +445,7 @@ body.auth { min-height: 100vh; margin: 0; background: var(--bg); }
     .auth-shell { grid-template-columns: 1.1fr 1fr; grid-template-rows: 1fr; }
     .auth-brand { padding: 56px 64px; display: flex; flex-direction: column; justify-content: space-between; }
     .auth-brand::before { width: 900px; inset: 0 -120px 0 auto; opacity: .26; }
-    .auth-brand img { height: 56px; }
+    .auth-brand img { max-width: 180px !important; }
     .auth-brand .tag { display: block; max-width: 15ch; font-size: 3rem; line-height: 1.08; font-weight: 600; letter-spacing: -.03em; }
     .auth-brand .tag small { display: block; margin-top: 18px; max-width: 36ch; font-size: 1.05rem; font-weight: 300; letter-spacing: 0; line-height: 1.5; opacity: .9; }
     .auth-panel { align-items: center; padding: 40px; }
@@ -445,4 +456,53 @@ body.auth { min-height: 100vh; margin: 0; background: var(--bg); }
 
 @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+
+/* ==========================================
+   MELHORIAS DE VISUALIZAÇÃO NO CELULAR (TELAS DE LOGIN)
+========================================== */
+@media (max-width: 991.98px) {
+    .auth-brand {
+        padding: 40px 24px 90px; /* Dá mais espaço e respiro no fundo vermelho */
+    }
+    
+    .auth-card {
+        margin-top: -60px; /* Posiciona o cartão sobre o vermelho com mais elegância */
+        padding: 40px 24px; /* Aumenta o espaço em branco dentro do cartão */
+        border-radius: 28px;
+    }
+    
+    .auth-card h1 {
+        font-size: 1.9rem; /* Título maior e mais chamativo */
+        margin-bottom: 10px;
+    }
+    
+    .auth-card .lead-sm {
+        font-size: 1.05rem; /* Texto descritivo mais fácil de ler */
+        margin-bottom: 30px;
+    }
+    
+    /* Botões e campos mais largos e altos para o toque do dedo */
+    .auth-card .btn-google,
+    .auth-card .btn {
+        padding: 1.1rem 1rem;
+        font-size: 1.1rem;
+        border-radius: 16px; /* Cantos arredondados mais modernos */
+    }
+    
+    .auth-card .form-control {
+        padding: 1rem 1.1rem;
+        font-size: 1.05rem;
+        border-radius: 12px;
+    }
+    
+    .auth-card .form-label {
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .auth-foot {
+        font-size: 0.95rem;
+        margin-top: 30px;
+    }
 }

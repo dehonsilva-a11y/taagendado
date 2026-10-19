@@ -31,7 +31,16 @@ def auth_google():
         return jsonify({'status': 'error', 'message': 'Token não fornecido.'}), 400
 
     try:
-        decoded_token = firebase_auth.verify_id_token(token)
+        try:
+            decoded_token = firebase_auth.verify_id_token(token)
+        except Exception as e:
+            # Se der o erro de relógio desajustado, espera 8 segundos e tenta de novo
+            if "too early" in str(e).lower():
+                time.sleep(8)
+                decoded_token = firebase_auth.verify_id_token(token)
+            else:
+                raise e # Se for outro erro, repassa pra frente
+                
         email_google = decoded_token.get('email', '').lower()
         
         user_ref = db.collection('usuarios').document(email_google)
