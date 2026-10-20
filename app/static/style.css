@@ -169,11 +169,24 @@ a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
     box-sizing: content-box;
 }
 .auth-brand img, 
-.sidebar-brand img, 
-.topbar-logo img {
+.sidebar-brand img {
     max-width: 140px !important;
     width: 100% !important;
     height: auto !important;
+    object-fit: contain !important;
+}
+
+/* Logo na barra superior do celular */
+.topbar-logo {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.topbar-logo img {
+    max-height: 28px !important;   /* Trava a altura para caber perfeitamente nos 60px da barra */
+    width: auto !important;         /* Mantém a proporção horizontal natural sem distorcer */
+    max-width: 110px !important;
     object-fit: contain !important;
 }
 .topbar-title { display: none; }

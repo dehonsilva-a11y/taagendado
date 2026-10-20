@@ -11,10 +11,13 @@ main_bp = Blueprint('main', __name__)
 # --- CONFIGURAÇÃO DE PÁGINAS DO SISTEMA ---
 PAGINAS_SISTEMA = [
     {'id': 'home', 'nome': 'Dashboard (Tela Inicial)', 'icone': 'bi-house'},
+    {'id': 'visitas', 'nome': 'Visitas', 'icone': 'bi-house'},
+    {'id': 'indicacao', 'nome': 'Indicação', 'icone': 'bi-house'},
     {'id': 'usuarios', 'nome': 'Gerenciar Equipe', 'icone': 'bi-people'},
     {'id': 'permissoes', 'nome': 'Matriz de Acessos', 'icone': 'bi-shield-lock'},
     {'id': 'portabilidade_interna', 'nome': 'Portabilidade Interna', 'icone': 'bi-arrow-left-right'},
     {'id': 'portabilidade_externa', 'nome': 'Portabilidade Externa', 'icone': 'bi-box-arrow-up-right'},
+    
 ]
 PERFIS_SISTEMA = ['Corretor', 'Agente de Visita', 'Gerente Filial', 'Gerente Geral', 'Admin']
 
