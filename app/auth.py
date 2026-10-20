@@ -32,15 +32,26 @@ def auth_token():
         return jsonify({'status': 'error', 'message': 'Token não fornecido.'}), 400
 
     try:
-        try:
-            decoded_token = firebase_auth.verify_id_token(token)
-        except Exception as e:
-            # Se der o erro de relógio desajustado, espera 8 segundos e tenta de novo
-            if "too early" in str(e).lower():
-                time.sleep(8)
+        decoded_token = None
+        max_tentativas = 10
+
+        # Loop de validação de até 10 segundos
+        for tentativa in range(max_tentativas):
+            try:
                 decoded_token = firebase_auth.verify_id_token(token)
-            else:
-                raise e # Se for outro erro, repassa pra frente
+                break  # Validou com sucesso! Sai do loop
+            except Exception as e:
+                # Se o token ainda "veio do futuro", espera 1 segundo para sincronizar o tempo
+                if "too early" in str(e).lower():
+                    time.sleep(1)
+                else:
+                    raise e  # Se for erro de credencial/expirado, interrompe na hora
+
+        if not decoded_token:
+            return jsonify({
+                'status': 'error', 
+                'message': 'Não foi possível validar o token devido a divergência de horário no servidor.'
+            }), 401
                 
         email_usuario = decoded_token.get('email', '').lower()
         

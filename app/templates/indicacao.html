@@ -3,10 +3,183 @@
 {% block page_title %}Indicações{% endblock %}
 
 {% block content %}
-<div class="surface empty">
-    <div class="ico"><i class="bi bi-person-plus"></i></div>
-    <h2>Indicações chegam na próxima atualização</h2>
-    <p>Em breve você vai registrar e acompanhar as indicações de clientes e imóveis por aqui.</p>
-    <a href="{{ url_for('main.home') }}" class="btn btn-primary mt-4 px-4">Voltar ao início</a>
+<!-- CONTAINER PRINCIPAL: Define a "caixa" central da página -->
+<div class="mx-auto" style="max-width: 960px; padding: 0 16px;">
+
+    <!-- 1. SEÇÃO SUPERIOR: BANNER PRINCIPAL -->
+    <section class="mb-5 py-3">
+        <div class="row align-items-center g-4">
+            <!-- Texto e Botão -->
+            <div class="col-12 col-md-6 col-lg-7 text-center text-md-start">
+                <h1 class="fw-bold mb-3" style="color: #1f1a1d; font-size: clamp(1.85rem, 3.5vw, 2.7rem); line-height: 1.2; letter-spacing: -0.02em;">
+                    Ganhe uma <span style="color: var(--lello-red);">grana extra</span><br class="d-none d-lg-inline">
+                    indicando imóveis ocupados<br class="d-none d-lg-inline">
+                    para <span style="color: var(--lello-red);">portabilidade!</span>
+                </h1>
+                
+                <p class="text-secondary mb-4 mx-auto mx-md-0" style="font-size: 1.05rem; line-height: 1.55; max-width: 500px;">
+                    Indique imóveis <strong>ocupados</strong> para migrar a administração de locação para a Lello e ganhe uma grana extra!
+                </p>
+
+                <a href="#indicar" onclick="rolarParaIndicacao(event)" class="btn btn-primary fw-bold px-4 py-2" style="border-radius: 8px; font-size: 1.05rem;">
+                    Quero indicar
+                </a>
+            </div>
+
+            <!-- Imagem Superior -->
+            <div class="col-12 col-md-6 col-lg-5 text-center text-md-end">
+                <img src="{{ url_for('static', filename='img/ativo_23_100.png') }}" 
+                     alt="Campanha de Portabilidade Lello" 
+                     class="img-fluid" 
+                     style="width: 100%; height: auto; object-fit: contain;">
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. SEÇÃO: COMO FUNCIONA A REMUNERAÇÃO NA PRÁTICA -->
+    <section class="text-center my-5 py-2">
+        <h2 class="fw-bold mb-1" style="color: #1f1a1d; font-size: clamp(1.7rem, 3vw, 2.4rem); line-height: 1.2; letter-spacing: -0.02em;">
+            Ganhe 2 taxas de administração*
+        </h2>
+        <h2 class="fw-bold mb-2" style="color: #1f1a1d; font-size: clamp(1.7rem, 3vw, 2.4rem); line-height: 1.2; letter-spacing: -0.02em;">
+            sobre o aluguel líquido
+        </h2>
+        <p class="text-muted small mb-5">
+            *Por contrato assinado.
+        </p>
+
+        <h3 class="fw-bold mb-4" style="color: #1f1a1d; font-size: clamp(1.25rem, 2.2vw, 1.7rem); letter-spacing: -0.01em;">
+            Quer saber como a remuneração acontece na prática?
+        </h3>
+
+        <!-- Imagem do Cálculo (Agora ocupa 100% da largura do container) -->
+        <div class="mb-4 w-100">
+            <img src="{{ url_for('static', filename='img/ativo_4_100.png') }}" 
+                 alt="Cálculo da remuneração na prática" 
+                 class="img-fluid w-100" 
+                 style="height: auto; object-fit: contain;">
+        </div>
+
+        <p class="text-secondary mx-auto mb-4" style="font-size: 1rem; line-height: 1.6;">
+            A remuneração da indicação com sucesso será efetuada todo dia 15 de cada mês mediante ao pagamento da 1ª taxa de administração no mês antecedente.
+        </p>
+
+        <h3 class="fw-bold mb-5" style="color: #1f1a1d; font-size: clamp(1.6rem, 2.8vw, 2.2rem); letter-spacing: -0.02em;">
+            Você só tem a ganhar!
+        </h3>
+
+        <!-- Imagem das Premiações (Agora ocupa 100% da largura do container) -->
+        <div class="mb-3 w-100">
+            <img src="{{ url_for('static', filename='img/ativo_33_100.png') }}" 
+                 alt="Premiações de Superação, Trimestral e Mensal" 
+                 class="img-fluid w-100 rounded-4 shadow-sm" 
+                 style="height: auto; object-fit: contain;">
+        </div>
+
+        <p class="text-secondary mx-auto mb-0" style="font-size: 0.9rem;">
+            <strong>ATENÇÃO:</strong> O critério para desempate das premiações será o maior valor de taxa de administração do período.
+        </p>
+    </section>
+
+    <!-- 3. QUEM PODE PARTICIPAR -->
+    <section class="my-5 py-3">
+        <div class="row align-items-center g-4">
+            <!-- Imagem à Esquerda -->
+            <div class="col-12 col-md-5 text-center text-md-start">
+                <img src="{{ url_for('static', filename='img/ativo_25_100.png') }}" 
+                     alt="Participe da Campanha" 
+                     class="img-fluid" 
+                     style="width: 100%; height: auto; object-fit: contain;">
+            </div>
+
+            <!-- Texto à Direita -->
+            <div class="col-12 col-md-7 text-center text-md-start">
+                <h2 class="fw-bold mb-3" style="color: #1f1a1d; font-size: clamp(1.65rem, 2.8vw, 2.3rem); line-height: 1.25; letter-spacing: -0.02em;">
+                    Esses prêmios podem ser seus! <span style="color: var(--lello-red);">Corra e indique!</span>
+                </h2>
+
+                <p class="text-secondary mb-3" style="font-size: 1rem; line-height: 1.6;">
+                    <strong>Colaboradores corporativos, captadores, executivos comerciais, Inside Sales, corretores, vendas, gerentes e colaboradores Lello Condomínios</strong> estão habilitados para participar da campanha e aumentar suas comissões com a portabilidade de imóveis!
+                </p>
+
+                <p class="mb-4" style="font-size: 0.95rem; color: #1f1a1d;">
+                    <strong>Quem não participa:</strong> Telefonistas, recepcionistas e E1.
+                </p>
+
+                <a href="#indicar" class="btn btn-primary fw-bold px-4 py-2" style="border-radius: 8px; font-size: 1.05rem;">
+                    Indicar Imóvel
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. CANAIS DE INDICAÇÃO E WHATSAPP -->
+    <section id="indicar" class="my-5 pt-4 text-center" style="scroll-margin-top: 90px;">
+        <h2 class="fw-bold mb-4" style="color: #1f1a1d; font-size: clamp(1.8rem, 3vw, 2.4rem); letter-spacing: -0.02em;">
+            Indicar imóvel:
+        </h2>
+
+        <!-- Cards das Portabilidades ocupando as laterais -->
+        <div class="row g-3 mb-4 text-start">
+            <div class="col-12 col-md-6">
+                <a href="{{ url_for('main.portabilidade_interna') }}" class="shortcut w-100">
+                    <span class="ico"><i class="bi bi-arrow-left-right"></i></span>
+                    <span>
+                        <h3>Portabilidade Interna</h3>
+                        <p>Transferência de administração de carteira interna ocupada.</p>
+                    </span>
+                    <i class="bi bi-chevron-right go"></i>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <a href="{{ url_for('main.portabilidade_externa') }}" class="shortcut w-100">
+                    <span class="ico"><i class="bi bi-box-arrow-up-right"></i></span>
+                    <span>
+                        <h3>Portabilidade Externa</h3>
+                        <p>Traga a administração de imóveis de outras imobiliárias.</p>
+                    </span>
+                    <i class="bi bi-chevron-right go"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Botão WhatsApp -->
+        {% set mensagem_wa = "Olá, eu sou " ~ session.get('user_nome', 'Corretor') ~ ", corretor da filial " ~ session.get('user_filial', 'Matriz') ~ ", e eu gostaria de fazer uma indicação." %}
+        <div class="d-flex justify-content-center my-4">
+            <a href="https://wa.me/5511910163462?text={{ mensagem_wa | urlencode }}" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="btn btn-success btn-lg px-4 py-3 fw-bold d-inline-flex align-items-center gap-2 shadow-sm"
+               style="background-color: #25D366; border-color: #25D366; border-radius: 12px; font-size: 1.1rem;">
+                <i class="bi bi-whatsapp fs-4"></i>
+                Indicar via WhatsApp (+55 11 91016-3462)
+            </a>
+        </div>
+    </section>
+
+    <!-- 5. RODAPÉ DE CONTATO -->
+    <footer class="text-center my-5 pt-4 pb-2 border-top" style="border-color: var(--line) !important;">
+        <h3 class="fw-bold h5 mb-2" style="color: #1f1a1d;">Ficou com alguma dúvida?</h3>
+        <p class="text-secondary mb-0" style="font-size: 0.95rem;">
+            Entre em contato pelo e-mail: 
+            <a href="mailto:portabilidade.locacao@lello.com.br" class="fw-semibold text-decoration-none" style="color: var(--lello-red);">
+                portabilidade.locacao@lello.com.br
+            </a>
+        </p>
+    </footer>
+
 </div>
+<script>
+function rolarParaIndicacao(event) {
+    if (event) event.preventDefault();
+    const destino = document.getElementById('indicar');
+    if (destino) {
+        destino.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+        });
+    }
+}
+</script>
 {% endblock %}

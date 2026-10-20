@@ -13,7 +13,8 @@ PAGINAS_SISTEMA = [
     {'id': 'home', 'nome': 'Dashboard (Tela Inicial)', 'icone': 'bi-house'},
     {'id': 'usuarios', 'nome': 'Gerenciar Equipe', 'icone': 'bi-people'},
     {'id': 'permissoes', 'nome': 'Matriz de Acessos', 'icone': 'bi-shield-lock'},
-    {'id': 'portabilidade', 'nome': 'Portabilidade Interna', 'icone': 'bi-arrow-left-right'},
+    {'id': 'portabilidade_interna', 'nome': 'Portabilidade Interna', 'icone': 'bi-arrow-left-right'},
+    {'id': 'portabilidade_externa', 'nome': 'Portabilidade Externa', 'icone': 'bi-box-arrow-up-right'},
 ]
 PERFIS_SISTEMA = ['Corretor', 'Agente de Visita', 'Gerente Filial', 'Gerente Geral', 'Admin']
 
@@ -55,9 +56,18 @@ def injetar_dados_globais():
 def home():
     return render_template('home.html')
 
-@main_bp.route('/portabilidade')
-def portabilidade():
-    return render_template('portabilidade.html')
+@main_bp.route('/indica_lello')
+def indica_lello():
+    return render_template('indica_lello.html')
+
+@main_bp.route('/portabilidade_interna')
+def portabilidade_interna():
+    return render_template('portabilidade_interna.html')
+
+@main_bp.route('/portabilidade_externa')
+def portabilidade_externa():
+    return render_template('portabilidade_externa.html')
+
 
 @main_bp.route('/indicacao')
 def indicacao():

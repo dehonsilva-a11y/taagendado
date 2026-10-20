@@ -48,13 +48,27 @@
     </div>
     {% endif %}
 
-    {% set pode_portabilidade = 'portabilidade' in minhas_permissoes or is_admin %}
-    {% if pode_portabilidade %}
+    {% set pode_portabilidade_interna = 'portabilidade_interna' in minhas_permissoes or is_admin %}
+    {% if pode_portabilidade_interna %}
     <div class="col-12 col-md-6 col-xl-4">
-        <a href="{{ url_for('main.portabilidade') }}" class="shortcut">
+        <a href="{{ url_for('main.portabilidade_interna') }}" class="shortcut">
             <span class="ico"><i class="bi bi-arrow-left-right"></i></span>
             <span>
                 <h3>Portabilidade Interna</h3>
+                <p>Acesse o portal da portabilidade.</p>
+            </span>
+            <i class="bi bi-chevron-right go"></i>
+        </a>
+    </div>
+    {% endif %}
+
+    {% set pode_portabilidade_externa = 'portabilidade_externa' in minhas_permissoes or is_admin %}
+    {% if pode_portabilidade_externa %}
+    <div class="col-12 col-md-6 col-xl-4">
+        <a href="{{ url_for('main.portabilidade_externa') }}" class="shortcut">
+            <span class="ico"><i class="bi bi-box-arrow-up-right"></i></span>
+            <span>
+                <h3>Portabilidade Externa</h3>
                 <p>Acesse o portal da portabilidade.</p>
             </span>
             <i class="bi bi-chevron-right go"></i>
