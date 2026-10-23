@@ -3,183 +3,99 @@
 {% block page_title %}Indicações{% endblock %}
 
 {% block content %}
-<!-- CONTAINER PRINCIPAL: Define a "caixa" central da página -->
-<div class="mx-auto" style="max-width: 960px; padding: 0 16px;">
-
-    <!-- 1. SEÇÃO SUPERIOR: BANNER PRINCIPAL -->
-    <section class="mb-5 py-3">
-        <div class="row align-items-center g-4">
-            <!-- Texto e Botão -->
-            <div class="col-12 col-md-6 col-lg-7 text-center text-md-start">
-                <h1 class="fw-bold mb-3" style="color: #1f1a1d; font-size: clamp(1.85rem, 3.5vw, 2.7rem); line-height: 1.2; letter-spacing: -0.02em;">
-                    Ganhe uma <span style="color: var(--lello-red);">grana extra</span><br class="d-none d-lg-inline">
-                    indicando imóveis ocupados<br class="d-none d-lg-inline">
-                    para <span style="color: var(--lello-red);">portabilidade!</span>
-                </h1>
-                
-                <p class="text-secondary mb-4 mx-auto mx-md-0" style="font-size: 1.05rem; line-height: 1.55; max-width: 500px;">
-                    Indique imóveis <strong>ocupados</strong> para migrar a administração de locação para a Lello e ganhe uma grana extra!
-                </p>
-
-                <a href="#indicar" onclick="rolarParaIndicacao(event)" class="btn btn-primary fw-bold px-4 py-2" style="border-radius: 8px; font-size: 1.05rem;">
-                    Quero indicar
-                </a>
+<div class="lo-stack" style="padding: var(--space-4); max-width: 960px; margin:0 auto;">
+    <div class="lo-card" style="padding: var(--space-5);">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: var(--space-5); align-items:center;">
+            <div>
+                <h1 style="margin:0; font-size: clamp(28px,4vw,44px); font-weight:800; line-height:1.1; letter-spacing:-.02em;">Ganhe uma <span style="color:var(--accent);">grana extra</span> indicando imóveis ocupados para <span style="color:var(--accent);">portabilidade!</span></h1>
+                <p style="margin: var(--space-3) 0 0; color:var(--muted); font-size:16px; max-width:500px;">Indique imóveis <b>ocupados</b> para migrar a administração de locação para a Lello e ganhe uma grana extra!</p>
+                <div style="margin-top: var(--space-4);">
+                    <a href="#indicar" onclick="rolarParaIndicacao(event)" class="lo-btn lo-btn-fill">Quero indicar</a>
+                </div>
             </div>
-
-            <!-- Imagem Superior -->
-            <div class="col-12 col-md-6 col-lg-5 text-center text-md-end">
-                <img src="{{ url_for('static', filename='img/ativo_23_100.png') }}" 
-                     alt="Campanha de Portabilidade Lello" 
-                     class="img-fluid" 
-                     style="width: 100%; height: auto; object-fit: contain;">
+            <div style="text-align:center;">
+                <img src="{{ url_for('static', filename='img/ativo_23_100.png') }}" alt="Campanha de Portabilidade Lello" style="max-width:100%; height:auto;">
             </div>
         </div>
-    </section>
+    </div>
 
-    <!-- 2. SEÇÃO: COMO FUNCIONA A REMUNERAÇÃO NA PRÁTICA -->
-    <section class="text-center my-5 py-2">
-        <h2 class="fw-bold mb-1" style="color: #1f1a1d; font-size: clamp(1.7rem, 3vw, 2.4rem); line-height: 1.2; letter-spacing: -0.02em;">
-            Ganhe 2 taxas de administração*
-        </h2>
-        <h2 class="fw-bold mb-2" style="color: #1f1a1d; font-size: clamp(1.7rem, 3vw, 2.4rem); line-height: 1.2; letter-spacing: -0.02em;">
-            sobre o aluguel líquido
-        </h2>
-        <p class="text-muted small mb-5">
-            *Por contrato assinado.
-        </p>
+    <div class="lo-card" style="text-align:center; padding: var(--space-5);">
+        <h2 style="margin:0; font-size: clamp(24px,3vw,38px); font-weight:800;">Ganhe 2 taxas de administração*</h2>
+        <h2 style="margin:0; font-size: clamp(24px,3vw,38px); font-weight:800;">sobre o aluguel líquido</h2>
+        <div class="lo-label" style="margin-top: var(--space-2);">*Por contrato assinado.</div>
 
-        <h3 class="fw-bold mb-4" style="color: #1f1a1d; font-size: clamp(1.25rem, 2.2vw, 1.7rem); letter-spacing: -0.01em;">
-            Quer saber como a remuneração acontece na prática?
-        </h3>
-
-        <!-- Imagem do Cálculo (Agora ocupa 100% da largura do container) -->
-        <div class="mb-4 w-100">
-            <img src="{{ url_for('static', filename='img/ativo_4_100.png') }}" 
-                 alt="Cálculo da remuneração na prática" 
-                 class="img-fluid w-100" 
-                 style="height: auto; object-fit: contain;">
+        <h3 style="margin: var(--space-5) 0 0; font-size: clamp(18px,2.2vw,26px); font-weight:700;">Quer saber como a remuneração acontece na prática?</h3>
+        <div style="margin-top: var(--space-4);">
+            <img src="{{ url_for('static', filename='img/ativo_4_100.png') }}" alt="Cálculo da remuneração na prática" style="max-width:100%; height:auto;">
         </div>
-
-        <p class="text-secondary mx-auto mb-4" style="font-size: 1rem; line-height: 1.6;">
-            A remuneração da indicação com sucesso será efetuada todo dia 15 de cada mês mediante ao pagamento da 1ª taxa de administração no mês antecedente.
-        </p>
-
-        <h3 class="fw-bold mb-5" style="color: #1f1a1d; font-size: clamp(1.6rem, 2.8vw, 2.2rem); letter-spacing: -0.02em;">
-            Você só tem a ganhar!
-        </h3>
-
-        <!-- Imagem das Premiações (Agora ocupa 100% da largura do container) -->
-        <div class="mb-3 w-100">
-            <img src="{{ url_for('static', filename='img/ativo_33_100.png') }}" 
-                 alt="Premiações de Superação, Trimestral e Mensal" 
-                 class="img-fluid w-100 rounded-4 shadow-sm" 
-                 style="height: auto; object-fit: contain;">
+        <p style="margin: var(--space-4) auto 0; color:var(--muted); max-width:720px;">A remuneração da indicação com sucesso será efetuada todo dia 15 de cada mês mediante ao pagamento da 1ª taxa de administração no mês antecedente.</p>
+        <h3 style="margin: var(--space-4) 0 0; font-size: clamp(22px,2.8vw,34px); font-weight:800;">Você só tem a ganhar!</h3>
+        <div style="margin-top: var(--space-4);">
+            <img src="{{ url_for('static', filename='img/ativo_33_100.png') }}" alt="Premiações de Superação, Trimestral e Mensal" style="max-width:100%; height:auto; border-radius: var(--radius-card);">
         </div>
+        <p style="margin: var(--space-3) 0 0; color:var(--muted); font-size:13px;"><b>ATENÇÃO:</b> O critério para desempate das premiações será o maior valor de taxa de administração do período.</p>
+    </div>
 
-        <p class="text-secondary mx-auto mb-0" style="font-size: 0.9rem;">
-            <strong>ATENÇÃO:</strong> O critério para desempate das premiações será o maior valor de taxa de administração do período.
-        </p>
-    </section>
-
-    <!-- 3. QUEM PODE PARTICIPAR -->
-    <section class="my-5 py-3">
-        <div class="row align-items-center g-4">
-            <!-- Imagem à Esquerda -->
-            <div class="col-12 col-md-5 text-center text-md-start">
-                <img src="{{ url_for('static', filename='img/ativo_25_100.png') }}" 
-                     alt="Participe da Campanha" 
-                     class="img-fluid" 
-                     style="width: 100%; height: auto; object-fit: contain;">
+    <div class="lo-card" style="padding: var(--space-5);">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: var(--space-5); align-items:center;">
+            <div style="text-align:center;">
+                <img src="{{ url_for('static', filename='img/ativo_25_100.png') }}" alt="Participe da Campanha" style="max-width:100%; height:auto;">
             </div>
-
-            <!-- Texto à Direita -->
-            <div class="col-12 col-md-7 text-center text-md-start">
-                <h2 class="fw-bold mb-3" style="color: #1f1a1d; font-size: clamp(1.65rem, 2.8vw, 2.3rem); line-height: 1.25; letter-spacing: -0.02em;">
-                    Esses prêmios podem ser seus! <span style="color: var(--lello-red);">Corra e indique!</span>
-                </h2>
-
-                <p class="text-secondary mb-3" style="font-size: 1rem; line-height: 1.6;">
-                    <strong>Colaboradores corporativos, captadores, executivos comerciais, Inside Sales, corretores, vendas, gerentes e colaboradores Lello Condomínios</strong> estão habilitados para participar da campanha e aumentar suas comissões com a portabilidade de imóveis!
-                </p>
-
-                <p class="mb-4" style="font-size: 0.95rem; color: #1f1a1d;">
-                    <strong>Quem não participa:</strong> Telefonistas, recepcionistas e E1.
-                </p>
-
-                <a href="#indicar" class="btn btn-primary fw-bold px-4 py-2" style="border-radius: 8px; font-size: 1.05rem;">
-                    Indicar Imóvel
-                </a>
+            <div>
+                <h2 style="margin:0; font-size: clamp(24px,2.8vw,36px); font-weight:800;">Esses prêmios podem ser seus! <span style="color:var(--accent);">Corra e indique!</span></h2>
+                <p style="margin: var(--space-3) 0 0; color:var(--muted);"><b>Colaboradores corporativos, captadores, executivos comerciais, Inside Sales, corretores, vendas, gerentes e colaboradores Lello Condomínios</b> estão habilitados para participar da campanha e aumentar suas comissões com a portabilidade de imóveis!</p>
+                <p style="margin: var(--space-3) 0 0;"><b>Quem não participa:</b> Telefonistas, recepcionistas e E1.</p>
+                <div style="margin-top: var(--space-4);">
+                    <a href="#indicar" class="lo-btn lo-btn-fill">Indicar Imóvel</a>
+                </div>
             </div>
         </div>
-    </section>
+    </div>
 
-    <!-- 4. CANAIS DE INDICAÇÃO E WHATSAPP -->
-    <section id="indicar" class="my-5 pt-4 text-center" style="scroll-margin-top: 90px;">
-        <h2 class="fw-bold mb-4" style="color: #1f1a1d; font-size: clamp(1.8rem, 3vw, 2.4rem); letter-spacing: -0.02em;">
-            Indicar imóvel:
-        </h2>
-
-        <!-- Cards das Portabilidades ocupando as laterais -->
-        <div class="row g-3 mb-4 text-start">
-            <div class="col-12 col-md-6">
-                <a href="{{ url_for('main.portabilidade_interna') }}" class="shortcut w-100">
-                    <span class="ico"><i class="bi bi-arrow-left-right"></i></span>
-                    <span>
-                        <h3>Portabilidade Interna</h3>
-                        <p>Transferência de administração de carteira interna ocupada.</p>
-                    </span>
-                    <i class="bi bi-chevron-right go"></i>
-                </a>
-            </div>
-
-            <div class="col-12 col-md-6">
-                <a href="{{ url_for('main.portabilidade_externa') }}" class="shortcut w-100">
-                    <span class="ico"><i class="bi bi-box-arrow-up-right"></i></span>
-                    <span>
-                        <h3>Portabilidade Externa</h3>
-                        <p>Traga a administração de imóveis de outras imobiliárias.</p>
-                    </span>
-                    <i class="bi bi-chevron-right go"></i>
-                </a>
-            </div>
+    <div id="indicar" style="scroll-margin-top: 90px;">
+        <div class="lo-label" style="margin-bottom: var(--space-3);">Indicar imóvel</div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:12px;">
+            <a href="{{ url_for('main.portabilidade_interna') }}" class="lo-card" style="text-decoration:none; color:inherit; gap:10px; padding:16px;">
+                <div class="lo-row" style="padding:0; align-items:center;">
+                    <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
+                    <div class="lo-grow">
+                        <div style="font-weight:700; font-size:16px;">Portabilidade Interna</div>
+                        <div style="color:var(--muted); font-size:13px;">Transferência de administração de carteira interna ocupada.</div>
+                    </div>
+                    <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+            </a>
+            <a href="{{ url_for('main.portabilidade_externa') }}" class="lo-card" style="text-decoration:none; color:inherit; gap:10px; padding:16px;">
+                <div class="lo-row" style="padding:0; align-items:center;">
+                    <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
+                    <div class="lo-grow">
+                        <div style="font-weight:700; font-size:16px;">Portabilidade Externa</div>
+                        <div style="color:var(--muted); font-size:13px;">Traga a administração de imóveis de outras imobiliárias.</div>
+                    </div>
+                    <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+            </a>
         </div>
-
-        <!-- Botão WhatsApp -->
         {% set mensagem_wa = "Olá, eu sou " ~ session.get('user_nome', 'Corretor') ~ ", corretor da filial " ~ session.get('user_filial', 'Matriz') ~ ", e eu gostaria de fazer uma indicação." %}
-        <div class="d-flex justify-content-center my-4">
-            <a href="https://wa.me/5511910163462?text={{ mensagem_wa | urlencode }}" 
-               target="_blank" 
-               rel="noopener noreferrer" 
-               class="btn btn-success btn-lg px-4 py-3 fw-bold d-inline-flex align-items-center gap-2 shadow-sm"
-               style="background-color: #25D366; border-color: #25D366; border-radius: 12px; font-size: 1.1rem;">
-                <i class="bi bi-whatsapp fs-4"></i>
+        <div style="display:flex; justify-content:center; margin-top: var(--space-5);">
+            <a href="https://wa.me/5511910163462?text={{ mensagem_wa | urlencode }}" target="_blank" rel="noopener noreferrer" class="lo-btn lo-btn-fill" style="background:#25D366; border-color:#25D366; color:#fff;">
+                <svg class="lo-ico" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
                 Indicar via WhatsApp (+55 11 91016-3462)
             </a>
         </div>
-    </section>
+    </div>
 
-    <!-- 5. RODAPÉ DE CONTATO -->
-    <footer class="text-center my-5 pt-4 pb-2 border-top" style="border-color: var(--line) !important;">
-        <h3 class="fw-bold h5 mb-2" style="color: #1f1a1d;">Ficou com alguma dúvida?</h3>
-        <p class="text-secondary mb-0" style="font-size: 0.95rem;">
-            Entre em contato pelo e-mail: 
-            <a href="mailto:portabilidade.locacao@lello.com.br" class="fw-semibold text-decoration-none" style="color: var(--lello-red);">
-                portabilidade.locacao@lello.com.br
-            </a>
-        </p>
-    </footer>
-
+    <div style="text-align:center; padding: var(--space-5) 0; border-top:1px solid var(--line);">
+        <h3 style="margin:0; font-size:18px; font-weight:700;">Ficou com alguma dúvida?</h3>
+        <p style="margin:6px 0 0; color:var(--muted);">Entre em contato pelo e-mail: <a href="mailto:portabilidade.locacao@lello.com.br" style="color:var(--accent); font-weight:600; text-decoration:none;">portabilidade.locacao@lello.com.br</a></p>
+    </div>
 </div>
+
 <script>
 function rolarParaIndicacao(event) {
     if (event) event.preventDefault();
     const destino = document.getElementById('indicar');
-    if (destino) {
-        destino.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start' 
-        });
-    }
+    if (destino) destino.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
 {% endblock %}
