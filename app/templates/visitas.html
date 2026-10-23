@@ -3,22 +3,20 @@
 {% block page_title %}Seus Ganhos{% endblock %}
 
 {% block content %}
-<div class="container-fluid" style="max-width: 900px;">
-    
-    <!-- Filtros de Mês e Ano -->
-    <div class="surface surface-pad mb-4 border-0 shadow-sm">
-        <form method="GET" action="{{ url_for('main.visitas') }}" class="row g-3">
-            <div class="col-md-6">
-                <label for="mesFiltro" class="form-label small fw-bold text-muted">Mês:</label>
-                <select id="mesFiltro" name="mes" class="form-select shadow-sm" onchange="this.form.submit()">
+<div class="lo-stack" style="padding: var(--space-4); max-width: 900px;">
+    <div class="lo-card" style="padding: var(--space-4); gap: var(--space-3);">
+        <form method="GET" action="{{ url_for('main.visitas') }}" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: var(--space-3);">
+            <div class="lo-field" style="max-width:none;">
+                <div class="lo-label">Mês</div>
+                <select name="mes" onchange="this.form.submit()" style="font:inherit; color:var(--ink); background:var(--surface); border:1px solid var(--line-strong); border-radius:var(--radius-md); padding:10px 12px;">
                     {% for m, nome_mes in [(1,'Jan'), (2,'Fev'), (3,'Mar'), (4,'Abr'), (5,'Mai'), (6,'Jun'), (7,'Jul'), (8,'Ago'), (9,'Set'), (10,'Out'), (11,'Nov'), (12,'Dez')] %}
                         <option value="{{ m }}" {% if mes_selecionado == m %}selected{% endif %}>{{ nome_mes }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-6">
-                <label for="anoFiltro" class="form-label small fw-bold text-muted">Ano:</label>
-                <select id="anoFiltro" name="ano" class="form-select shadow-sm" onchange="this.form.submit()">
+            <div class="lo-field" style="max-width:none;">
+                <div class="lo-label">Ano</div>
+                <select name="ano" onchange="this.form.submit()" style="font:inherit; color:var(--ink); background:var(--surface); border:1px solid var(--line-strong); border-radius:var(--radius-md); padding:10px 12px;">
                     {% for a in [2024, 2025, 2026] %}
                         <option value="{{ a }}" {% if ano_selecionado == a %}selected{% endif %}>{{ a }}</option>
                     {% endfor %}
@@ -27,66 +25,50 @@
         </form>
     </div>
 
-    <!-- Ganhos Totais -->
-    <div class="surface surface-pad mb-4 border-0 shadow-sm text-center">
-        <h5 class="fw-bold mb-3" style="color: #2da182;">GANHOS TOTAIS DO MÊS:</h5>
-        <div class="display-3 fw-bold mb-2" style="color: var(--lello-red);">{{ valor_ganho_formatado }}</div>
-        <p class="text-muted small mb-4">{{ periodo_str }}</p>
-        
-        <div class="d-inline-block bg-light px-4 py-2 rounded-2" style="border: 1px solid var(--line);">
-            <span class="small fw-semibold text-muted">Data do pagamento:</span>
-            <span class="small fw-bold" style="color: var(--lello-red);">{{ data_pagamento_str }}</span>
-        </div>
-    </div>
-
-    <h4 class="fw-bold mb-3" style="color: var(--lello-red);">Detalhes dos ganhos:</h4>
-
-    <!-- Detalhes: Visitas (Zeradinho conforme pedido, se precisar somar algo aqui é só replicar a lógica do backend) -->
-    <div class="surface mb-3 border-0 shadow-sm overflow-hidden">
-        <div class="surface-head bg-light px-4 py-3 mb-0 border-bottom">
-            <h5 class="m-0 fw-bold text-dark d-flex align-items-center">
-                Visitas
-                <i class="bi bi-info-circle-fill text-danger ms-2" style="font-size: 1rem; cursor: pointer;" title="Detalhes sobre ganhos de visitas"></i>
-            </h5>
-        </div>
-        <div class="p-4">
-            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                <span class="text-muted fw-semibold">Visitas realizadas:</span>
-                <span class="fw-bold" style="color: var(--lello-red);">0</span>
-            </div>
-            <div class="d-flex justify-content-between">
-                <span class="text-muted fw-semibold">Valor ganho:</span>
-                <span class="fw-bold" style="color: var(--lello-red);">R$ 0,00</span>
+    <div class="lo-card" style="text-align:center; gap: var(--space-3);">
+        <div class="lo-label">Ganhos totais do mês</div>
+        <div style="font-size: clamp(40px, 8vw, 72px); font-weight:800; line-height:1; color: var(--accent);">{{ valor_ganho_formatado }}</div>
+        <div style="color:var(--muted);">{{ periodo_str }}</div>
+        <div style="display:flex; justify-content:center;">
+            <div class="lo-pill lo-pill-neutral" style="padding:8px 14px;">
+                <span>Data do pagamento:</span>
+                <b style="color:var(--accent);">{{ data_pagamento_str }}</b>
             </div>
         </div>
     </div>
 
-    <!-- Detalhes: Contratos -->
-    <div class="surface mb-3 border-0 shadow-sm overflow-hidden">
-        <div class="surface-head bg-light px-4 py-3 mb-0 border-bottom">
-            <h5 class="m-0 fw-bold text-dark d-flex align-items-center">
-                Contratos
-                <i class="bi bi-info-circle-fill text-danger ms-2" style="font-size: 1rem; cursor: pointer;" title="Detalhes sobre ganhos de contratos"></i>
-            </h5>
+    <div class="lo-label">Detalhes dos ganhos</div>
+
+    <div class="lo-card" style="padding:0; overflow:hidden; gap:0;">
+        <div class="lo-row" style="padding: var(--space-4); background:var(--sunk); border-bottom:1px solid var(--line);">
+            <div class="lo-grow" style="font-weight:700; font-size:16px;">Visitas</div>
         </div>
-        <div class="p-4">
-            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                <span class="text-muted fw-semibold">Contratos comissionados:</span>
-                <span class="fw-bold" style="color: var(--lello-red);">{{ total_contratos }}</span>
+        <div class="lo-stack" style="padding: var(--space-4);">
+            <div class="lo-row" style="padding:0; justify-content:space-between;">
+                <div style="color:var(--muted); font-weight:600;">Visitas realizadas:</div>
+                <div style="font-weight:700; color:var(--accent);">0</div>
             </div>
-            <div class="d-flex justify-content-between">
-                <span class="text-muted fw-semibold">Valor ganho:</span>
-                <span class="fw-bold" style="color: var(--lello-red);">R$ {{ valor_ganho_formatado }}</span>
+            <div class="lo-row" style="padding:0; justify-content:space-between;">
+                <div style="color:var(--muted); font-weight:600;">Valor ganho:</div>
+                <div style="font-weight:700; color:var(--accent);">R$ 0,00</div>
             </div>
         </div>
     </div>
 
+    <div class="lo-card" style="padding:0; overflow:hidden; gap:0;">
+        <div class="lo-row" style="padding: var(--space-4); background:var(--sunk); border-bottom:1px solid var(--line);">
+            <div class="lo-grow" style="font-weight:700; font-size:16px;">Contratos</div>
+        </div>
+        <div class="lo-stack" style="padding: var(--space-4);">
+            <div class="lo-row" style="padding:0; justify-content:space-between;">
+                <div style="color:var(--muted); font-weight:600;">Contratos comissionados:</div>
+                <div style="font-weight:700; color:var(--accent);">{{ total_contratos }}</div>
+            </div>
+            <div class="lo-row" style="padding:0; justify-content:space-between;">
+                <div style="color:var(--muted); font-weight:600;">Valor ganho:</div>
+                <div style="font-weight:700; color:var(--accent);">R$ {{ valor_ganho_formatado }}</div>
+            </div>
+        </div>
+    </div>
 </div>
-
-<!-- Estilos complementares -->
-<style>
-    .surface {
-        border-radius: var(--r-md);
-    }
-</style>
 {% endblock %}
