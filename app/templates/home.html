@@ -7,110 +7,135 @@
 {% set pode_visitas = 'visitas' in minhas_permissoes or is_admin %}
 {% set pode_indicacao = 'indicacao' in minhas_permissoes or is_admin %}
 {% set pode_equipe = 'usuarios' in minhas_permissoes or is_admin %}
+{% set pode_portabilidade_interna = 'portabilidade_interna' in minhas_permissoes or is_admin %}
+{% set pode_portabilidade_externa = 'portabilidade_externa' in minhas_permissoes or is_admin %}
 
-<div class="lo-row" style="padding: var(--space-5) var(--space-4);">
-    <div class="lo-grow">
-        <div class="lo-label">Bem-vindo</div>
-        <h1 style="margin:4px 0 0; font-size:28px; font-weight:700; letter-spacing:-.01em;">Olá, {{ session.get('user_nome') }}</h1>
-        <p style="margin:6px 0 0; color:var(--muted);">Veja suas visitas e comissões.</p>
-    </div>
-    {% if pode_visitas %}
-    <a href="{{ url_for('main.visitas') }}" class="lo-btn lo-btn-fill">
-        <svg class="lo-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Ver minhas visitas
-    </a>
-    {% endif %}
-</div>
-
-<div class="lo-stack" style="padding:0 var(--space-4) var(--space-6);">
-    <div class="lo-label">Atalhos</div>
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:12px;">
-        {% if pode_visitas %}
-        <a href="{{ url_for('main.visitas') }}" class="lo-card" style="text-decoration:none; color:inherit; gap:10px; padding:16px;">
-            <div class="lo-row" style="padding:0; align-items:center;">
-                <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-                <div class="lo-grow">
-                    <div style="font-weight:700; font-size:16px;">Gestão de visitas</div>
-                    <div style="color:var(--muted); font-size:13px;">Agendamentos, clientes e comissões.</div>
+<div class="lo-stack" style="padding: var(--space-5) var(--space-4); gap: var(--space-5);">
+    <div class="lo-card" style="padding: clamp(20px,4vw,40px); position:relative; overflow:hidden;">
+        <div style="position:absolute; inset:0; background: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%); pointer-events:none;"></div>
+        <div style="position:relative; display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: var(--space-4); align-items:center;">
+            <div>
+                <div class="lo-label">Bem-vindo de volta</div>
+                <h1 style="margin:6px 0 0; font-size: clamp(28px,5vw,44px); font-weight:800; letter-spacing:-.02em; line-height:1.05;">Olá, {{ session.get('user_nome') }}</h1>
+                <p style="margin:10px 0 0; color:var(--muted); font-size:clamp(15px,2vw,17px); max-width:520px;">Acompanhe suas visitas, comissões e indicações em um só lugar, com uma visão clara do seu desempenho.</p>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top: var(--space-4);">
+                    {% if pode_visitas %}
+                    <a href="{{ url_for('main.visitas') }}" class="lo-btn lo-btn-fill">
+                        <svg class="lo-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Ver meus ganhos
+                    </a>
+                    {% endif %}
+                    {% if pode_indicacao %}
+                    <a href="{{ url_for('main.indicacao') }}" class="lo-btn">
+                        <svg class="lo-ico" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                        Fazer indicação
+                    </a>
+                    {% endif %}
                 </div>
-                <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
-        </a>
-        {% endif %}
-
-        {% if pode_indicacao %}
-        <a href="{{ url_for('main.indicacao') }}" class="lo-card" style="text-decoration:none; color:inherit; gap:10px; padding:16px;">
-            <div class="lo-row" style="padding:0; align-items:center;">
-                <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>
-                <div class="lo-grow">
-                    <div style="font-weight:700; font-size:16px;">Indicações</div>
-                    <div style="color:var(--muted); font-size:13px;">Registre e acompanhe novas indicações.</div>
+            <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px;">
+                <div class="lo-card" style="padding:16px; gap:8px;">
+                    <div class="lo-label">Visitas</div>
+                    <div style="font-size:28px; font-weight:800;">{{ visitas_count or 0 }}</div>
+                    <div style="color:var(--muted); font-size:13px;">Mês atual</div>
                 </div>
-                <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
-        </a>
-        {% endif %}
-
-        {% set pode_portabilidade_interna = 'portabilidade_interna' in minhas_permissoes or is_admin %}
-        {% if pode_portabilidade_interna %}
-        <a href="{{ url_for('main.portabilidade_interna') }}" class="lo-card" style="text-decoration:none; color:inherit; gap:10px; padding:16px;">
-            <div class="lo-row" style="padding:0; align-items:center;">
-                <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
-                <div class="lo-grow">
-                    <div style="font-weight:700; font-size:16px;">Portabilidade Interna</div>
-                    <div style="color:var(--muted); font-size:13px;">Acesse o portal da portabilidade.</div>
-                </div>
-                <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
-        </a>
-        {% endif %}
-
-        {% set pode_portabilidade_externa = 'portabilidade_externa' in minhas_permissoes or is_admin %}
-        {% if pode_portabilidade_externa %}
-        <a href="{{ url_for('main.portabilidade_externa') }}" class="lo-card" style="text-decoration:none; color:inherit; gap:10px; padding:16px;">
-            <div class="lo-row" style="padding:0; align-items:center;">
-                <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
-                <div class="lo-grow">
-                    <div style="font-weight:700; font-size:16px;">Portabilidade Externa</div>
-                    <div style="color:var(--muted); font-size:13px;">Acesse o portal da portabilidade.</div>
-                </div>
-                <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
-        </a>
-        {% endif %}
-
-        <div class="lo-card" style="gap:10px; padding:16px; opacity:.7;">
-            <div class="lo-row" style="padding:0; align-items:center;">
-                <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-                <div class="lo-grow">
-                    <div style="font-weight:700; font-size:16px;">Minha carteira <span class="lo-pill lo-pill-neutral" style="margin-left:6px;">Em breve</span></div>
-                    <div style="color:var(--muted); font-size:13px;">Seus imóveis em um só lugar.</div>
+                <div class="lo-card" style="padding:16px; gap:8px;">
+                    <div class="lo-label">Comissões</div>
+                    <div style="font-size:28px; font-weight:800;">{{ valor_ganho_formatado or 'R$ 0,00' }}</div>
+                    <div style="color:var(--muted); font-size:13px;">Acumulado</div>
                 </div>
             </div>
         </div>
+    </div>
 
-        {% if pode_equipe %}
-        <a href="{{ url_for('main.usuarios') }}" class="lo-card" style="text-decoration:none; color:inherit; gap:10px; padding:16px;">
-            <div class="lo-row" style="padding:0; align-items:center;">
-                <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-                <div class="lo-grow">
-                    <div style="font-weight:700; font-size:16px;">Gerenciar equipe</div>
-                    <div style="color:var(--muted); font-size:13px;">Cadastre e edite colaboradores.</div>
-                </div>
-                <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    <div>
+        <div class="lo-row" style="padding:0 var(--space-1); align-items:baseline;">
+            <div class="lo-grow">
+                <div class="lo-label">Acesso rápido</div>
+                <div style="font-size:20px; font-weight:800; margin-top:4px;">Principais atalhos</div>
             </div>
-        </a>
-        <a href="{{ url_for('main.importar_dados') }}" class="lo-card" style="text-decoration:none; color:inherit; gap:10px; padding:16px;">
-            <div class="lo-row" style="padding:0; align-items:center;">
-                <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
-                <div class="lo-grow">
-                    <div style="font-weight:700; font-size:16px;">Importar Dados</div>
-                    <div style="color:var(--muted); font-size:13px;">Importe dados de forma massiva.</div>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:12px; margin-top: var(--space-3);">
+            {% if pode_visitas %}
+            <a href="{{ url_for('main.visitas') }}" class="lo-card" style="text-decoration:none; color:inherit; padding:18px; gap:12px;">
+                <div class="lo-row" style="padding:0; align-items:center;">
+                    <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+                    <div class="lo-grow">
+                        <div style="font-weight:700; font-size:17px;">Gestão de visitas</div>
+                        <div style="color:var(--muted); font-size:13px;">Agenda, status e comissões</div>
+                    </div>
+                    <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
-                <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            {% endif %}
+            {% if pode_indicacao %}
+            <a href="{{ url_for('main.indicacao') }}" class="lo-card" style="text-decoration:none; color:inherit; padding:18px; gap:12px;">
+                <div class="lo-row" style="padding:0; align-items:center;">
+                    <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>
+                    <div class="lo-grow">
+                        <div style="font-weight:700; font-size:17px;">Indicações</div>
+                        <div style="color:var(--muted); font-size:13px;">Campanha de portabilidade</div>
+                    </div>
+                    <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+            </a>
+            {% endif %}
+            {% if pode_portabilidade_interna %}
+            <a href="{{ url_for('main.portabilidade_interna') }}" class="lo-card" style="text-decoration:none; color:inherit; padding:18px; gap:12px;">
+                <div class="lo-row" style="padding:0; align-items:center;">
+                    <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
+                    <div class="lo-grow">
+                        <div style="font-weight:700; font-size:17px;">Portabilidade Interna</div>
+                        <div style="color:var(--muted); font-size:13px;">Carteira Lello ocupada</div>
+                    </div>
+                    <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+            </a>
+            {% endif %}
+            {% if pode_portabilidade_externa %}
+            <a href="{{ url_for('main.portabilidade_externa') }}" class="lo-card" style="text-decoration:none; color:inherit; padding:18px; gap:12px;">
+                <div class="lo-row" style="padding:0; align-items:center;">
+                    <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
+                    <div class="lo-grow">
+                        <div style="font-weight:700; font-size:17px;">Portabilidade Externa</div>
+                        <div style="color:var(--muted); font-size:13px;">Outras imobiliárias</div>
+                    </div>
+                    <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+            </a>
+            {% endif %}
+            <div class="lo-card" style="padding:18px; gap:12px; opacity:.7;">
+                <div class="lo-row" style="padding:0; align-items:center;">
+                    <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+                    <div class="lo-grow">
+                        <div style="font-weight:700; font-size:17px;">Minha carteira <span class="lo-pill lo-pill-neutral" style="margin-left:6px;">Em breve</span></div>
+                        <div style="color:var(--muted); font-size:13px;">Imóveis em um só lugar</div>
+                    </div>
+                </div>
             </div>
-        </a>
-        {% endif %}
+            {% if pode_equipe %}
+            <a href="{{ url_for('main.usuarios') }}" class="lo-card" style="text-decoration:none; color:inherit; padding:18px; gap:12px;">
+                <div class="lo-row" style="padding:0; align-items:center;">
+                    <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                    <div class="lo-grow">
+                        <div style="font-weight:700; font-size:17px;">Gerenciar equipe</div>
+                        <div style="color:var(--muted); font-size:13px;">Cadastros e permissões</div>
+                    </div>
+                    <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+            </a>
+            <a href="{{ url_for('main.importar_dados') }}" class="lo-card" style="text-decoration:none; color:inherit; padding:18px; gap:12px;">
+                <div class="lo-row" style="padding:0; align-items:center;">
+                    <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+                    <div class="lo-grow">
+                        <div style="font-weight:700; font-size:17px;">Importar dados</div>
+                        <div style="color:var(--muted); font-size:13px;">Atualização em massa</div>
+                    </div>
+                    <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+            </a>
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}
