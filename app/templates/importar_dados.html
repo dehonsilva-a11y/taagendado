@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}Importador Dinâmico · Lello{% endblock %}
+{% block page_title %}Importador de Planilhas{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8 col-xl-6">
+        <div class="surface surface-pad mb-4 shadow-sm border-0">
+            <div class="surface-head border-bottom pb-3 mb-4">
+                <h2 class="mb-0 text-dark"><i class="bi bi-file-earmark-spreadsheet text-success me-2"></i> Importar Excel para o Firebase</h2>
+            </div>
+
+            <form method="POST" action="{{ url_for('main.importar_dados') }}" enctype="multipart/form-data" id="formImportacao" data-once>
+                
+                <!-- Passo 1: Selecionar o Arquivo -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-muted" for="arquivoExcel">1. Escolha o arquivo Excel (.xlsx)</label>
+                    <input type="file" id="arquivoExcel" name="arquivo_excel" class="form-control form-control-lg shadow-sm" accept=".xlsx, .xls" required>
+                    <div class="form-text">As colunas da planilha vão virar os campos do banco de dados automaticamente.</div>
+                </div>
+
+                <!-- Passo 2: Selecionar o Destino -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-muted">2. Para qual tabela (Coleção) enviar?</label>
+                    
+                    <div class="card bg-light border-0 shadow-sm p-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="colecao_destino" id="destinoExistente" value="" checked onchange="toggleNovaColecao()">
+                            <label class="form-check-label fw-semibold" for="destinoExistente">
+                                Usar tabela existente
+                            </label>
+                        </div>
+                        <select class="form-select shadow-sm mb-3" id="selectColecao" name="colecao_destino" onchange="document.getElementById('destinoExistente').value = this.value; document.getElementById('destinoExistente').checked = true;">
+                            <option value="" disabled selected>Selecione uma coleção do Firebase...</option>
+                            {% for col in colecoes %}
+                                <option value="{{ col }}">{{ col }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <hr class="my-2 border-secondary opacity-25">
+
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="colecao_destino" id="destinoNovo" value="nova" onchange="toggleNovaColecao()">
+                            <label class="form-check-label fw-semibold" for="destinoNovo">
+                                Criar uma NOVA tabela
+                            </label>
+                        </div>
+                        <input type="text" id="inputNovaColecao" name="nova_colecao" class="form-control shadow-sm mt-2" placeholder="Digite o nome da nova coleção (ex: leads_campanha_2026)" disabled>
+                    </div>
+                </div>
+
+                <!-- Passo 3: Coluna de ID (Prevenção de Duplicidade) -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-muted" for="colunaId">3. Coluna de ID Único (Opcional, mas recomendado)</label>
+                    <input type="text" id="colunaId" name="coluna_id" class="form-control form-control-lg shadow-sm" placeholder="Ex: CPF, Codigo_Imovel, Email">
+                    <div class="form-text text-warning fw-semibold">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Digite o nome exato da coluna na planilha. Se a linha já existir no banco com esse ID, ela não será duplicada (apenas atualizada).
+                    </div>
+                </div>
+
+                <!-- Botão de Envio -->
+                <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow-sm" id="btnEnviar">
+                    <i class="bi bi-cloud-arrow-up me-2"></i> Iniciar Importação
+                </button>
+            </form>
+        </div>
+
+        <div class="alert alert-info shadow-sm border-0 small">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <strong>Como funciona:</strong> Cada linha da sua planilha vai gerar um novo documento no Firebase. O cabeçalho da planilha ditará o nome dos campos (ex: Se a coluna chama "Telefone", no Firebase criará o campo "Telefone").
+        </div>
+    </div>
+</div>
+
+<script>
+    // Controla o radio button para liberar a digitação de nova tabela
+    function toggleNovaColecao() {
+        const checkNovo = document.getElementById('destinoNovo').checked;
+        const inputNova = document.getElementById('inputNovaColecao');
+        const selectExistente = document.getElementById('selectColecao');
+
+        if (checkNovo) {
+            inputNova.disabled = false;
+            inputNova.required = true;
+            selectExistente.value = "";
+        } else {
+            inputNova.disabled = true;
+            inputNova.required = false;
+            inputNova.value = "";
+        }
+    }
+
+    // Feedback visual ao enviar (Travar botão para evitar duplo clique e mostrar loading)
+    document.getElementById('formImportacao').addEventListener('submit', function() {
+        const btn = document.getElementById('btnEnviar');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Processando planilha...';
+        btn.classList.add('disabled');
+    });
+</script>
+{% endblock %}

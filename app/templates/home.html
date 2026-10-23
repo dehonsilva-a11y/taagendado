@@ -98,5 +98,17 @@
         </a>
     </div>
     {% endif %}
+    {% if pode_equipe %}
+    <div class="col-12 col-md-6 col-xl-4">
+        <a href="{{ url_for('main.importar_dados') }}" class="shortcut">
+            <span class="ico"><i class="bi bi-people"></i></span>
+            <span>
+                <h3>Importar Dados</h3>
+                <p>Importe dados de forma massiva.</p>
+            </span>
+            <i class="bi bi-chevron-right go"></i>
+        </a>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

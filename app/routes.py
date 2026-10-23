@@ -1,6 +1,9 @@
 import time
 import csv
 import io
+import re
+import pandas as pd
+import calendar
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app import db, MEMORIA_CACHE
@@ -17,6 +20,7 @@ PAGINAS_SISTEMA = [
     {'id': 'permissoes', 'nome': 'Matriz de Acessos', 'icone': 'bi-shield-lock'},
     {'id': 'portabilidade_interna', 'nome': 'Portabilidade Interna', 'icone': 'bi-arrow-left-right'},
     {'id': 'portabilidade_externa', 'nome': 'Portabilidade Externa', 'icone': 'bi-box-arrow-up-right'},
+    {'id': 'importar_dados', 'nome': 'Importar Dados', 'icone': 'bi-box-arrow-up-right'},
     
 ]
 PERFIS_SISTEMA = ['Corretor', 'Agente de Visita', 'Gerente Filial', 'Gerente Geral', 'Admin']
@@ -123,6 +127,10 @@ def usuarios():
         email = request.form.get('email', '').strip().lower()
         nome = request.form.get('nome', '').strip()
         enviar_email = request.form.get('enviar_email') 
+        
+        # PEGA OS NOVOS CAMPOS
+        usuario_portal = request.form.get('usuario_portal', '').strip()
+        id_apple = request.form.get('id_apple', '').strip()
 
         # REGRAS DE GERÊNCIA (Trava segurança de cadastro)
         if perfil_logado in ['Gerente Filial', 'Gerente Geral']:
@@ -151,7 +159,8 @@ def usuarios():
 
         dados_usuario = {
             "nome": nome, "email": email, "filial": filial,
-            "perfil": perfil, "ativo": True, "nome_exibicao": nome
+            "perfil": perfil, "ativo": True, "nome_exibicao": nome,
+            "usuario_portal": usuario_portal, "id_apple": id_apple
         }
         user_ref.set(dados_usuario)
         
@@ -246,6 +255,9 @@ def editar_usuario():
     nome_exibicao = request.form.get('nome_exibicao', '').strip()
     ativo = request.form.get('ativo') == 'true'
     foto = request.form.get('foto', '').strip()
+    # PEGA OS NOVOS CAMPOS
+    usuario_portal = request.form.get('usuario_portal', '').strip()
+    id_apple = request.form.get('id_apple', '').strip()
 
     is_self = (email_original == email_logado)
 
@@ -299,7 +311,8 @@ def editar_usuario():
             dados.update({
                 "nome": nome, "nome_exibicao": nome_exibicao, 
                 "email": novo_email, "filial": filial, 
-                "perfil": perfil, "ativo": ativo, "foto": foto
+                "perfil": perfil, "ativo": ativo, "foto": foto,
+                "usuario_portal": usuario_portal, "id_apple": id_apple
             })
             db.collection("usuarios").document(novo_email).set(dados)
             user_ref.delete()
@@ -307,7 +320,8 @@ def editar_usuario():
             user_ref.update({
                 "nome": nome, "nome_exibicao": nome_exibicao, 
                 "filial": filial, "perfil": perfil, 
-                "ativo": ativo, "foto": foto
+                "ativo": ativo, "foto": foto,
+                "usuario_portal": usuario_portal, "id_apple": id_apple
             })
             
         registrar_log_auditoria(f"EDITOU os dados do colaborador {novo_email}")
@@ -352,31 +366,82 @@ def excluir_usuario():
 
 @main_bp.route('/visitas')
 def visitas():
-    agora = time.time()
-    if 'lista_visitas' in MEMORIA_CACHE and (agora - MEMORIA_CACHE['lista_visitas']['tempo']) < 300:
-        grupos = MEMORIA_CACHE['lista_visitas']['dados']
-    else:
-        docs = db.collection('db_visita_locacao').stream()
-        grupos = {"PENDENTE AUT.": [], "A FAZER": [], "CANCELADAS": [], "REALIZADAS": []}
+    # 1. Pega os dados do usuário logado para descobrir o usuario_portal
+    email_usuario = session.get('user_email')
+    user_doc = db.collection('usuarios').document(email_usuario).get()
+    usuario_portal = ""
+    if user_doc.exists:
+        usuario_portal = user_doc.to_dict().get('usuario_portal', '').strip()
+
+    # 2. Lógica de Datas (Padrão: Mês Anterior)
+    hoje = datetime.now()
+    mes_padrao = hoje.month - 1 if hoje.month > 1 else 12
+    ano_padrao = hoje.year if hoje.month > 1 else hoje.year - 1
+    
+    mes_selecionado = int(request.args.get('mes', mes_padrao))
+    ano_selecionado = int(request.args.get('ano', ano_padrao))
+    
+    ultimo_dia = calendar.monthrange(ano_selecionado, mes_selecionado)[1]
+    periodo_str = f"Período 01 a {ultimo_dia:02d}/{mes_selecionado:02d}/{ano_selecionado}"
+    
+    mes_pagamento = mes_selecionado + 1 if mes_selecionado < 12 else 1
+    ano_pagamento = ano_selecionado if mes_selecionado < 12 else ano_selecionado + 1
+    data_pagamento_str = f"10/{mes_pagamento:02d}/{ano_pagamento}"
+
+    # 3. Lógica de Cálculo de Valores
+    contratos_unicos = set()
+    valor_total_fechado = 0.0
+    
+    if usuario_portal:
+        docs = db.collection('dt_ctrl_pagamento_visita').where('Colaborador', '==', usuario_portal).stream()
+        
+        str_busca_br = f"/{mes_selecionado:02d}/{ano_selecionado}"
+        str_busca_us = f"{ano_selecionado}-{mes_selecionado:02d}"
+        
         for doc in docs:
-            imovel_raw = doc.to_dict() or {}
-            if not imovel_raw: continue
-            status_excel = str(imovel_raw.get('Dados_da_visita_Status', ''))
-            status = 'A FAZER' if status_excel == 'Fazer' else 'CANCELADAS' if status_excel == 'Cancelada' else 'REALIZADAS' if status_excel == 'Realizada' else 'PENDENTE AUT.'
-            valor_raw = imovel_raw.get('Dados_do_Imovel_Valor', 0)
-            valor_int = float(str(valor_raw).replace('.', '').replace(',', '.')) if isinstance(valor_raw, str) else float(valor_raw) if valor_raw else 0.0
+            dados = doc.to_dict() or {}
+            data_referencia = str(dados.get('Negocio_Data_status', ''))
             
-            grupos[status].append({
-                "id_imovel": str(imovel_raw.get('Dados_do_Imovel_Codigo', 'S/N')),
-                "endereco": str(imovel_raw.get('Dados_do_Imovel_Bairro', 'Imóvel')),
-                "numero": "S/N", "bairro": str(imovel_raw.get('Dados_do_Imovel_Bairro.1', 'Não Informado')),
-                "cidade": "São Paulo", "uf": "SP", "cep": "00000-000",
-                "valor_int_str": f'R$ {valor_int:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
-                "tipo_adm": "COM ADM", "percentual": 6.0,
-                "valor_comissao_str": f'R$ {valor_int * 0.06:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
-            })
-        MEMORIA_CACHE['lista_visitas'] = {'dados': grupos, 'tempo': agora}
-    return render_template('visitas.html', grupos=grupos)
+            if str_busca_br in data_referencia or str_busca_us in data_referencia:
+                
+                contrato = str(dados.get('Negocio_Contrato', '')).strip()
+                
+                # A TRAVA DE DUPLICIDADE: Se o contrato já foi computado antes, pula pro próximo registro!
+                if contrato and contrato in contratos_unicos:
+                    continue
+                
+                # Se for um contrato novo, adiciona na lista de únicos
+                if contrato and contrato.lower() not in ['nan', 'none']:
+                    contratos_unicos.add(contrato)
+                
+                # Faz o tratamento do valor e soma (agora apenas 1 vez por contrato)
+                valor_raw = str(dados.get('Negocio_Valor_fechado', '0'))
+                try:
+                    valor_raw = valor_raw.replace('R$', '').strip()
+                    if '.' in valor_raw and ',' in valor_raw:
+                        valor_clean = float(valor_raw.replace('.', '').replace(',', '.'))
+                    elif ',' in valor_raw:
+                        valor_clean = float(valor_raw.replace(',', '.'))
+                    else:
+                        valor_clean = float(valor_raw)
+                except:
+                    valor_clean = 0.0
+                    
+                valor_total_fechado += valor_clean
+
+    # 4. Aplica a comissão de 20%
+    valor_ganho = valor_total_fechado * 0.20
+    
+    # Formatação visual final para reais
+    valor_ganho_formatado = f"{valor_ganho:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+
+    return render_template('visitas.html', 
+                           mes_selecionado=mes_selecionado, 
+                           ano_selecionado=ano_selecionado,
+                           periodo_str=periodo_str,
+                           data_pagamento_str=data_pagamento_str,
+                           total_contratos=len(contratos_unicos),
+                           valor_ganho_formatado=valor_ganho_formatado)
 
 @main_bp.route('/simular_acesso', methods=['POST'])
 def simular_acesso():
@@ -588,3 +653,90 @@ def importar_usuarios():
         flash(f'Erro ao processar o arquivo CSV. Verifique se ele está no formato correto. Detalhe: {str(e)}', 'danger')
         
     return redirect(url_for('main.usuarios'))
+
+@main_bp.route('/importar_dados', methods=['GET', 'POST'])
+def importar_dados():
+    # Apenas Admin deve ter permissão para criar coleções e fazer cargas em massa
+    if session.get('user_perfil') != 'Admin':
+        flash('Acesso negado. Apenas Administradores podem importar dados.', 'floating_danger')
+        return redirect(url_for('main.home'))
+
+    if request.method == 'POST':
+        arquivo = request.files.get('arquivo_excel')
+        if not arquivo or arquivo.filename == '':
+            flash('Nenhum arquivo selecionado.', 'floating_danger')
+            return redirect(url_for('main.importar_dados'))
+
+        # Lógica de seleção da coleção (tabela)
+        colecao_destino = request.form.get('colecao_destino')
+        nova_colecao = request.form.get('nova_colecao','').strip()
+
+        colecao_final = nova_colecao if colecao_destino == 'nova' else colecao_destino
+
+        if not colecao_final:
+            flash('Você precisa selecionar ou digitar o nome de uma tabela destino.', 'floating_danger')
+            return redirect(url_for('main.importar_dados'))
+
+        try:
+            df = pd.read_excel(arquivo)
+            df = df.fillna('')
+            registros = df.to_dict(orient='records')
+            
+            coluna_id = request.form.get('coluna_id', '').strip()
+            
+            # 1. Busca todos os IDs que JÁ EXISTEM na tabela destino
+            ids_existentes = set()
+            if coluna_id:
+                # O .select([]) traz APENAS o ID dos documentos, sem os dados, deixando a consulta super rápida
+                docs = db.collection(colecao_final).select([]).stream()
+                for doc in docs:
+                    ids_existentes.add(doc.id)
+
+            batch = db.batch()
+            contador_novos = 0
+            contador_ignorados = 0
+            
+            for reg in registros:
+                if coluna_id and coluna_id in reg:
+                    doc_id = str(reg[coluna_id]).strip()
+                    
+                    if not doc_id:
+                        continue
+                        
+                    # 2. A MÁGICA: Se o ID da planilha já existir no banco, ele pula para a próxima linha
+                    if doc_id in ids_existentes:
+                        contador_ignorados += 1
+                        continue
+                        
+                    doc_ref = db.collection(colecao_final).document(doc_id)
+                else:
+                    # Se não informou coluna de ID, gera um ID aleatório
+                    doc_ref = db.collection(colecao_final).document()
+                
+                # 3. Salva apenas os registros que passaram no filtro
+                batch.set(doc_ref, reg)
+                contador_novos += 1
+                
+                if contador_novos > 0 and contador_novos % 500 == 0:
+                    batch.commit()
+                    batch = db.batch()
+            
+            # Comita o restante
+            if contador_novos % 500 != 0:
+                batch.commit()
+
+            registrar_log_auditoria(f"IMPORTOU {contador_novos} novos registros para '{colecao_final}' (Ignorou {contador_ignorados} repetidos)")
+            
+            if contador_ignorados > 0:
+                flash(f'Sucesso! {contador_novos} novos cadastros importados. {contador_ignorados} repetidos foram ignorados.', 'floating_info')
+            else:
+                flash(f'Sucesso! {contador_novos} linhas foram importadas na tabela "{colecao_final}".', 'floating_success')
+
+        except Exception as e:
+            flash(f'Erro ao processar o arquivo Excel: {str(e)}', 'floating_danger')
+            
+        return redirect(url_for('main.importar_dados'))
+
+    # Método GET: Pega a lista de tabelas existentes para popular o dropdown
+    colecoes_firebase = [colecao.id for colecao in db.collections()]
+    return render_template('importar_dados.html', colecoes=colecoes_firebase)

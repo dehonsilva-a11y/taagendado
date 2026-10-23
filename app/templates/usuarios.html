@@ -40,6 +40,19 @@
                         <label class="form-label small fw-bold text-muted" for="novoEmail">E-mail corporativo</label>
                         <input type="email" id="novoEmail" name="email" class="form-control shadow-sm" required placeholder="joao.silva@lello.com.br">
                     </div>
+                    
+                    <!-- NOVOS CAMPOS AQUI (CADASTRO) -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-bold text-muted" for="novoUsuarioPortal">Usuário Portal</label>
+                            <input type="text" id="novoUsuarioPortal" name="usuario_portal" class="form-control shadow-sm" placeholder="Para cruzar dados">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-bold text-muted" for="novoIdApple">ID da Apple</label>
+                            <input type="text" id="novoIdApple" name="id_apple" class="form-control shadow-sm" placeholder="Conta Apple">
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted" for="novaFilial">Filial / equipe</label>
                         <select id="novaFilial" name="filial" class="form-select shadow-sm" required>
@@ -102,6 +115,7 @@
             <div class="collapse mb-4 {% if current_filters.search or current_filters.filial or current_filters.perfil or current_filters.status != 'ativo' %}show{% endif %}" id="painelFiltros">
                 <div class="card card-body bg-light border-0 shadow-sm">
                     <form method="GET" action="{{ url_for('main.usuarios') }}" class="row g-3 align-items-end">
+                        <!-- Campos de filtro omitidos por brevidade visual (se mantêm iguais) -->
                         <div class="col-md-4">
                             <label class="form-label small fw-bold text-muted" for="fBusca">Pesquisar</label>
                             <input type="text" id="fBusca" name="search" class="form-control form-control-sm shadow-sm" placeholder="Nome ou e-mail..." value="{{ current_filters.search }}" onchange="this.form.submit()">
@@ -195,7 +209,7 @@
                             <!-- Ações -->
                             <td class="text-center">
                                 <div class="d-flex justify-content-center align-items-center gap-2">
-                                    <!-- Botão de Editar com data attributes para o JS -->
+                                    <!-- Botão de Editar com NOVOS data attributes para o JS -->
                                     <button class="btn btn-sm btn-outline-primary border-0" 
                                             title="Editar Colaborador" aria-label="Editar"
                                             data-email="{{ u.email }}" 
@@ -205,6 +219,8 @@
                                             data-perfil="{{ u.perfil }}" 
                                             data-ativo="{{ 'true' if u.ativo else 'false' }}"
                                             data-foto="{{ u.foto if u.foto and u.foto != 'None' else '' }}"
+                                            data-usuarioportal="{{ u.usuario_portal or '' }}"
+                                            data-idapple="{{ u.id_apple or '' }}"
                                             onclick="abrirModalEditar(this)">
                                         <i class="bi bi-pencil-square fs-6"></i>
                                     </button>
@@ -304,6 +320,18 @@
                 </div>
             </div>
 
+            <!-- NOVOS CAMPOS AQUI (EDICAO) -->
+            <div class="row g-3 mb-3">
+                <div class="col-sm-6">
+                    <label class="form-label small fw-bold text-muted" for="editUsuarioPortal">Usuário Portal</label>
+                    <input type="text" name="usuario_portal" id="editUsuarioPortal" class="form-control shadow-sm" placeholder="Para cruzar dados">
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label small fw-bold text-muted" for="editIdApple">ID da Apple</label>
+                    <input type="text" name="id_apple" id="editIdApple" class="form-control shadow-sm" placeholder="Conta Apple">
+                </div>
+            </div>
+
             <div class="mb-3">
                 <label class="form-label small fw-bold text-muted" for="editFilial">Filial / equipe</label>
                 <select name="filial" id="editFilial" class="form-select shadow-sm" required {% if not eh_admin %}disabled{% endif %}>
@@ -362,6 +390,7 @@
 <div class="modal fade" id="modalImportar" tabindex="-1" aria-labelledby="tituloImportar" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
+      <!-- (Omitido por brevidade visual: modal import continua intacto) -->
       <div class="modal-header bg-light border-0">
         <h5 class="modal-title fw-bold text-dark" id="tituloImportar"><i class="bi bi-file-earmark-excel text-success me-2"></i> Importar Colaboradores</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
@@ -392,18 +421,15 @@
 
 <!-- Correção do JavaScript -->
 <script>
-// Pega as variáveis globais injetadas pelo Flask de forma segura
 const emailLogado = "{{ session.get('user_email', '') }}";
 const perfilLogado = "{{ session.get('user_perfil', '') }}";
 
-// Função para travar os campos
 function travar(el, travado) {
     el.style.pointerEvents = travado ? 'none' : 'auto';
     el.classList.toggle('bg-light', travado);
     el.classList.toggle('text-muted', travado);
 }
 
-// Lida com a exibição da foto
 function mostrarFoto(src) {
     const preview = document.getElementById('previewFoto');
     const placeholder = document.getElementById('placeholderFoto');
@@ -421,7 +447,6 @@ function mostrarFoto(src) {
     }
 }
 
-// Função principal de abrir o modal chamada pelos botões "Editar"
 function abrirModalEditar(btn) {
     const d = btn.dataset;
     document.getElementById('editEmailOriginal').value = d.email;
@@ -431,6 +456,11 @@ function abrirModalEditar(btn) {
     
     document.getElementById('editNome').value = d.nome;
     document.getElementById('editNomeExibicao').value = d.nomeexibicao || d.nome;
+    
+    // PREENCHE OS NOVOS CAMPOS NO MODAL
+    document.getElementById('editUsuarioPortal').value = d.usuarioportal || '';
+    document.getElementById('editIdApple').value = d.idapple || '';
+    
     document.getElementById('editFilial').value = d.filial;
     
     const selectAtivo = document.getElementById('editAtivo');
@@ -448,7 +478,6 @@ function abrirModalEditar(btn) {
     }
     selectPerfil.value = d.perfil;
 
-    // Travas se o usuário estiver editando a si mesmo e não for admin
     const trava = (d.email.toLowerCase() === emailLogado.toLowerCase()) && (perfilLogado !== 'Admin');
     inputEmail.readOnly = trava;
     inputEmail.classList.toggle('bg-light', trava);
@@ -463,7 +492,6 @@ function abrirModalEditar(btn) {
     myModal.show();
 }
 
-// Redimensionamento de Foto
 document.getElementById('inputFileFoto').addEventListener('change', function (event) {
     const file = event.target.files[0];
     if (!file) return;

@@ -1,5 +1,7 @@
 import os
 import time
+import calendar
+from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify
 from firebase_admin import auth as firebase_auth
 from app import db, MEMORIA_CACHE
@@ -119,3 +121,4 @@ def bloquear_rotas():
             if not MEMORIA_CACHE[email].get('ativo'):
                 session.clear()
                 return render_template('bloqueado.html')
+

@@ -1,78 +1,92 @@
 {% extends 'base.html' %}
-{% block title %}Visitas · Lello{% endblock %}
-{% block page_title %}Gestão de visitas{% endblock %}
-
-
+{% block title %}Seus Ganhos · Lello{% endblock %}
+{% block page_title %}Seus Ganhos{% endblock %}
 
 {% block content %}
-{# Define a cor de cada grupo pelo nome do status #}
-{% macro tom(status) -%}
-    {%- set s = status|lower -%}
-    {%- if 'realiz' in s or 'conclu' in s or 'fatur' in s or 'pago' in s -%}ok
-    {%- elif 'cancel' in s or 'recus' in s or 'perd' in s -%}bad
-    {%- elif 'pend' in s or 'fazer' in s or 'agend' in s or 'aguard' in s or 'andamento' in s -%}warn
-    {%- else -%}muted{%- endif -%}
-{%- endmacro %}
-{% set ns = namespace(total=0) %}
-{% for status, imoveis in grupos.items() %}{% set ns.total = ns.total + imoveis|length %}{% endfor %}
-
-{% if grupos|length == 0 %}
-    <div class="surface empty">
-        <div class="ico"><i class="bi bi-calendar-x"></i></div>
-        <h2>Nenhuma visita por aqui ainda</h2>
-        <p>Quando houver visitas registradas, elas aparecem agrupadas por status.</p>
+<div class="container-fluid" style="max-width: 900px;">
+    
+    <!-- Filtros de Mês e Ano -->
+    <div class="surface surface-pad mb-4 border-0 shadow-sm">
+        <form method="GET" action="{{ url_for('main.visitas') }}" class="row g-3">
+            <div class="col-md-6">
+                <label for="mesFiltro" class="form-label small fw-bold text-muted">Mês:</label>
+                <select id="mesFiltro" name="mes" class="form-select shadow-sm" onchange="this.form.submit()">
+                    {% for m, nome_mes in [(1,'Jan'), (2,'Fev'), (3,'Mar'), (4,'Abr'), (5,'Mai'), (6,'Jun'), (7,'Jul'), (8,'Ago'), (9,'Set'), (10,'Out'), (11,'Nov'), (12,'Dez')] %}
+                        <option value="{{ m }}" {% if mes_selecionado == m %}selected{% endif %}>{{ nome_mes }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="anoFiltro" class="form-label small fw-bold text-muted">Ano:</label>
+                <select id="anoFiltro" name="ano" class="form-select shadow-sm" onchange="this.form.submit()">
+                    {% for a in [2024, 2025, 2026] %}
+                        <option value="{{ a }}" {% if ano_selecionado == a %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
     </div>
-{% else %}
 
-<!-- Resumo: toque em um status para abrir o grupo -->
-<div class="stat-strip" aria-label="Resumo por status">
-    <div class="stat stat-total">
-        <span class="n">{{ ns.total }}</span>
-        <span class="l">Total de imóveis</span>
-    </div>
-    {% for status, imoveis in grupos.items() %}
-    <button type="button" class="stat" data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}" aria-controls="collapse-{{ loop.index }}">
-        <span class="n">{{ imoveis|length }}</span>
-        <span class="l"><span class="dot dot-{{ tom(status)|trim }}"></span>{{ status }}</span>
-    </button>
-    {% endfor %}
-</div>
-
-<div class="groups" id="accordionVisitas">
-    {% for status, imoveis in grupos.items() %}
-    <section class="group">
-        <h2 class="m-0" id="heading-{{ loop.index }}">
-            <button class="group-toggle {% if loop.index != 1 %}collapsed{% endif %}" type="button"
-                    data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}"
-                    aria-expanded="{{ 'true' if loop.index == 1 else 'false' }}" aria-controls="collapse-{{ loop.index }}">
-                <span class="dot dot-{{ tom(status)|trim }}"></span>
-                {{ status }}
-                <span class="chip chip-{{ tom(status)|trim }} count">{{ imoveis|length }}</span>
-                <i class="bi bi-chevron-down chev"></i>
-            </button>
-        </h2>
-        <div id="collapse-{{ loop.index }}" class="collapse {% if loop.index == 1 %}show{% endif %}" data-bs-parent="#accordionVisitas" aria-labelledby="heading-{{ loop.index }}">
-            {% if imoveis|length > 0 %}
-                <div class="vhead" aria-hidden="true">
-                    <span>Imóvel</span>
-                    <span>Endereço</span>
-                    <span>Valor interm.</span>
-                    <span>Comissão</span>
-                </div>
-                {% for imovel in imoveis %}
-                <article class="vrow">
-                    <div class="v-id">{{ imovel.id_imovel }}</div>
-                    <div class="v-com"><span class="cell-label">Comissão</span>{{ imovel.valor_comissao_str }}</div>
-                    <div class="v-end">{{ imovel.endereco }}, {{ imovel.bairro }}</div>
-                    <div class="v-val"><span class="cell-label">Valor interm.:</span> {{ imovel.valor_int_str }}</div>
-                </article>
-                {% endfor %}
-            {% else %}
-                <div class="empty-inline">Nenhum imóvel neste status.</div>
-            {% endif %}
+    <!-- Ganhos Totais -->
+    <div class="surface surface-pad mb-4 border-0 shadow-sm text-center">
+        <h5 class="fw-bold mb-3" style="color: #2da182;">GANHOS TOTAIS DO MÊS:</h5>
+        <div class="display-3 fw-bold mb-2" style="color: var(--lello-red);">{{ valor_ganho_formatado }}</div>
+        <p class="text-muted small mb-4">{{ periodo_str }}</p>
+        
+        <div class="d-inline-block bg-light px-4 py-2 rounded-2" style="border: 1px solid var(--line);">
+            <span class="small fw-semibold text-muted">Data do pagamento:</span>
+            <span class="small fw-bold" style="color: var(--lello-red);">{{ data_pagamento_str }}</span>
         </div>
-    </section>
-    {% endfor %}
+    </div>
+
+    <h4 class="fw-bold mb-3" style="color: var(--lello-red);">Detalhes dos ganhos:</h4>
+
+    <!-- Detalhes: Visitas (Zeradinho conforme pedido, se precisar somar algo aqui é só replicar a lógica do backend) -->
+    <div class="surface mb-3 border-0 shadow-sm overflow-hidden">
+        <div class="surface-head bg-light px-4 py-3 mb-0 border-bottom">
+            <h5 class="m-0 fw-bold text-dark d-flex align-items-center">
+                Visitas
+                <i class="bi bi-info-circle-fill text-danger ms-2" style="font-size: 1rem; cursor: pointer;" title="Detalhes sobre ganhos de visitas"></i>
+            </h5>
+        </div>
+        <div class="p-4">
+            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                <span class="text-muted fw-semibold">Visitas realizadas:</span>
+                <span class="fw-bold" style="color: var(--lello-red);">0</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="text-muted fw-semibold">Valor ganho:</span>
+                <span class="fw-bold" style="color: var(--lello-red);">R$ 0,00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalhes: Contratos -->
+    <div class="surface mb-3 border-0 shadow-sm overflow-hidden">
+        <div class="surface-head bg-light px-4 py-3 mb-0 border-bottom">
+            <h5 class="m-0 fw-bold text-dark d-flex align-items-center">
+                Contratos
+                <i class="bi bi-info-circle-fill text-danger ms-2" style="font-size: 1rem; cursor: pointer;" title="Detalhes sobre ganhos de contratos"></i>
+            </h5>
+        </div>
+        <div class="p-4">
+            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                <span class="text-muted fw-semibold">Contratos comissionados:</span>
+                <span class="fw-bold" style="color: var(--lello-red);">{{ total_contratos }}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="text-muted fw-semibold">Valor ganho:</span>
+                <span class="fw-bold" style="color: var(--lello-red);">R$ {{ valor_ganho_formatado }}</span>
+            </div>
+        </div>
+    </div>
+
 </div>
-{% endif %}
+
+<!-- Estilos complementares -->
+<style>
+    .surface {
+        border-radius: var(--r-md);
+    }
+</style>
 {% endblock %}
