@@ -1,114 +1,77 @@
 {% extends 'base.html' %}
-{% block title %}Indicações · Lello{% endblock %}
+{% block title %}Indicações · Portal Lello{% endblock %}
 {% block page_title %}Indicações{% endblock %}
+{% block page_subtitle %}<p class="lello-section-subtitle">Campanha de portabilidade com comissões atrativas</p>{% endblock %}
 
 {% block content %}
-<div class="lo-stack" style="padding: var(--space-5) var(--space-4); max-width: 1040px; margin:0 auto; gap: var(--space-5);">
-    <div class="lo-card" style="padding: clamp(24px,5vw,56px); position:relative; overflow:hidden;">
-        <div style="position:absolute; inset:0; background: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%); pointer-events:none;"></div>
-        <div style="position:relative; display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: clamp(24px,6vw,64px); align-items:center;">
-            <div>
-                <div class="lo-label">Campanha Portabilidade</div>
-                <h1 style="margin:8px 0 0; font-size: clamp(30px,6vw,56px); font-weight:800; line-height:1.02; letter-spacing:-.03em;">Ganhe uma <span style="color:var(--accent);">grana extra</span> indicando imóveis ocupados para portabilidade</h1>
-                <p style="margin: var(--space-4) 0 0; color:var(--muted); font-size:clamp(16px,2vw,18px); max-width:560px;">Indique imóveis ocupados para migrar a administração de locação para a Lello e transforme indicações em comissões.</p>
-                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top: var(--space-5);">
-                    <a href="#indicar" onclick="rolarParaIndicacao(event)" class="lo-btn lo-btn-fill">Indicar agora</a>
-                    <a href="#como-funciona" class="lo-btn">Como funciona</a>
-                </div>
+<div class="lello-grid">
+    <article class="lello-card lello-card-hero">
+        <div class="lello-card-header">
+            <div class="lello-card-heading">
+                <span class="lello-kicker">Campanha</span>
+                <h2 class="lello-card-title">Ganhe uma grana extra indicando imóveis ocupados</h2>
+                <p class="lello-card-subtitle">Indique imóveis ocupados para migração da administração para a Lello e seja remunerado por contrato assinado.</p>
             </div>
-            <div style="text-align:center;">
-                <img src="{{ url_for('static', filename='img/ativo_23_100.png') }}" alt="Campanha de Portabilidade Lello" style="max-width:100%; height:auto; filter: drop-shadow(0 40px 80px rgba(92,5,33,0.16));">
+            <div class="lello-card-actions">
+                <a href="#indicar" class="lello-btn lello-btn-primary">Indicar agora</a>
+                <a href="#como-funciona" class="lello-btn lello-btn-ghost">Como funciona</a>
             </div>
+        </div>
+    </article>
+
+    <div class="lello-section-header" id="como-funciona">
+        <div class="lello-section-title-group">
+            <span class="lello-kicker">Remuneração</span>
+            <h3 class="lello-section-title">Ganhe 2 taxas de administração sobre o aluguel líquido</h3>
+            <p class="lello-section-subtitle">*Por contrato assinado</p>
         </div>
     </div>
 
-    <div id="como-funciona" style="scroll-margin-top: 90px;">
-        <div class="lo-row" style="padding:0 var(--space-1); align-items:baseline;">
-            <div class="lo-grow">
-                <div class="lo-label">Remuneração</div>
-                <div style="font-size:24px; font-weight:800; margin-top:4px;">Ganhe 2 taxas de administração sobre o aluguel líquido</div>
-                <div style="color:var(--muted); margin-top:6px;">*Por contrato assinado</div>
-            </div>
-        </div>
-        <div class="lo-card" style="margin-top: var(--space-3); padding: clamp(20px,4vw,40px); text-align:center; gap: var(--space-4);">
-            <h3 style="margin:0; font-size: clamp(18px,2.6vw,28px); font-weight:800;">Como funciona na prática</h3>
-            <img src="{{ url_for('static', filename='img/ativo_4_100.png') }}" alt="Cálculo da remuneração" style="max-width:100%; height:auto;">
-            <p style="margin:0 auto; color:var(--muted); max-width:760px;">A remuneração da indicação com sucesso será efetuada todo dia 15 de cada mês, mediante ao pagamento da 1ª taxa de administração no mês antecedente.</p>
-            <h3 style="margin:0; font-size: clamp(22px,3vw,36px); font-weight:800;">Você só tem a ganhar!</h3>
-            <img src="{{ url_for('static', filename='img/ativo_33_100.png') }}" alt="Premiações" style="max-width:100%; height:auto; border-radius: var(--radius-card);">
-            <p style="margin:0; color:var(--muted); font-size:13px;"><b>ATENÇÃO:</b> O critério para desempate das premiações será o maior valor de taxa de administração do período.</p>
+    <div class="lello-panel">
+        <div class="lello-panel-body" style="align-items:center; text-align:center;">
+            <img src="{{ url_for('static', filename='img/ativo_4_100.png') }}" alt="Cálculo da remuneração" style="max-width:980px; width:100%;">
+            <p class="lello-section-subtitle" style="max-width:760px;">A remuneração é paga todo dia 15 do mês seguinte ao pagamento da 1ª taxa de administração.</p>
+            <img src="{{ url_for('static', filename='img/ativo_33_100.png') }}" alt="Premiações" style="max-width:980px; width:100%; border-radius: var(--lello-radius-lg);">
+            <p class="lello-section-subtitle">ATENÇÃO: Em caso de empate, prevalece o maior valor de taxa de administração do período.</p>
         </div>
     </div>
 
-    <div class="lo-card" style="padding: clamp(20px,4vw,48px);">
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: clamp(20px,6vw,56px); align-items:center;">
-            <div style="text-align:center;">
-                <img src="{{ url_for('static', filename='img/ativo_25_100.png') }}" alt="Participe da campanha" style="max-width:100%; height:auto;">
-            </div>
-            <div>
-                <div class="lo-label">Quem pode participar</div>
-                <h2 style="margin:8px 0 0; font-size: clamp(26px,4vw,40px); font-weight:800; line-height:1.05;">Esses prêmios podem ser seus! <span style="color:var(--accent);">Corra e indique!</span></h2>
-                <p style="margin: var(--space-4) 0 0; color:var(--muted);"><b>Colaboradores corporativos, captadores, executivos comerciais, Inside Sales, corretores, vendas, gerentes e colaboradores Lello Condomínios</b> estão habilitados para participar.</p>
-                <p style="margin: var(--space-3) 0 0;"><b>Quem não participa:</b> Telefonistas, recepcionistas e E1.</p>
-                <div style="margin-top: var(--space-5);">
-                    <a href="#indicar" class="lo-btn lo-btn-fill">Indicar imóvel</a>
-                </div>
-            </div>
+    <div class="lello-section-header" id="indicar">
+        <div class="lello-section-title-group">
+            <span class="lello-kicker">Indicação</span>
+            <h3 class="lello-section-title">Escolha o canal ideal</h3>
+            <p class="lello-section-subtitle">Formulário próprio ou atendimento via WhatsApp</p>
         </div>
     </div>
 
-    <div id="indicar" style="scroll-margin-top: 90px;">
-        <div class="lo-row" style="padding:0 var(--space-1); align-items:baseline;">
-            <div class="lo-grow">
-                <div class="lo-label">Indicação</div>
-                <div style="font-size:24px; font-weight:800; margin-top:4px;">Canais para indicar</div>
+    <div class="lello-shortcuts">
+        <a href="{{ url_for('main.portabilidade_interna') }}" class="lello-shortcut">
+            <div class="lello-shortcut-icon"><i class="bi bi-arrow-left-right"></i></div>
+            <div class="lello-shortcut-content">
+                <div class="lello-shortcut-title">Portabilidade Interna</div>
+                <div class="lello-shortcut-text">Transferência na carteira interna Lello</div>
             </div>
-        </div>
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:12px; margin-top: var(--space-3);">
-            <a href="{{ url_for('main.portabilidade_interna') }}" class="lo-card" style="text-decoration:none; color:inherit; padding:20px; gap:12px;">
-                <div class="lo-row" style="padding:0; align-items:center;">
-                    <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
-                    <div class="lo-grow">
-                        <div style="font-weight:700; font-size:17px;">Portabilidade Interna</div>
-                        <div style="color:var(--muted); font-size:13px;">Transferência de administração de carteira interna ocupada</div>
-                    </div>
-                    <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                </div>
-            </a>
-            <a href="{{ url_for('main.portabilidade_externa') }}" class="lo-card" style="text-decoration:none; color:inherit; padding:20px; gap:12px;">
-                <div class="lo-row" style="padding:0; align-items:center;">
-                    <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
-                    <div class="lo-grow">
-                        <div style="font-weight:700; font-size:17px;">Portabilidade Externa</div>
-                        <div style="color:var(--muted); font-size:13px;">Traga imóveis de outras imobiliárias</div>
-                    </div>
-                    <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                </div>
-            </a>
-        </div>
-        {% set mensagem_wa = "Olá, eu sou " ~ session.get('user_nome', 'Corretor') ~ ", corretor da filial " ~ session.get('user_filial', 'Matriz') ~ ", e eu gostaria de fazer uma indicação." %}
-        <div class="lo-card" style="margin-top: var(--space-4); padding: clamp(18px,4vw,28px); display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px;">
-            <div class="lo-label">Atendimento direto</div>
-            <div style="font-size:20px; font-weight:800;">Indicar via WhatsApp</div>
-            <p style="margin:0; color:var(--muted);">Fale com a equipe de Portabilidade para dar andamento à sua indicação.</p>
-            <a href="https://wa.me/5511910163462?text={{ mensagem_wa | urlencode }}" target="_blank" rel="noopener noreferrer" class="lo-btn lo-btn-fill" style="background:#25D366; border-color:#25D366; color:#fff;">
-                <svg class="lo-ico" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-                Indicar via WhatsApp (+55 11 91016-3462)
-            </a>
-        </div>
+            <i class="bi bi-chevron-right lello-shortcut-arrow"></i>
+        </a>
+        <a href="{{ url_for('main.portabilidade_externa') }}" class="lello-shortcut">
+            <div class="lello-shortcut-icon"><i class="bi bi-box-arrow-up-right"></i></div>
+            <div class="lello-shortcut-content">
+                <div class="lello-shortcut-title">Portabilidade Externa</div>
+                <div class="lello-shortcut-text">Imóveis de outras imobiliárias</div>
+            </div>
+            <i class="bi bi-chevron-right lello-shortcut-arrow"></i>
+        </a>
     </div>
 
-    <div style="text-align:center; padding: var(--space-5) 0; border-top:1px solid var(--line);">
-        <div style="font-size:18px; font-weight:700;">Ficou com alguma dúvida?</div>
-        <p style="margin:6px 0 0; color:var(--muted);">Entre em contato pelo e-mail: <a href="mailto:portabilidade.locacao@lello.com.br" style="color:var(--accent); font-weight:600; text-decoration:none;">portabilidade.locacao@lello.com.br</a></p>
-    </div>
+    {% set mensagem_wa = "Olá, eu sou " ~ session.get('user_nome', 'Corretor') ~ ", corretor da filial " ~ session.get('user_filial', 'Matriz') ~ ", e eu gostaria de fazer uma indicação." %}
+    <article class="lello-card lello-card-body" style="text-align:center; align-items:center;">
+        <span class="lello-kicker">Atendimento direto</span>
+        <h3 class="lello-section-title">Indicar via WhatsApp</h3>
+        <p class="lello-section-subtitle">Fale com a equipe de Portabilidade para iniciar sua indicação</p>
+        <a href="https://wa.me/5511910163462?text={{ mensagem_wa | urlencode }}" target="_blank" rel="noopener noreferrer" class="lello-btn lello-btn-primary" style="background:linear-gradient(90deg,#25D366,#1ebe57);">
+            <i class="bi bi-whatsapp"></i>
+            (+55 11 91016-3462)
+        </a>
+    </article>
 </div>
-
-<script>
-function rolarParaIndicacao(event) {
-    if (event) event.preventDefault();
-    const destino = document.getElementById('indicar');
-    if (destino) destino.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-</script>
 {% endblock %}
