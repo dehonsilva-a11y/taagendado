@@ -3,78 +3,79 @@
 {% block page_title %}Meu perfil{% endblock %}
 
 {% block content %}
-<form method="POST" action="{{ url_for('main.perfil') }}" class="mx-auto" style="max-width: 860px;">
-
+<form method="POST" action="{{ url_for('main.perfil') }}" class="lo-stack" style="padding: var(--space-4); max-width: 860px; margin:0 auto;">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show alert-temporario" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            <div class="lo-callout">
+                <div class="ic"><svg class="lo-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+                <div>{{ message }}</div>
             </div>
         {% endfor %}
     {% endwith %}
 
-    <!-- Capa com foto -->
-    <div class="profile-cover"></div>
-    <div class="surface profile-card mb-4">
-        <div class="avatar avatar-lg mx-auto">
+    <div class="lo-card" style="align-items:center; text-align:center; padding: var(--space-6);">
+        <div style="width:96px; height:96px; border-radius:50%; overflow:hidden; background:var(--accent-soft); display:grid; place-items:center;">
             {% if user.foto %}
-                <img src="{{ user.foto }}" id="fotoPreview" alt="Foto de perfil">
+                <img src="{{ user.foto }}" id="fotoPreview" alt="Foto de perfil" style="width:100%; height:100%; object-fit:cover;">
             {% else %}
-                <span id="fotoIcon">{{ (user.nome_exibicao or user.nome or '?')[:1]|upper }}</span>
-                <img src="" id="fotoPreview" alt="Foto de perfil" style="display: none;">
+                <span id="fotoIcon" style="font-size:38px; font-weight:800; color:var(--accent);">{{ (user.nome_exibicao or user.nome or '?')[:1]|upper }}</span>
+                <img src="" id="fotoPreview" alt="Foto de perfil" style="display:none; width:100%; height:100%; object-fit:cover;">
             {% endif %}
         </div>
-        <h2 class="h4 mt-3 mb-0">{{ user.nome_exibicao }}</h2>
-        <p class="text-muted mb-3">{{ user.filial }}</p>
-
-        <label for="uploadFoto" class="btn btn-outline-primary btn-sm px-3">
-            <i class="bi bi-camera me-2"></i> Trocar foto
+        <div>
+            <div style="margin-top: var(--space-3); font-size:22px; font-weight:800;">{{ user.nome_exibicao }}</div>
+            <div style="color:var(--muted);">{{ user.filial }}</div>
+        </div>
+        <label for="uploadFoto" class="lo-btn lo-btn-sm">
+            <svg class="lo-ico" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Trocar foto
         </label>
-        <input type="file" id="uploadFoto" class="d-none" accept="image/png, image/jpeg">
-        <!-- O JS grava aqui a foto em texto (base64) para o servidor -->
+        <input type="file" id="uploadFoto" style="display:none;" accept="image/png, image/jpeg">
         <input type="hidden" name="foto_base64" id="fotoBase64">
-        <div class="form-text mt-2">Formatos aceitos: JPG ou PNG.</div>
+        <div class="lo-label">Formatos aceitos: JPG ou PNG</div>
     </div>
 
-    <!-- Dados -->
-    <div class="surface surface-pad">
-        <div class="surface-head">
-            <h2><i class="bi bi-person-lines-fill"></i> Informações da conta</h2>
-        </div>
-
-        <div class="mb-4">
-            <label class="form-label" for="nome_exibicao">Nome de exibição</label>
-            <input type="text" id="nome_exibicao" name="nome_exibicao" class="form-control form-control-lg" value="{{ user.nome_exibicao }}" required>
-            <div class="form-text">É assim que você aparece no sistema para os outros corretores.</div>
-        </div>
-
-        <div class="row g-3">
-            <div class="col-md-6">
-                <div class="form-label">Nome de registro</div>
-                <div class="readonly-field"><i class="bi bi-lock"></i> {{ user.nome }}</div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-label">Filial / equipe</div>
-                <div class="readonly-field"><i class="bi bi-lock"></i> {{ user.filial }}</div>
-            </div>
-            <div class="col-12">
-                <div class="form-label">E-mail corporativo (login)</div>
-                <div class="readonly-field"><i class="bi bi-lock"></i> {{ user.email }}</div>
+    <div class="lo-card" style="padding: var(--space-5); gap: var(--space-4);">
+        <div class="lo-row" style="padding:0;">
+            <div class="lo-itile"><svg class="lo-ico" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div class="lo-grow">
+                <div style="font-weight:700; font-size:18px;">Informações da conta</div>
+                <div style="color:var(--muted); font-size:13px;">Dados do perfil</div>
             </div>
         </div>
-        <p class="form-text mt-3 mb-0">Nome, filial e e-mail só podem ser alterados pelo gerente.</p>
 
-        <div class="d-grid d-sm-flex justify-content-sm-end mt-4 pt-4 border-top">
-            <button type="submit" class="btn btn-primary btn-lg px-4">
-                <i class="bi bi-check2-circle me-2"></i> Salvar alterações
+        <div class="lo-field" style="max-width:none;">
+            <div class="lo-label">Nome de exibição</div>
+            <input type="text" id="nome_exibicao" name="nome_exibicao" value="{{ user.nome_exibicao }}" required style="font:inherit; color:var(--ink); background:var(--surface); border:1px solid var(--line-strong); border-radius:var(--radius-md); padding:10px 12px;">
+            <div class="lo-note">É assim que você aparece no sistema para os outros corretores.</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: var(--space-3);">
+            <div class="lo-field" style="max-width:none;">
+                <div class="lo-label">Nome de registro</div>
+                <input type="text" value="{{ user.nome }}" disabled style="font:inherit; color:var(--muted); background:var(--sunk); border:1px solid var(--line-strong); border-radius:var(--radius-md); padding:10px 12px;">
+            </div>
+            <div class="lo-field" style="max-width:none;">
+                <div class="lo-label">Filial / equipe</div>
+                <input type="text" value="{{ user.filial }}" disabled style="font:inherit; color:var(--muted); background:var(--sunk); border:1px solid var(--line-strong); border-radius:var(--radius-md); padding:10px 12px;">
+            </div>
+        </div>
+        <div class="lo-field" style="max-width:none;">
+            <div class="lo-label">E-mail corporativo (login)</div>
+            <input type="text" value="{{ user.email }}" disabled style="font:inherit; color:var(--muted); background:var(--sunk); border:1px solid var(--line-strong); border-radius:var(--radius-md); padding:10px 12px;">
+        </div>
+        <div class="lo-note">Nome, filial e e-mail só podem ser alterados pelo gerente.</div>
+
+        <div style="display:flex; justify-content:flex-end; padding-top: var(--space-4); border-top:1px solid var(--line);">
+            <button type="submit" class="lo-btn lo-btn-fill">
+                <svg class="lo-ico" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Salvar alterações
             </button>
         </div>
     </div>
 </form>
 
 <script>
-    // Redimensiona a foto para 300px e converte para base64 antes de enviar
     document.getElementById('uploadFoto').addEventListener('change', function (event) {
         const file = event.target.files[0];
         if (!file) return;
