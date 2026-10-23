@@ -1,51 +1,55 @@
 {% extends 'base.html' %}
-{% block title %}Acessos · Lello{% endblock %}
+{% block title %}Matriz de Acessos · Portal Lello{% endblock %}
 {% block page_title %}Matriz de acessos{% endblock %}
+{% block page_subtitle %}<p class="lo-page-subtitle">Configure as permissões de visualização e ação por perfil de usuário</p>{% endblock %}
 
 {% block content %}
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show alert-temporario" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+<form method="POST" action="{{ url_for('main.permissoes') }}" class="lo-stack" data-once>
+    <article class="lo-card" style="padding: 0; overflow: hidden;">
+        <div style="padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--line);" class="lo-between">
+            <div>
+                <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--ink);">Quem acessa o quê</h3>
+                <p style="margin: 3px 0 0; font-size: 13.5px; color: var(--muted);">
+                    Ative ou desative o acesso de cada perfil a cada módulo do sistema
+                </p>
+            </div>
+            <span class="lo-pill lo-pill-warn">
+                <i class="bi bi-lock-fill"></i> Admin sempre acessa Início e Matriz
+            </span>
         </div>
-    {% endfor %}
-{% endwith %}
 
-<form method="POST" action="{{ url_for('main.permissoes') }}">
-    <div class="surface surface-pad">
-        <div class="surface-head">
-            <h2><i class="bi bi-shield-lock"></i> Quem acessa o quê</h2>
-            <span class="chip chip-outline"><i class="bi bi-lock"></i> Admin sempre acessa Início e Matriz</span>
-        </div>
-        <p class="text-muted">Ligue ou desligue o acesso de cada perfil a cada página. Role para o lado para ver todos os perfis.</p>
-
-        <div class="matrix-wrap">
-            <table class="matrix">
+        <div class="lo-table-wrap" style="border: 0; border-radius: 0;">
+            <table class="lo-table">
                 <thead>
                     <tr>
-                        <th scope="col">Página</th>
+                        <th scope="col" style="min-width: 240px;">Página / Módulo</th>
                         {% for perfil in perfis %}
-                            <th scope="col">{{ perfil }}</th>
+                            <th scope="col" style="text-align: center; min-width: 130px;">{{ perfil }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for pagina in paginas %}
                     <tr>
-                        <td class="fw-semibold" style="color: var(--lello-wine);">
-                            <i class="bi {{ pagina.icone }} me-2" style="color: var(--lello-red);"></i>{{ pagina.nome }}
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--ink);">
+                                <div class="lo-avatar" style="width: 32px; height: 32px; font-size: 14px; background: var(--accent-soft); color: var(--accent);">
+                                    <i class="bi {{ pagina.icone }}"></i>
+                                </div>
+                                <span>{{ pagina.nome }}</span>
+                            </div>
                         </td>
                         {% for perfil in perfis %}
                             {% set travado = perfil == 'Admin' and pagina.id in ['home', 'permissoes'] %}
-                            <td>
-                                <div class="form-check form-switch d-flex justify-content-center m-0 p-0">
-                                    <!-- Admin nunca pode perder as funções críticas -->
-                                    <input class="form-check-input m-0 {% if travado %}is-locked{% endif %}" type="checkbox" role="switch"
-                                           name="permissoes_{{ perfil }}" value="{{ pagina.id }}"
-                                           aria-label="{{ pagina.nome }} para {{ perfil }}"
-                                           {% if pagina.id in permissoes_atuais.get(perfil, []) %}checked{% endif %}
-                                           {% if travado %}checked onclick="return false;" title="Este acesso não pode ser removido do Admin"{% endif %}>
+                            <td style="text-align: center;">
+                                <div style="display: inline-flex; justify-content: center; align-items: center;">
+                                    <label class="lo-switch" title="{% if travado %}Este acesso é obrigatório e não pode ser removido do Admin{% else %}Alternar acesso{% endif %}">
+                                        <input type="checkbox" name="permissoes_{{ perfil }}" value="{{ pagina.id }}"
+                                               aria-label="{{ pagina.nome }} para {{ perfil }}"
+                                               {% if pagina.id in permissoes_atuais.get(perfil, []) %}checked{% endif %}
+                                               {% if travado %}checked onclick="return false;" style="opacity: 0.6; cursor: not-allowed;"{% endif %}>
+                                        <span class="lo-switch-track" {% if travado %}style="opacity: 0.75;"{% endif %}></span>
+                                    </label>
                                 </div>
                             </td>
                         {% endfor %}
@@ -54,12 +58,14 @@
                 </tbody>
             </table>
         </div>
-    </div>
 
-    <div class="save-bar">
-        <button type="submit" class="btn btn-primary btn-lg px-4">
-            <i class="bi bi-save me-2"></i> Salvar acessos
-        </button>
-    </div>
+        <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--line); background: var(--glass);" class="lo-between">
+            <span class="lo-note">As alterações entram em vigor imediatamente após salvar</span>
+            <button type="submit" class="lo-btn lo-btn-fill lo-btn-lg">
+                <i class="bi bi-shield-check"></i>
+                Salvar acessos
+            </button>
+        </div>
+    </article>
 </form>
 {% endblock %}

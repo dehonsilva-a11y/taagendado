@@ -21,7 +21,7 @@ PAGINAS_SISTEMA = [
     {'id': 'portabilidade_interna', 'nome': 'Portabilidade Interna', 'icone': 'bi-arrow-left-right'},
     {'id': 'portabilidade_externa', 'nome': 'Portabilidade Externa', 'icone': 'bi-box-arrow-up-right'},
     {'id': 'importar_dados', 'nome': 'Importar Dados', 'icone': 'bi-box-arrow-up-right'},
-    
+    {'id': 'comissoes', 'nome': 'Relatório de Comissões', 'icone': 'bi-cash-stack'},
 ]
 PERFIS_SISTEMA = ['Corretor', 'Agente de Visita', 'Gerente Filial', 'Gerente Geral', 'Admin']
 
@@ -575,7 +575,7 @@ def permissoes():
             MEMORIA_CACHE['matriz_acessos'] = doc.to_dict()
         else:
             # Por padrão, se não existir nada salvo, libera tudo pro Admin e só a Home pro resto
-            MEMORIA_CACHE['matriz_acessos'] = {p: ['home', 'usuarios', 'permissoes'] if p == 'Admin' else ['home'] for p in PERFIS_SISTEMA}
+            MEMORIA_CACHE['matriz_acessos'] = {p: ['home', 'usuarios', 'permissoes', 'comissoes'] if p == 'Admin' else ['home'] for p in PERFIS_SISTEMA}
 
     permissoes_atuais = MEMORIA_CACHE['matriz_acessos']
 
@@ -740,3 +740,166 @@ def importar_dados():
     # Método GET: Pega a lista de tabelas existentes para popular o dropdown
     colecoes_firebase = [colecao.id for colecao in db.collections()]
     return render_template('importar_dados.html', colecoes=colecoes_firebase)
+
+
+# ============================================================================
+# RELATÓRIO DE COMISSÕES
+# ============================================================================
+@main_bp.route('/comissoes', methods=['GET'])
+def comissoes():
+    perfil_logado = session.get('user_perfil')
+    email_logado = session.get('user_email')
+    filial_logada = session.get('user_filial')
+
+    # --- Regras de acesso por perfil ---
+    pode_ver_todos = perfil_logado in ['Admin', 'Gerente Geral']
+    gerente_filial = perfil_logado == 'Gerente Filial'
+    e_corretor = perfil_logado in ['Corretor', 'Agente de Visita']
+
+    if not (pode_ver_todos or gerente_filial or e_corretor):
+        flash('Acesso negado. Você não tem permissão para visualizar relatórios de comissões.', 'floating_danger')
+        return redirect(url_for('main.home'))
+
+    # --- Filtros de período ---
+    hoje = datetime.now()
+    mes_padrao = hoje.month - 1 if hoje.month > 1 else 12
+    ano_padrao = hoje.year if hoje.month > 1 else hoje.year - 1
+
+    mes_selecionado = int(request.args.get('mes', mes_padrao))
+    ano_selecionado = int(request.args.get('ano', ano_padrao))
+
+    ultimo_dia = calendar.monthrange(ano_selecionado, mes_selecionado)[1]
+    str_busca_br = f"/{mes_selecionado:02d}/{ano_selecionado}"
+    str_busca_us = f"{ano_selecionado}-{mes_selecionado:02d}"
+
+    # --- Filtro de filial e corretor ---
+    filial_filtro = request.args.get('filial', '').strip()
+    corretor_filtro = request.args.get('corretor', '').strip()
+
+    if e_corretor:
+        # Corretor vê apenas o próprio usuario_portal
+        user_doc = db.collection('usuarios').document(email_logado).get()
+        usuario_portal_meu = user_doc.to_dict().get('usuario_portal', '') if user_doc.exists else ''
+        colaboradores = [usuario_portal_meu] if usuario_portal_meu else []
+        filial_filtro = filial_logada
+    elif gerente_filial:
+        # Gerente Filial só vê corretores da própria filial
+        filial_filtro = filial_logada
+        colaboradores = None  # será preenchido abaixo
+    else:
+        # Admin / Gerente Geral: filtro opcional
+        colaboradores = None
+
+    # --- Carregar lista de corretores elegíveis (para dropdown e iteração) ---
+    usuarios_query = db.collection('usuarios').where('perfil', '==', 'Corretor').where('ativo', '==', True).stream()
+    todos_corretores = []
+    for doc in usuarios_query:
+        dados = doc.to_dict() or {}
+        dados['email'] = doc.id
+        if gerente_filial and dados.get('filial') != filial_logada:
+            continue
+        if filial_filtro and dados.get('filial') != filial_filtro:
+            continue
+        todos_corretores.append(dados)
+
+    # Determinar lista de colaboradores (usuario_portal) a consultar
+    if colaboradores is None:
+        colaboradores = [c.get('usuario_portal', '') for c in todos_corretores if c.get('usuario_portal')]
+
+    # --- Mapear email -> dados do corretor para exibição ---
+    mapa_corretor = {c.get('usuario_portal'): c for c in todos_corretores}
+
+    # --- Consultar comissões por colaborador ---
+    resultados = []
+    total_contratos_geral = 0
+    valor_fechado_geral = 0.0
+    comissao_geral = 0.0
+
+    for portal in colaboradores:
+        if not portal:
+            continue
+        docs = db.collection('dt_ctrl_pagamento_visita').where('Colaborador', '==', portal).stream()
+
+        contratos_unicos = set()
+        valor_total_fechado = 0.0
+
+        for doc in docs:
+            dados = doc.to_dict() or {}
+            data_referencia = str(dados.get('Negocio_Data_status', ''))
+
+            if str_busca_br not in data_referencia and str_busca_us not in data_referencia:
+                continue
+
+            contrato = str(dados.get('Negocio_Contrato', '')).strip()
+            if contrato and contrato in contratos_unicos:
+                continue
+            if contrato and contrato.lower() not in ['nan', 'none']:
+                contratos_unicos.add(contrato)
+
+            valor_raw = str(dados.get('Negocio_Valor_fechado', '0'))
+            try:
+                valor_raw = valor_raw.replace('R$', '').strip()
+                if '.' in valor_raw and ',' in valor_raw:
+                    valor_clean = float(valor_raw.replace('.', '').replace(',', '.'))
+                elif ',' in valor_raw:
+                    valor_clean = float(valor_raw.replace(',', '.'))
+                else:
+                    valor_clean = float(valor_raw)
+            except Exception:
+                valor_clean = 0.0
+
+            valor_total_fechado += valor_clean
+
+        if not contratos_unicos:
+            continue
+
+        valor_ganho = valor_total_fechado * 0.20
+        info = mapa_corretor.get(portal, {})
+        resultados.append({
+            'nome': info.get('nome', portal),
+            'email': info.get('email', ''),
+            'filial': info.get('filial', ''),
+            'total_contratos': len(contratos_unicos),
+            'valor_fechado': valor_total_fechado,
+            'comissao': valor_ganho,
+        })
+
+        total_contratos_geral += len(contratos_unicos)
+        valor_fechado_geral += valor_total_fechado
+        comissao_geral += valor_ganho
+
+    # Ordenar por nome
+    resultados.sort(key=lambda x: x.get('nome', ''))
+
+    # Lista de filiais para o dropdown (só Admin/Gerente)
+    filiais_disponiveis = []
+    if pode_ver_todos or gerente_filial:
+        filiais_set = set()
+        for c in todos_corretores:
+            if c.get('filial'):
+                filiais_set.add(c.get('filial'))
+        filiais_disponiveis = sorted(filiais_set)
+
+    meses = [(1, 'Janeiro'), (2, 'Fevereiro'), (3, 'Março'), (4, 'Abril'), (5, 'Maio'), (6, 'Junho'),
+             (7, 'Julho'), (8, 'Agosto'), (9, 'Setembro'), (10, 'Outubro'), (11, 'Novembro'), (12, 'Dezembro')]
+    anos = [2024, 2025, 2026]
+
+    def fmt_brl(valor):
+        return f"{valor:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+
+    return render_template('comissoes.html',
+                           resultados=resultados,
+                           total_contratos_geral=total_contratos_geral,
+                           valor_fechado_geral=valor_fechado_geral,
+                           comissao_geral=comissao_geral,
+                           mes_selecionado=mes_selecionado,
+                           ano_selecionado=ano_selecionado,
+                           meses=meses,
+                           anos=anos,
+                           corretor_filtro=corretor_filtro,
+                           filial_filtro=filial_filtro,
+                           filiais_disponiveis=filiais_disponiveis,
+                           pode_ver_todos=pode_ver_todos,
+                           e_corretor=e_corretor,
+                           fmt_brl=fmt_brl,
+                           periodo_str=f"01 a {ultimo_dia:02d}/{mes_selecionado:02d}/{ano_selecionado}")

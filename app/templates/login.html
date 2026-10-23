@@ -3,57 +3,294 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#C20332">
-    <title>Entrar · Lello</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='design-system.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=6">
+    <meta name="theme-color" content="#5C0521">
+    <title>Entrar · Portal Lello</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=12">
+
+    <style>
+        .auth-container {
+            min-height: 100dvh;
+            display: grid;
+            grid-template-columns: 1fr;
+            background: var(--bg);
+        }
+
+        @media (min-width: 900px) {
+            .auth-container {
+                grid-template-columns: minmax(380px, 46%) 1fr;
+            }
+        }
+
+        .auth-brand-side {
+            background: radial-gradient(130% 150% at 0% 0%, #8A0F2A 0%, #5C0521 55%, #2A0110 100%);
+            color: #FFFFFF;
+            padding: clamp(28px, 6vw, 64px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-brand-side::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 100% 100%, rgba(194, 3, 50, 0.25) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .auth-brand-logo {
+            height: 38px;
+            width: auto;
+        }
+
+        .auth-brand-headline {
+            margin: clamp(32px, 8vw, 72px) 0 0;
+            font-size: clamp(30px, 4.5vw, 54px);
+            font-weight: 300;
+            line-height: 1.08;
+            letter-spacing: -0.03em;
+        }
+
+        .auth-brand-headline strong {
+            font-weight: 800;
+            display: block;
+        }
+
+        .auth-brand-sub {
+            margin: 16px 0 0;
+            font-size: clamp(15px, 1.8vw, 19px);
+            color: rgba(255, 255, 255, 0.88);
+            line-height: 1.45;
+            max-width: 480px;
+        }
+
+        .auth-brand-signature {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 24px;
+            font-size: 13.5px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #FF8FA8;
+        }
+
+        .auth-brand-footer {
+            margin-top: 40px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.65);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .auth-brand-footer a {
+            color: rgba(255, 255, 255, 0.85);
+            text-decoration: underline;
+        }
+
+        .auth-form-side {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(24px, 5vw, 64px);
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 440px;
+            padding: clamp(24px, 4.5vw, 40px);
+            gap: var(--space-5);
+            box-shadow: var(--shadow-float);
+        }
+
+        .lo-sso-btn {
+            height: 48px;
+            width: 100%;
+            border-radius: var(--radius-md);
+            border: 1.5px solid var(--line-strong);
+            background: var(--surface);
+            color: var(--ink);
+            font-weight: 600;
+            font-size: 14.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.16s ease;
+            box-shadow: 0 1px 2px rgba(30, 11, 17, 0.04);
+        }
+
+        .lo-sso-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+            color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-card);
+        }
+
+        .lo-sso-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+            transform: none;
+        }
+
+        .lo-sso-icon {
+            width: 20px;
+            height: 20px;
+            flex: none;
+        }
+
+        .lo-divider {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 4px 0;
+            color: var(--muted);
+            font-size: 12.5px;
+            font-weight: 600;
+        }
+
+        .lo-divider::before, .lo-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }
+
+        .lo-loading-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: var(--radius-md);
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-size: 13.5px;
+            font-weight: 600;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .lo-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--accent);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: loSpin 0.7s linear infinite;
+        }
+
+        @keyframes loSpin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
-<body style="background:var(--bg);">
-    <div style="min-height:100dvh; display:grid; grid-template-columns: repeat(auto-fit, minmax(320px,1fr));">
-        <div style="background: radial-gradient(120% 140% at 0% 0%, #8A0F2A 0%, #5C0521 55%, #2A0110 100%); color:#fff; display:flex; flex-direction:column; justify-content:space-between; padding: clamp(24px,6vw,64px);">
+<body>
+    <div class="auth-container">
+        <!-- Lado da Marca (Manual Lello: Vermelho & Bordô, Acolhedor) -->
+        <section class="auth-brand-side">
             <div>
-                <img src="{{ url_for('static', filename='img/lello-logo-branco.png') }}" alt="Lello" style="height:40px; width:auto;">
-                <h1 style="margin: clamp(24px,8vw,64px) 0 0; font-size: clamp(28px,5vw,56px); font-weight:800; line-height:1.05;">Suas visitas e comissões,<br>sempre à mão</h1>
-                <p style="margin:12px 0 0; opacity:.9; font-size:clamp(16px,2vw,20px);">Acompanhe os resultados em um só lugar.</p>
-            </div>
-            <div style="opacity:.7; font-size:13px;">&copy; 2026 Lello Imóveis · <a href="https://www.lello.com.br/politica-de-privacidade/lello-imoveis/" target="_blank" rel="noopener noreferrer" style="color:#fff; text-decoration:none;">Política de Privacidade</a></div>
-        </div>
-        <div style="display:flex; align-items:center; justify-content:center; padding: clamp(20px,6vw,64px);">
-            <div class="lo-card" style="width:100%; max-width:420px; padding: var(--space-6); gap: var(--space-5);">
-                <div>
-                    <h2 style="margin:0; font-size:28px; font-weight:800;">Entrar no portal</h2>
-                    <p style="margin:6px 0 0; color:var(--muted);">Use o e-mail cadastrado na Lello para acessar.</p>
+                <img src="{{ url_for('static', filename='img/lello-logo-branco.png') }}" alt="Lello Imóveis" class="auth-brand-logo">
+                <h1 class="auth-brand-headline">
+                    Suas visitas e comissões,
+                    <strong>sempre à mão</strong>
+                </h1>
+                <p class="auth-brand-sub">
+                    Acompanhe seus fechamentos, indique imóveis e gerencie seus ganhos com total transparência e agilidade.
+                </p>
+                <div class="auth-brand-signature">
+                    <i class="bi bi-heart-fill" style="font-size: 12px;"></i>
+                    Viver une
                 </div>
+            </div>
+
+            <footer class="auth-brand-footer">
+                <span>&copy; 2026 Lello Imóveis</span>
+                <span>·</span>
+                <a href="https://www.lello.com.br/politica-de-privacidade/lello-imoveis/" target="_blank" rel="noopener noreferrer">
+                    Política de Privacidade
+                </a>
+            </footer>
+        </section>
+
+        <!-- Lado do Formulário de Acesso -->
+        <section class="auth-form-side">
+            <div class="lo-card auth-card">
+                <div>
+                    <span class="lo-kicker">Acesso restrito</span>
+                    <h2 style="margin: 4px 0 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink);">
+                        Entrar no portal
+                    </h2>
+                    <p style="margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.4;">
+                        Utilize sua conta Google corporativa ou Apple cadastrada na Lello.
+                    </p>
+                </div>
+
+                <!-- Avisos e Alertas Flash -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% for category, message in messages %}
-                        <div class="lo-callout">
-                            <div class="ic"><svg class="lo-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+                        <div class="lo-callout lo-callout-danger" role="alert">
+                            <div class="ic"><i class="bi bi-exclamation-triangle-fill"></i></div>
                             <div>{{ message }}</div>
                         </div>
                     {% endfor %}
                 {% endwith %}
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                    <button id="btnGoogle" onclick="fazerLoginGoogle()" class="lo-btn" style="justify-content:center;">
-                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" style="width:18px; height:18px;">
-                        Entrar com o Google
+
+                <!-- Botões de Provedor de Acesso SSO -->
+                <div class="lo-stack lo-stack-sm">
+                    <button type="button" id="btnGoogle" onclick="fazerLoginGoogle()" class="lo-sso-btn" aria-label="Entrar com o Google">
+                        <svg class="lo-sso-icon" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                        </svg>
+                        <span>Entrar com o Google</span>
                     </button>
-                    <button id="btnApple" onclick="fazerLoginApple()" class="lo-btn" style="justify-content:center;">
-                        <i class="bi bi-apple" style="font-size:18px;"></i>
-                        Entrar com a Apple
+
+                    <button type="button" id="btnApple" onclick="fazerLoginApple()" class="lo-sso-btn" aria-label="Entrar com a Apple">
+                        <i class="bi bi-apple" style="font-size: 20px; line-height: 1;"></i>
+                        <span>Entrar com a Apple</span>
                     </button>
                 </div>
-                <div id="loading" style="display:none; text-align:center; color:var(--muted); font-size:13px;">
-                    <span class="spinner-border spinner-border-sm" role="status"></span> Verificando seu acesso...
+
+                <!-- Estado de Carregamento -->
+                <div id="loading" class="lo-loading-indicator" style="display: none;">
+                    <div class="lo-spinner"></div>
+                    <span>Validando seu acesso no sistema...</span>
                 </div>
-                <div style="text-align:center; color:var(--muted); font-size:13px;">Sem acesso? Fale com o gerente da sua filial.</div>
+
+                <!-- Apoio e Suporte (Manual Lello: Dizer com quem falar) -->
+                <div class="lo-note" style="text-align: center; border-top: 1px solid var(--line); padding-top: var(--space-4);">
+                    <i class="bi bi-shield-check" style="color: var(--ok); margin-right: 4px;"></i>
+                    Ambiente seguro e monitorado. Sem acesso? Fale com o gerente da sua filial.
+                </div>
             </div>
-        </div>
+        </section>
     </div>
 
+    <!-- Scripts Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
     <script id="firebase-config-data" type="application/json">{{ firebase_config | tojson | safe }}</script>
+    
     <script>
         const configData = document.getElementById('firebase-config-data').textContent;
         const firebaseConfig = JSON.parse(configData);
@@ -62,39 +299,41 @@
         const providerApple = new firebase.auth.OAuthProvider('apple.com');
         providerApple.addScope('email');
         providerApple.addScope('name');
-    </script>
-    <script src="{{ url_for('static', filename='login-firebase.js') }}"></script>
-</body>
-</html>
 
         function alternarCarregamento(carregando) {
             const btnGoogle = document.getElementById('btnGoogle');
-            const btnApple = document.getElementById('btnApple'); // O novo botão que adicionamos antes
+            const btnApple = document.getElementById('btnApple');
             const loading = document.getElementById('loading');
             
             btnGoogle.disabled = carregando;
             btnApple.disabled = carregando;
-            loading.classList.toggle('d-none', !carregando);
+            loading.style.display = carregando ? 'flex' : 'none';
         }
 
-        // Função Única que envia o token para o Flask
         async function enviarTokenParaBackend(token) {
-            const resposta = await fetch('/auth_token', { // Usando a nova rota
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: token })
-            });
+            try {
+                const resposta = await fetch('/auth_token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idToken: token })
+                });
 
-            const dados = await resposta.json().catch(() => null);
+                const dados = await resposta.json().catch(() => null);
 
-            if (resposta.ok && dados && dados.status === 'success') {
-                window.location.href = "/";
-            } else if (dados && dados.status === 'bloqueado') {
-                await firebase.auth().signOut();
-                window.location.href = "/bloqueado";
-            } else {
-                const mensagem = dados?.message || 'Falha na validação do acesso.';
-                alert(mensagem);
+                if (resposta.ok && dados && dados.status === 'success') {
+                    window.location.href = "/";
+                } else if (dados && dados.status === 'bloqueado') {
+                    await firebase.auth().signOut();
+                    window.location.href = "/bloqueado";
+                } else {
+                    const mensagem = dados?.message || 'Falha na validação do acesso.';
+                    alert(mensagem);
+                    await firebase.auth().signOut();
+                    alternarCarregamento(false);
+                }
+            } catch (err) {
+                console.error("Erro na comunicação com o servidor:", err);
+                alert("Erro de conexão com o servidor. Tente novamente.");
                 await firebase.auth().signOut();
                 alternarCarregamento(false);
             }
@@ -107,9 +346,9 @@
                 const token = await result.user.getIdToken();
                 await enviarTokenParaBackend(token);
             } catch (error) {
-                console.error("Erro no login:", error);
+                console.error("Erro no login Google:", error);
                 if (error.code === 'auth/unauthorized-domain') {
-                    alert('Este domínio ainda não foi autorizado no Firebase Console. Adicione o link da Vercel em Authentication > Settings > Authorized domains.');
+                    alert('Este domínio ainda não foi autorizado no Firebase Console. Adicione o domínio em Authentication > Settings > Authorized domains.');
                 } else if (error.code !== 'auth/popup-closed-by-user') {
                     alert(`Não foi possível autenticar: ${error.message}`);
                 }
@@ -124,7 +363,7 @@
                 const token = await result.user.getIdToken();
                 await enviarTokenParaBackend(token);
             } catch (error) {
-                console.error("Erro no login com Apple:", error);
+                console.error("Erro no login Apple:", error);
                 if (error.code !== 'auth/popup-closed-by-user') {
                     alert(`Não foi possível autenticar com a Apple: ${error.message}`);
                 }

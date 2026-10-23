@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Relatório de Comissões · Portal Lello{% endblock %}
+{% block page_title %}Relatório de Comissões{% endblock %}
+{% block page_subtitle %}<p class="lo-page-subtitle">Acompanhe as comissões consolidadas da equipe por período e filial</p>{% endblock %}
+
+{% block content %}
+<div class="lo-stack">
+    <!-- Grade de KPIs Resumo (Manual Lello) -->
+    <div class="lo-kpis">
+        <article class="lo-kpi">
+            <span class="k-lbl">Contratos no período</span>
+            <div class="k-val">{{ total_contratos_geral }}</div>
+            <div class="k-foot">Total de contratos comissionados</div>
+        </article>
+
+        <article class="lo-kpi">
+            <span class="k-lbl">Valor total fechado</span>
+            <div class="k-val">R$ {{ fmt_brl(valor_fechado_geral) }}</div>
+            <div class="k-foot">Volume financeiro gerado</div>
+        </article>
+
+        <article class="lo-kpi">
+            <span class="k-lbl">Total comissões (20%)</span>
+            <div class="k-val" style="color: var(--accent);">R$ {{ fmt_brl(comissao_geral) }}</div>
+            <div class="k-foot">Regra padrão da campanha</div>
+        </article>
+    </div>
+
+    <!-- Painel de Filtros -->
+    <article class="lo-card">
+        <div class="lo-card-hd">
+            <div>
+                <h3>Filtros do relatório</h3>
+                <p>Altere o período ou restrinja a busca por filial e colaborador</p>
+            </div>
+        </div>
+
+        <form method="GET" action="{{ url_for('main.comissoes') }}">
+            <div class="lo-grid" style="align-items: flex-end;">
+                <div class="lo-col-3 lo-col-md-6">
+                    <div class="lo-field">
+                        <label class="lo-label" for="mes">Mês</label>
+                        <select class="lo-select" id="mes" name="mes" onchange="this.form.submit()">
+                            {% for m, nome_mes in meses %}
+                            <option value="{{ m }}" {% if mes_selecionado == m %}selected{% endif %}>{{ nome_mes }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="lo-col-3 lo-col-md-6">
+                    <div class="lo-field">
+                        <label class="lo-label" for="ano">Ano</label>
+                        <select class="lo-select" id="ano" name="ano" onchange="this.form.submit()">
+                            {% for a in anos %}
+                            <option value="{{ a }}" {% if ano_selecionado == a %}selected{% endif %}>{{ a }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                {% if pode_ver_todos %}
+                <div class="lo-col-3 lo-col-md-6">
+                    <div class="lo-field">
+                        <label class="lo-label" for="filial">Filial</label>
+                        <select class="lo-select" id="filial" name="filial" onchange="this.form.submit()">
+                            <option value="">Todas as filiais</option>
+                            {% for f in filiais_disponiveis %}
+                            <option value="{{ f }}" {% if filial_filtro == f %}selected{% endif %}>{{ f }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="lo-col-3 lo-col-md-6">
+                    <div class="lo-field">
+                        <label class="lo-label" for="corretor">Corretor</label>
+                        <select class="lo-select" id="corretor" name="corretor" onchange="this.form.submit()">
+                            <option value="">Todos os corretores</option>
+                            {% for c in resultados %}
+                            <option value="{{ c.email }}" {% if corretor_filtro == c.email %}selected{% endif %}>{{ c.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </form>
+    </article>
+
+    <!-- Tabela de Resultados (DataTable Manual Lello) -->
+    <article class="lo-card" style="padding: 0; overflow: hidden;">
+        <div style="padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--line);" class="lo-between">
+            <div>
+                <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: var(--ink);">Comissões por corretor</h3>
+                <span class="lo-note">Valores calculados sobre os contratos assinados no mês</span>
+            </div>
+            <span class="lo-pill lo-pill-neutral">
+                {{ resultados|length }} registros encontrados
+            </span>
+        </div>
+
+        {% if resultados %}
+        <div class="lo-table-wrap" style="border: 0; border-radius: 0;">
+            <table class="lo-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Corretor</th>
+                        <th scope="col">Filial</th>
+                        <th scope="col" class="num">Contratos</th>
+                        <th scope="col" class="num">Valor Fechado</th>
+                        <th scope="col" class="num">Comissão 20%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in resultados %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="lo-avatar" style="width: 32px; height: 32px; font-size: 13px;">
+                                    {{ r.nome[:1]|upper }}
+                                </div>
+                                <div>
+                                    <strong style="color: var(--ink); font-weight: 700;">{{ r.nome }}</strong>
+                                    <div style="font-size: 12px; color: var(--muted);">{{ r.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="lo-pill lo-pill-neutral">{{ r.filial }}</span>
+                        </td>
+                        <td class="num">
+                            <span class="lo-pill lo-pill-info">{{ r.total_contratos if r.total_contratos is defined else r.contratos }}</span>
+                        </td>
+                        <td class="num">
+                            R$ {{ fmt_brl(r.valor_fechado) }}
+                        </td>
+                        <td class="num" style="color: var(--accent); font-weight: 800;">
+                            R$ {{ fmt_brl(r.comissao) }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="padding: clamp(32px, 6vw, 64px); text-align: center; color: var(--muted);">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--sunk); margin: 0 auto 12px; display: grid; place-items: center; font-size: 24px;">
+                <i class="bi bi-file-earmark-x"></i>
+            </div>
+            <h4 style="margin: 0; font-size: 17px; font-weight: 700; color: var(--ink);">Nenhum contrato encontrado</h4>
+            <p style="margin: 4px 0 0; font-size: 13.5px;">Não foram encontrados lançamentos para os filtros e período selecionados.</p>
+        </div>
+        {% endif %}
+    </article>
+</div>
+{% endblock %}

@@ -1,78 +1,95 @@
 {% extends 'base.html' %}
 {% block title %}Meus ganhos · Portal Lello{% endblock %}
 {% block page_title %}Meus ganhos{% endblock %}
-{% block page_subtitle %}<p class="lello-section-subtitle">Acompanhe suas comissões por período</p>{% endblock %}
+{% block page_subtitle %}<p class="lo-page-subtitle">Acompanhe suas comissões e previsão de repasses por período</p>{% endblock %}
 
 {% block content %}
-<div class="lello-grid">
-    <article class="lello-card lello-card-hero lello-hero-stat">
-        <span class="lello-kicker">Ganhos totais do mês</span>
-        <div class="lello-hero-stat-value">{{ valor_ganho_formatado }}</div>
-        <div class="lello-hero-stat-meta">
-            <span>{{ periodo_str }}</span>
-            <span>•</span>
-            <span>Pagamento previsto em <strong>{{ data_pagamento_str }}</strong></span>
+<div class="lo-stack">
+    <!-- Destaque Principal: Ganhos do Mês -->
+    <article class="lo-card lo-stat-hero">
+        <span class="lo-kicker">Comissões apuradas no período</span>
+        <div class="lo-stat-hero-val">R$ {{ valor_ganho_formatado }}</div>
+        
+        <div class="lo-stat-hero-meta">
+            <span class="lo-pill lo-pill-neutral">
+                <i class="bi bi-calendar3"></i> {{ periodo_str }}
+            </span>
+            <span>·</span>
+            <span class="lo-pill lo-pill-ok">
+                <i class="bi bi-cash-coin"></i> Pagamento previsto em <strong>{{ data_pagamento_str }}</strong>
+            </span>
         </div>
     </article>
 
-    <div class="lello-section-header">
-        <div class="lello-section-title-group">
-            <span class="lello-kicker">Detalhamento</span>
-            <h3 class="lello-section-title">Origem das comissões</h3>
-        </div>
-    </div>
-
-    <div class="lello-metric-grid">
-        <article class="lello-metric">
-            <span class="lello-metric-label">Contratos comissionados</span>
-            <div class="lello-metric-value">{{ total_contratos }}</div>
-            <div class="lello-metric-foot">Válidos para este período</div>
-        </article>
-        <article class="lello-metric">
-            <span class="lello-metric-label">Valor base</span>
-            <div class="lello-metric-value">R$ {{ valor_ganho_formatado }}</div>
-            <div class="lello-metric-foot">Sobre o valor fechado</div>
-        </article>
-        <article class="lello-metric">
-            <span class="lello-metric-label">Comissão</span>
-            <div class="lello-metric-value">20%</div>
-            <div class="lello-metric-foot">Conforme regra da campanha</div>
-        </article>
-        <article class="lello-metric">
-            <span class="lello-metric-label">Pagamento</span>
-            <div class="lello-metric-value">{{ data_pagamento_str }}</div>
-            <div class="lello-metric-foot">Todo dia 10 do mês seguinte</div>
-        </article>
-    </div>
-
-    <section class="lello-panel">
-        <header class="lello-panel-header">
-            <div class="lello-section-title-group">
-                <span class="lello-kicker">Filtrar</span>
-                <h3 class="lello-panel-title">Selecionar período</h3>
-                <p class="lello-section-subtitle">Altere mês e ano para consultar outro fechamento</p>
+    <!-- Filtro de Período -->
+    <article class="lo-card">
+        <div class="lo-card-hd">
+            <div>
+                <h3>Filtrar fechamento</h3>
+                <p>Selecione o mês e o ano para consultar o histórico de comissões</p>
             </div>
-        </header>
-        <div class="lello-panel-body">
-            <form method="GET" action="{{ url_for('main.visitas') }}" class="lello-filter-grid">
-                <div class="lello-filter-field">
-                    <label class="lello-label" for="mes">Mês</label>
-                    <select class="lello-select" id="mes" name="mes" onchange="this.form.submit()">
-                        {% for m, nome_mes in [(1,'Janeiro'), (2,'Fevereiro'), (3,'Março'), (4,'Abril'), (5,'Maio'), (6,'Junho'), (7,'Julho'), (8,'Agosto'), (9,'Setembro'), (10,'Outubro'), (11,'Novembro'), (12,'Dezembro')] %}
-                        <option value="{{ m }}" {% if mes_selecionado == m %}selected{% endif %}>{{ nome_mes }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="lello-filter-field">
-                    <label class="lello-label" for="ano">Ano</label>
-                    <select class="lello-select" id="ano" name="ano" onchange="this.form.submit()">
-                        {% for a in [2024, 2025, 2026] %}
-                        <option value="{{ a }}" {% if ano_selecionado == a %}selected{% endif %}>{{ a }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </form>
         </div>
-    </section>
+
+        <form method="GET" action="{{ url_for('main.visitas') }}">
+            <div class="lo-grid" style="align-items: flex-end;">
+                <div class="lo-col-6 lo-col-md-6">
+                    <div class="lo-field">
+                        <label class="lo-label" for="mes">Mês de referência</label>
+                        <select class="lo-select" id="mes" name="mes" onchange="this.form.submit()">
+                            {% for m, nome_mes in [(1,'Janeiro'), (2,'Fevereiro'), (3,'Março'), (4,'Abril'), (5,'Maio'), (6,'Junho'), (7,'Julho'), (8,'Agosto'), (9,'Setembro'), (10,'Outubro'), (11,'Novembro'), (12,'Dezembro')] %}
+                            <option value="{{ m }}" {% if mes_selecionado == m %}selected{% endif %}>{{ nome_mes }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="lo-col-6 lo-col-md-6">
+                    <div class="lo-field">
+                        <label class="lo-label" for="ano">Ano</label>
+                        <select class="lo-select" id="ano" name="ano" onchange="this.form.submit()">
+                            {% for a in [2024, 2025, 2026] %}
+                            <option value="{{ a }}" {% if ano_selecionado == a %}selected{% endif %}>{{ a }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </article>
+
+    <!-- Grade de Métricas Detalhadas (KPIs Lello DS) -->
+    <div class="lo-kpis">
+        <article class="lo-kpi">
+            <span class="k-lbl">Contratos assinados</span>
+            <div class="k-val">{{ total_contratos }}</div>
+            <div class="k-foot">Válidos para o fechamento deste mês</div>
+        </article>
+
+        <article class="lo-kpi">
+            <span class="k-lbl">Valor base apurado</span>
+            <div class="k-val">R$ {{ valor_ganho_formatado }}</div>
+            <div class="k-foot">Sobre o valor fechado dos imóveis</div>
+        </article>
+
+        <article class="lo-kpi">
+            <span class="k-lbl">Taxa de comissão</span>
+            <div class="k-val">20%</div>
+            <div class="k-foot">Conforme regra padrão da campanha</div>
+        </article>
+
+        <article class="lo-kpi">
+            <span class="k-lbl">Data do repasse</span>
+            <div class="k-val">{{ data_pagamento_str }}</div>
+            <div class="k-foot">Todo dia 10 do mês subsequente</div>
+        </article>
+    </div>
+
+    <!-- Nota Informativa -->
+    <div class="lo-callout lo-callout-info">
+        <div class="ic"><i class="bi bi-info-circle-fill"></i></div>
+        <div>
+            <strong>Regra de comissionamento Lello:</strong> Os pagamentos são consolidados ao final de cada mês e creditados automaticamente na conta informada. Em caso de dúvidas sobre contratos específicos, consulte a gerência da sua filial.
+        </div>
+    </div>
 </div>
 {% endblock %}

@@ -5,157 +5,280 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#C20332">
     <title>{% block title %}Portal Lello{% endblock %}</title>
+
+    <!-- Previne flash de tema no carregamento -->
+    <script>
+        (function() {
+            var saved = localStorage.getItem('lello-theme') || 'claro';
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
+
+    <!-- Tipografia Anek Latin & Ícones -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@100..800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='design-system.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=10">
+
+    <!-- Design System Lello (Tokens & Componentes Oficiais) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=12">
     {% block head %}{% endblock %}
 </head>
-<body class="lello-app">
+<body>
     {% set is_admin = session.get('user_perfil') == 'Admin' %}
-    {% set nome_sessao = session.get('user_nome') or '' %}
-    {% set perfil_sessao = session.get('user_perfil') or '' %}
-    {% set filial_sessao = session.get('user_filial') or '' %}
+    {% set nome_sessao = session.get('user_nome') or 'Colaborador' %}
+    {% set perfil_sessao = session.get('user_perfil') or 'Corretor' %}
+    {% set filial_sessao = session.get('user_filial') or 'Lello' %}
 
+    <!-- Faixa de Simulação (Admin Impersonation) -->
     {% if session.get('admin_original') %}
-    <div class="lello-simbar">
-        <div class="lello-simbar-inner">
-            <div class="lello-simbar-text">
-                <i class="bi bi-incognito"></i>
-                <span>Visualizando como <strong>{{ nome_sessao }}</strong> · {{ perfil_sessao }}</span>
+    <aside class="lo-simbar" aria-label="Aviso de simulação de acesso">
+        <div class="lo-simbar-inner">
+            <div class="lo-simbar-text">
+                <i class="bi bi-incognito" style="font-size: 16px;"></i>
+                <span>Visualizando o portal como <strong>{{ nome_sessao }}</strong> ({{ perfil_sessao }}{% if filial_sessao %} · {{ filial_sessao }}{% endif %})</span>
             </div>
-            <a href="{{ url_for('main.restaurar_acesso') }}" class="lello-simbar-btn">
+            <a href="{{ url_for('main.restaurar_acesso') }}" class="lo-simbar-btn">
                 <i class="bi bi-arrow-left"></i>
                 Voltar ao painel Admin
             </a>
         </div>
-    </div>
+    </aside>
     {% endif %}
 
-    {% set nav = [
-        ('main.home', 'bi-grid', 'Início', 'Início', True),
-        ('main.visitas', 'bi-bar-chart-line', 'Meus ganhos', 'Ganhos', 'visitas' in minhas_permissoes or is_admin),
-        ('main.indicacao', 'bi-megaphone', 'Indicações', 'Indicar', 'indicacao' in minhas_permissoes or is_admin),
-        ('main.portabilidade_interna', 'bi-arrow-left-right', 'Portabilidade Interna', 'Port. Int.', 'portabilidade_interna' in minhas_permissoes or is_admin),
-        ('main.portabilidade_externa', 'bi-box-arrow-up-right', 'Portabilidade Externa', 'Port. Ext.', 'portabilidade_externa' in minhas_permissoes or is_admin),
-        ('main.usuarios', 'bi-people', 'Equipe', 'Equipe', 'usuarios' in minhas_permissoes or is_admin),
-        ('main.permissoes', 'bi-shield-lock', 'Permissões', 'Permissões', is_admin),
-        ('main.importar_dados', 'bi-cloud-upload', 'Importar dados', 'Importar', is_admin)
-    ] %}
-
-    <div class="lello-shell">
-        <aside class="lello-sidebar" id="lelloSidebar">
-            <div class="lello-sidebar-header">
-                <a href="{{ url_for('main.home') }}" class="lello-brand">
-                    <img src="{{ url_for('static', filename='img/lello-logo-branco.png') }}" alt="Lello Imóveis" class="lello-brand-logo">
+    <!-- Estrutura Geral WebApp -->
+    <div class="lo-shell">
+        
+        <!-- SideNav (Navegação Lateral) -->
+        <aside class="lo-sidebar" id="lelloSidebar" aria-label="Navegação principal">
+            <div class="lo-sidebar-hd">
+                <a href="{{ url_for('main.home') }}" class="lo-sidebar-brand" title="Lello Imóveis">
+                    <img src="{{ url_for('static', filename='img/lello-logo.png') }}" alt="Lello" class="lo-sidebar-logo lo-logo-claro">
+                    <img src="{{ url_for('static', filename='img/lello-logo-branco.png') }}" alt="Lello" class="lo-sidebar-logo lo-logo-escuro">
                 </a>
-                <button class="lello-sidebar-close d-lg-none" data-sidebar-toggle>
+                <button class="lo-sidebar-close" data-sidebar-toggle aria-label="Fechar menu de navegação">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
-            <div class="lello-sidebar-user">
-                <div class="lello-avatar">
-                    {% if current_user_foto %}
+
+            <!-- Identificação do Usuário -->
+            <div class="lo-sidebar-user">
+                <div class="lo-avatar">
+                    {% if current_user_foto and current_user_foto != 'None' and current_user_foto != '' %}
                         <img src="{{ current_user_foto }}" alt="{{ nome_sessao }}">
                     {% else %}
                         <span>{{ nome_sessao[:1]|upper }}</span>
                     {% endif %}
                 </div>
-                <div class="lello-sidebar-user-info">
-                    <div class="lello-sidebar-user-name">{{ nome_sessao }}</div>
-                    <div class="lello-sidebar-user-meta">{{ perfil_sessao }}{% if filial_sessao %} · {{ filial_sessao }}{% endif %}</div>
+                <div class="lo-sidebar-user-info">
+                    <span class="lo-sidebar-user-name" title="{{ nome_sessao }}">{{ nome_sessao }}</span>
+                    <span class="lo-sidebar-user-role" title="{{ perfil_sessao }}{% if filial_sessao %} · {{ filial_sessao }}{% endif %}">
+                        {{ perfil_sessao }}{% if filial_sessao %} · {{ filial_sessao }}{% endif %}
+                    </span>
                 </div>
             </div>
-            <nav class="lello-nav">
-                <div class="lello-nav-label">Navegação</div>
-                <ul class="lello-nav-list">
-                    {% for rota, icone, nome, curto, visivel in nav if visivel %}
-                    <li>
-                        <a href="{{ url_for(rota) }}" class="lello-nav-link {% if request.endpoint == rota %}active{% endif %}" {% if request.endpoint == rota %}aria-current="page"{% endif %}>
-                            <i class="bi {{ icone }}"></i>
-                            <span>{{ nome }}</span>
-                        </a>
-                    </li>
-                    {% endfor %}
-                </ul>
+
+            <!-- Menus Agrupados por Área (Manual Lello: Grupos em caixa alta) -->
+            <nav class="lo-sidebar-nav">
+                <!-- Grupo: Operação -->
+                <div class="lo-nav-group">
+                    <span class="lo-nav-label">Operação</span>
+                    <a href="{{ url_for('main.home') }}" class="lo-nav-item {% if request.endpoint == 'main.home' %}active{% endif %}" {% if request.endpoint == 'main.home' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-grid-1x2"></i>
+                        <span>Início</span>
+                    </a>
+                    {% if 'visitas' in minhas_permissoes or is_admin %}
+                    <a href="{{ url_for('main.visitas') }}" class="lo-nav-item {% if request.endpoint == 'main.visitas' %}active{% endif %}" {% if request.endpoint == 'main.visitas' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-graph-up-arrow"></i>
+                        <span>Meus ganhos</span>
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Grupo: Campanhas & Portabilidade -->
+                {% set pode_indicacao = 'indicacao' in minhas_permissoes or is_admin %}
+                {% set pode_port_int = 'portabilidade_interna' in minhas_permissoes or is_admin %}
+                {% set pode_port_ext = 'portabilidade_externa' in minhas_permissoes or is_admin %}
+                {% if pode_indicacao or pode_port_int or pode_port_ext %}
+                <div class="lo-nav-group">
+                    <span class="lo-nav-label">Campanhas</span>
+                    {% if pode_indicacao %}
+                    <a href="{{ url_for('main.indicacao') }}" class="lo-nav-item {% if request.endpoint == 'main.indicacao' %}active{% endif %}" {% if request.endpoint == 'main.indicacao' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-megaphone"></i>
+                        <span>Indicações</span>
+                    </a>
+                    {% endif %}
+                    {% if pode_port_int %}
+                    <a href="{{ url_for('main.portabilidade_interna') }}" class="lo-nav-item {% if request.endpoint == 'main.portabilidade_interna' %}active{% endif %}" {% if request.endpoint == 'main.portabilidade_interna' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-arrow-left-right"></i>
+                        <span>Portabilidade Interna</span>
+                    </a>
+                    {% endif %}
+                    {% if pode_port_ext %}
+                    <a href="{{ url_for('main.portabilidade_externa') }}" class="lo-nav-item {% if request.endpoint == 'main.portabilidade_externa' %}active{% endif %}" {% if request.endpoint == 'main.portabilidade_externa' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-box-arrow-up-right"></i>
+                        <span>Portabilidade Externa</span>
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Grupo: Gestão & Administração -->
+                {% set pode_comissoes = 'comissoes' in minhas_permissoes or is_admin %}
+                {% set pode_usuarios = 'usuarios' in minhas_permissoes or is_admin %}
+                {% if pode_comissoes or pode_usuarios or is_admin %}
+                <div class="lo-nav-group">
+                    <span class="lo-nav-label">Gestão</span>
+                    {% if pode_comissoes %}
+                    <a href="{{ url_for('main.comissoes') }}" class="lo-nav-item {% if request.endpoint == 'main.comissoes' %}active{% endif %}" {% if request.endpoint == 'main.comissoes' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-cash-stack"></i>
+                        <span>Relatório Comissões</span>
+                    </a>
+                    {% endif %}
+                    {% if pode_usuarios %}
+                    <a href="{{ url_for('main.usuarios') }}" class="lo-nav-item {% if request.endpoint == 'main.usuarios' %}active{% endif %}" {% if request.endpoint == 'main.usuarios' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-people"></i>
+                        <span>Gerenciar equipe</span>
+                    </a>
+                    {% endif %}
+                    {% if is_admin %}
+                    <a href="{{ url_for('main.permissoes') }}" class="lo-nav-item {% if request.endpoint == 'main.permissoes' %}active{% endif %}" {% if request.endpoint == 'main.permissoes' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-shield-lock"></i>
+                        <span>Matriz de acessos</span>
+                    </a>
+                    <a href="{{ url_for('main.importar_dados') }}" class="lo-nav-item {% if request.endpoint == 'main.importar_dados' %}active{% endif %}" {% if request.endpoint == 'main.importar_dados' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <span>Importar dados</span>
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
             </nav>
-            <div class="lello-sidebar-footer">
-                <a href="{{ url_for('main.perfil') }}" class="lello-sidebar-footer-link">
+
+            <!-- Rodapé da Sidebar (Ações Rápidas & Perfil) -->
+            <div class="lo-sidebar-ft">
+                <a href="{{ url_for('main.perfil') }}" class="lo-sidebar-ft-btn {% if request.endpoint == 'main.perfil' %}active{% endif %}">
                     <i class="bi bi-person-circle"></i>
-                    Meu perfil
+                    <span>Meu perfil</span>
                 </a>
-                <a href="{{ url_for('auth.logout') }}" class="lello-sidebar-footer-link lello-sidebar-footer-link-danger">
+                <a href="{{ url_for('auth.logout') }}" class="lo-sidebar-ft-btn danger">
                     <i class="bi bi-box-arrow-right"></i>
-                    Sair
+                    <span>Sair da conta</span>
                 </a>
             </div>
         </aside>
 
-        <div class="lello-main">
-            <header class="lello-header">
-                <div class="lello-header-left">
-                    <button class="lello-menu-toggle d-lg-none" data-sidebar-toggle aria-label="Abrir menu">
+        <!-- Coluna de Conteúdo Principal -->
+        <div class="lo-main">
+            <!-- Header Global -->
+            <header class="lo-header">
+                <div class="lo-header-left">
+                    <button class="lo-menu-toggle" data-sidebar-toggle aria-label="Abrir menu de navegação">
                         <i class="bi bi-list"></i>
                     </button>
-                    <div class="lello-page-heading">
-                        <h1 class="lello-page-title">{% block page_title %}Portal{% endblock %}</h1>
+                    <div class="lo-page-head">
+                        <h1 class="lo-page-title">{% block page_title %}Portal Lello{% endblock %}</h1>
                         {% block page_subtitle %}{% endblock %}
                     </div>
                 </div>
-                <div class="lello-header-right">
-                    <div class="lello-header-user">
-                        <div class="lello-header-user-text">
-                            <div class="lello-header-user-name">{{ nome_sessao }}</div>
-                            <div class="lello-header-user-meta">{{ perfil_sessao }}</div>
-                        </div>
-                        <div class="lello-header-avatar">
-                            {% if current_user_foto %}
-                                <img src="{{ current_user_foto }}" alt="{{ nome_sessao }}">
-                            {% else %}
-                                <span>{{ nome_sessao[:1]|upper }}</span>
-                            {% endif %}
-                        </div>
+
+                <div class="lo-header-right">
+                    <!-- Alternador de Tema Oficial Lello (Claro / Bordô) -->
+                    <div class="lo-theme-toggle" role="group" aria-label="Alternar tema visual">
+                        <button type="button" class="lo-theme-btn" data-theme-set="claro" aria-pressed="true" title="Tema Claro">
+                            <i class="bi bi-sun"></i> Claro
+                        </button>
+                        <button type="button" class="lo-theme-btn" data-theme-set="bordo" aria-pressed="false" title="Tema Bordô">
+                            <i class="bi bi-moon-stars"></i> Bordô
+                        </button>
                     </div>
+
+                    <!-- Botão de Perfil Rápido -->
+                    <a href="{{ url_for('main.perfil') }}" class="lo-avatar" style="width: 38px; height: 38px; font-size: 14px;" title="Ver meu perfil">
+                        {% if current_user_foto and current_user_foto != 'None' and current_user_foto != '' %}
+                            <img src="{{ current_user_foto }}" alt="{{ nome_sessao }}">
+                        {% else %}
+                            <span>{{ nome_sessao[:1]|upper }}</span>
+                        {% endif %}
+                    </a>
                 </div>
             </header>
 
-            <main class="lello-content">
+            <!-- Conteúdo da Página -->
+            <main class="lo-content">
+                <!-- Stack de Mensagens Flash -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
-                    <div class="lello-flash-stack">
+                    <div class="lo-stack lo-stack-sm" role="status" aria-live="polite">
                         {% for category, message in messages %}
-                        <div class="lello-flash lello-flash-{{ category|replace('floating_', '')|replace('_', '-') }}">
-                            <div class="lello-flash-icon">
-                                {% if 'success' in category %}<i class="bi bi-check-circle-fill"></i>
-                                {% elif 'danger' in category %}<i class="bi bi-exclamation-triangle-fill"></i>
-                                {% elif 'warning' in category %}<i class="bi bi-exclamation-circle-fill"></i>
-                                {% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
+                            {% set cat_clean = category|replace('floating_', '')|replace('_', '-') %}
+                            {% set is_ok = 'success' in cat_clean %}
+                            {% set is_danger = 'danger' in cat_clean or 'error' in cat_clean %}
+                            {% set is_warn = 'warning' in cat_clean or 'warn' in cat_clean %}
+                            <div class="lo-callout {% if is_ok %}lo-callout-success{% elif is_danger %}lo-callout-danger{% elif is_warn %}lo-callout-warning{% else %}lo-callout-info{% endif %}" data-auto-dismiss>
+                                <div class="ic">
+                                    {% if is_ok %}<i class="bi bi-check-circle-fill"></i>
+                                    {% elif is_danger %}<i class="bi bi-exclamation-triangle-fill"></i>
+                                    {% elif is_warn %}<i class="bi bi-exclamation-circle-fill"></i>
+                                    {% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
+                                </div>
+                                <div style="flex: 1; font-weight: 500;">{{ message }}</div>
                             </div>
-                            <div class="lello-flash-text">{{ message }}</div>
-                        </div>
                         {% endfor %}
                     </div>
                     {% endif %}
                 {% endwith %}
+
                 {% block content %}{% endblock %}
             </main>
         </div>
     </div>
 
-    <nav class="lello-tabbar d-lg-none">
-        {% for rota, icone, nome, curto, visivel in nav if visivel %}
-        <a href="{{ url_for(rota) }}" class="lello-tabbar-link {% if request.endpoint == rota %}active{% endif %}" {% if request.endpoint == rota %}aria-current="page"{% endif %}>
-            <i class="bi {{ icone }}{% if request.endpoint == rota %}-fill{% endif %}"></i>
-            <span>{{ curto }}</span>
+    <!-- Barra de Abas Mobile (TabBar Flutuante Nativa do Celular) -->
+    <nav class="lo-tabbar" aria-label="Navegação rápida inferior">
+        <a href="{{ url_for('main.home') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.home' %}active{% endif %}">
+            <i class="bi bi-grid-1x2{% if request.endpoint == 'main.home' %}-fill{% endif %}"></i>
+            <span>Início</span>
         </a>
-        {% endfor %}
+        {% if 'visitas' in minhas_permissoes or is_admin %}
+        <a href="{{ url_for('main.visitas') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.visitas' %}active{% endif %}">
+            <i class="bi bi-graph-up-arrow"></i>
+            <span>Ganhos</span>
+        </a>
+        {% endif %}
+        {% if pode_indicacao %}
+        <a href="{{ url_for('main.indicacao') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.indicacao' %}active{% endif %}">
+            <i class="bi bi-megaphone{% if request.endpoint == 'main.indicacao' %}-fill{% endif %}"></i>
+            <span>Indicar</span>
+        </a>
+        {% endif %}
+        {% if pode_comissoes %}
+        <a href="{{ url_for('main.comissoes') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.comissoes' %}active{% endif %}">
+            <i class="bi bi-cash-stack"></i>
+            <span>Comissões</span>
+        </a>
+        {% elif pode_usuarios %}
+        <a href="{{ url_for('main.usuarios') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.usuarios' %}active{% endif %}">
+            <i class="bi bi-people{% if request.endpoint == 'main.usuarios' %}-fill{% endif %}"></i>
+            <span>Equipe</span>
+        </a>
+        {% else %}
+        <a href="{{ url_for('main.perfil') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.perfil' %}active{% endif %}">
+            <i class="bi bi-person{% if request.endpoint == 'main.perfil' %}-fill{% endif %}"></i>
+            <span>Perfil</span>
+        </a>
+        {% endif %}
+        <button type="button" class="lo-tab lo-tab-link" data-sidebar-toggle aria-label="Abrir todas as opções">
+            <i class="bi bi-list"></i>
+            <span>Menu</span>
+        </button>
     </nav>
 
-    <div class="lello-overlay" data-sidebar-toggle></div>
+    <!-- Overlay para fechamento de menu mobile -->
+    <div class="lo-overlay" id="lelloOverlay" data-sidebar-toggle></div>
 
-    <script src="{{ url_for('static', filename='app.js') }}?v=10"></script>
+    <!-- Scripts do Design System -->
+    <script src="{{ url_for('static', filename='app.js') }}?v=12"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -1,55 +1,153 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="claro">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#C10232">
-    <title>Criar conta · Lello</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta name="theme-color" content="#5C0521">
+    <title>Criar conta · Portal Lello</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=12">
+
+    <style>
+        .auth-container {
+            min-height: 100dvh;
+            display: grid;
+            grid-template-columns: 1fr;
+            background: var(--bg);
+        }
+
+        @media (min-width: 900px) {
+            .auth-container {
+                grid-template-columns: minmax(380px, 44%) 1fr;
+            }
+        }
+
+        .auth-brand-side {
+            background: radial-gradient(130% 150% at 0% 0%, #8A0F2A 0%, #5C0521 55%, #2A0110 100%);
+            color: #FFFFFF;
+            padding: clamp(28px, 6vw, 64px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .auth-brand-logo {
+            height: 38px;
+            width: auto;
+        }
+
+        .auth-brand-headline {
+            margin: clamp(32px, 8vw, 72px) 0 0;
+            font-size: clamp(28px, 4.2vw, 48px);
+            font-weight: 300;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+        }
+
+        .auth-brand-headline strong {
+            font-weight: 800;
+            display: block;
+        }
+
+        .auth-form-side {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(24px, 5vw, 64px);
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 480px;
+            padding: clamp(24px, 4.5vw, 40px);
+            gap: var(--space-4);
+            box-shadow: var(--shadow-float);
+        }
+    </style>
 </head>
-<body class="auth">
-    <div class="auth-shell">
-        <section class="auth-brand">
-            <img src="{{ url_for('static', filename='img/lello-logo-branco.png') }}" alt="Lello">
-            <p class="tag mb-0">Bem-vindo ao time.
-                <small>Crie sua conta para acompanhar visitas, indicações e comissões.</small>
-            </p>
+<body>
+    <div class="auth-container">
+        <!-- Lado da Marca -->
+        <section class="auth-brand-side">
+            <div>
+                <img src="{{ url_for('static', filename='img/lello-logo-branco.png') }}" alt="Lello Imóveis" class="auth-brand-logo">
+                <h1 class="auth-brand-headline">
+                    Bem-vindo
+                    <strong>ao time Lello</strong>
+                </h1>
+                <p style="margin: 16px 0 0; font-size: 16px; color: rgba(255, 255, 255, 0.85); line-height: 1.45; max-width: 440px;">
+                    Complete o seu cadastro para acompanhar visitas, indicações e comissões no mesmo ambiente.
+                </p>
+            </div>
+
+            <footer style="font-size: 13px; color: rgba(255, 255, 255, 0.65); margin-top: 40px;">
+                &copy; 2026 Lello Imóveis · Viver une
+            </footer>
         </section>
 
-        <section class="auth-panel">
-            <div class="auth-card">
-                <h1>Criar conta</h1>
-                <p class="lead-sm">Preencha seus dados para continuar.</p>
+        <!-- Lado do Formulário de Cadastro -->
+        <section class="auth-form-side">
+            <div class="lo-card auth-card">
+                <div>
+                    <span class="lo-kicker">Primeiro acesso</span>
+                    <h2 style="margin: 4px 0 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink);">
+                        Criar conta
+                    </h2>
+                    <p style="margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.4;">
+                        Preencha seus dados corporativos para ativar seu acesso.
+                    </p>
+                </div>
 
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+                        <div class="lo-callout lo-callout-danger" role="alert">
+                            <div class="ic"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                            <div>{{ message }}</div>
+                        </div>
                     {% endfor %}
                 {% endwith %}
 
-                <form method="POST">
-                    <div class="mb-3">
-                        <label class="form-label" for="nome">Nome completo</label>
-                        <input type="text" id="nome" name="nome" class="form-control" autocomplete="name" required>
+                <form method="POST" class="lo-stack lo-stack-sm" data-once>
+                    <div class="lo-field">
+                        <label class="lo-label" for="nome">Nome completo</label>
+                        <input type="text" id="nome" name="nome" class="lo-input" autocomplete="name" required placeholder="Ex: Maria da Silva">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="filial">Filial / equipe</label>
-                        <input type="text" id="filial" name="filial" class="form-control" placeholder="Ex: (10) Centro Adm." required>
+
+                    <div class="lo-field">
+                        <label class="lo-label" for="filial">Filial / equipe</label>
+                        <input type="text" id="filial" name="filial" class="lo-input" placeholder="Ex: (11) Mooca" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="email">E-mail corporativo</label>
-                        <input type="email" id="email" name="email" class="form-control" autocomplete="email" required>
+
+                    <div class="lo-field">
+                        <label class="lo-label" for="email">E-mail corporativo</label>
+                        <input type="email" id="email" name="email" class="lo-input" autocomplete="email" required placeholder="maria.silva@lello.com.br">
                     </div>
-                    <div class="mb-4">
-                        <label class="form-label" for="senha">Senha de acesso</label>
-                        <input type="password" id="senha" name="senha" class="form-control" autocomplete="new-password" required>
+
+                    <div class="lo-field">
+                        <label class="lo-label" for="senha">Senha de acesso</label>
+                        <input type="password" id="senha" name="senha" class="lo-input" autocomplete="new-password" required placeholder="Mínimo de 8 caracteres">
                     </div>
-                    <button class="btn btn-primary btn-lg w-100" type="submit">Criar conta e continuar</button>
+
+                    <div style="margin-top: var(--space-2);">
+                        <button type="submit" class="lo-btn lo-btn-fill" style="width: 100%;">
+                            <i class="bi bi-check-circle"></i>
+                            Criar conta e continuar
+                        </button>
+                    </div>
                 </form>
 
-                <p class="auth-foot mb-0">Já tem conta? <a href="{{ url_for('auth.login') }}" class="fw-semibold">Voltar para o login</a></p>
+                <div class="lo-note" style="text-align: center; border-top: 1px solid var(--line); padding-top: var(--space-3); margin-top: var(--space-2);">
+                    Já tem conta ativa? 
+                    <a href="{{ url_for('auth.login') }}" style="color: var(--accent); font-weight: 700;">
+                        Voltar para o login
+                    </a>
+                </div>
             </div>
         </section>
     </div>

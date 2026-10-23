@@ -1,216 +1,233 @@
 {% extends 'base.html' %}
-{% block title %}Equipe · Lello{% endblock %}
+{% block title %}Equipe · Portal Lello{% endblock %}
 {% block page_title %}Gerenciar equipe{% endblock %}
+{% block page_subtitle %}<p class="lo-page-subtitle">Cadastre colaboradores, gerencie perfis de acesso e acompanhe a equipe</p>{% endblock %}
 
 {% block content %}
 {% set filiais = ['(10) Centro Adm.', '(11) Mooca', '(16) ABC', '(19) Tatuapé', '(27) Norte', '(29) Pinheiros', '(31) Vila Mariana'] %}
 {% set eh_admin = session.get('user_perfil') == 'Admin' %}
 
-<!-- Mensagens do cadastro / edição -->
-{% with messages = get_flashed_messages(category_filter=['success', 'danger', 'info', 'warning'], with_categories=true) %}
-    {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show alert-temporario shadow-sm mb-4" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-        </div>
-    {% endfor %}
-{% endwith %}
-
-<div class="row g-4">
-
-    <!-- Lado Esquerdo: Novo colaborador -->
-    <div class="col-12 col-xl-4">
-        <!-- Botão mobile para abrir o painel -->
-        <button class="btn btn-primary btn-lg w-100 d-xl-none mb-3 shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#painelNovo" aria-expanded="false" aria-controls="painelNovo">
-            <i class="bi bi-person-plus me-2"></i> Adicionar Colaborador
-        </button>
-
-        <div class="collapse d-xl-block" id="painelNovo">
-            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
-                <h5 class="fw-bold mb-4 text-dark border-bottom pb-3">
-                    <i class="bi bi-person-plus-fill text-danger me-2"></i> Adicionar Colaborador
-                </h5>
-
-                <form method="POST" action="{{ url_for('main.usuarios') }}">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted" for="novoNome">Nome completo</label>
-                        <input type="text" id="novoNome" name="nome" class="form-control shadow-sm" required placeholder="Ex: João da Silva">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted" for="novoEmail">E-mail corporativo</label>
-                        <input type="email" id="novoEmail" name="email" class="form-control shadow-sm" required placeholder="joao.silva@lello.com.br">
-                    </div>
-                    
-                    <!-- NOVOS CAMPOS AQUI (CADASTRO) -->
-                    <div class="row g-2 mb-3">
-                        <div class="col-sm-6">
-                            <label class="form-label small fw-bold text-muted" for="novoUsuarioPortal">Usuário Portal</label>
-                            <input type="text" id="novoUsuarioPortal" name="usuario_portal" class="form-control shadow-sm" placeholder="Para cruzar dados">
-                        </div>
-                        <div class="col-sm-6">
-                            <label class="form-label small fw-bold text-muted" for="novoIdApple">ID da Apple</label>
-                            <input type="text" id="novoIdApple" name="id_apple" class="form-control shadow-sm" placeholder="Conta Apple">
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted" for="novaFilial">Filial / equipe</label>
-                        <select id="novaFilial" name="filial" class="form-select shadow-sm" required>
-                            <option value="" disabled selected>Selecione a filial...</option>
-                            {% for f in filiais %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted" for="novoPerfil">Perfil de acesso</label>
-                        <select id="novoPerfil" name="perfil" class="form-select shadow-sm" required>
-                            <option value="Corretor" selected>Corretor</option>
-                            <option value="Agente de Visita">Agente de Visita</option>
-                            {% if session.get('user_perfil') in ['Admin', 'Gerente Geral'] %}
-                                <option value="Gerente Filial">Gerente Filial</option>
-                            {% endif %}
-                            {% if eh_admin %}
-                                <option value="Gerente Geral">Gerente Geral</option>
-                                <option value="Admin">Admin</option>
-                            {% endif %}
-                        </select>
-                    </div>
-
-                    <div class="form-check form-switch mb-4">
-                        <input class="form-check-input shadow-sm cursor-pointer" type="checkbox" role="switch" id="enviarEmailCheck" name="enviar_email" value="sim" checked>
-                        <label class="form-check-label small fw-bold text-muted cursor-pointer" for="enviarEmailCheck" style="cursor: pointer;">
-                        &nbsp;&nbsp;&nbsp;Enviar e-mail de boas-vindas
-                        </label>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm mt-2">
-                        <i class="bi bi-check-circle me-1"></i> Cadastrar
-                    </button>
-                </form>
+<div class="lo-grid">
+    <!-- Coluna Esquerda: Formulário de Adicionar Colaborador -->
+    <div class="lo-col-4">
+        <article class="lo-card">
+            <div class="lo-card-hd">
+                <div>
+                    <span class="lo-kicker">Novo cadastro</span>
+                    <h3>Adicionar colaborador</h3>
+                    <p>Preencha os dados do novo membro da equipe</p>
+                </div>
             </div>
-        </div>
+
+            <form method="POST" action="{{ url_for('main.usuarios') }}" class="lo-stack lo-stack-sm" data-once>
+                <div class="lo-field">
+                    <label class="lo-label" for="novoNome">Nome completo</label>
+                    <input type="text" id="novoNome" name="nome" class="lo-input" required placeholder="Ex: João da Silva">
+                </div>
+
+                <div class="lo-field">
+                    <label class="lo-label" for="novoEmail">E-mail corporativo</label>
+                    <input type="email" id="novoEmail" name="email" class="lo-input" required placeholder="joao.silva@lello.com.br">
+                </div>
+
+                <div class="lo-grid" style="gap: var(--space-2);">
+                    <div class="lo-col-6">
+                        <div class="lo-field">
+                            <label class="lo-label" for="novoUsuarioPortal">Usuário Portal</label>
+                            <input type="text" id="novoUsuarioPortal" name="usuario_portal" class="lo-input" placeholder="Cruzamento">
+                        </div>
+                    </div>
+                    <div class="lo-col-6">
+                        <div class="lo-field">
+                            <label class="lo-label" for="novoIdApple">ID da Apple</label>
+                            <input type="text" id="novoIdApple" name="id_apple" class="lo-input" placeholder="Conta Apple">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lo-field">
+                    <label class="lo-label" for="novaFilial">Filial / equipe</label>
+                    <select id="novaFilial" name="filial" class="lo-select" required>
+                        <option value="" disabled selected>Selecione a filial...</option>
+                        {% for f in filiais %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="lo-field">
+                    <label class="lo-label" for="novoPerfil">Perfil de acesso</label>
+                    <select id="novoPerfil" name="perfil" class="lo-select" required>
+                        <option value="Corretor" selected>Corretor</option>
+                        <option value="Agente de Visita">Agente de Visita</option>
+                        {% if session.get('user_perfil') in ['Admin', 'Gerente Geral'] %}
+                            <option value="Gerente Filial">Gerente Filial</option>
+                        {% endif %}
+                        {% if eh_admin %}
+                            <option value="Gerente Geral">Gerente Geral</option>
+                            <option value="Admin">Admin</option>
+                        {% endif %}
+                    </select>
+                </div>
+
+                <div style="margin: var(--space-2) 0;">
+                    <label class="lo-switch-label">
+                        <div class="lo-switch">
+                            <input type="checkbox" id="enviarEmailCheck" name="enviar_email" value="sim" checked>
+                            <span class="lo-switch-track"></span>
+                        </div>
+                        <span style="font-size: 13.5px; font-weight: 600; color: var(--ink);">
+                            Enviar e-mail de boas-vindas
+                        </span>
+                    </label>
+                </div>
+
+                <button type="submit" class="lo-btn lo-btn-fill" style="width: 100%; margin-top: 4px;">
+                    <i class="bi bi-person-plus-fill"></i>
+                    Cadastrar colaborador
+                </button>
+            </form>
+        </article>
     </div>
 
-    <!-- Lado Direito: Lista de Colaboradores -->
-    <div class="col-12 col-xl-8">
-        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
-            <!-- Cabeçalho -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="d-flex align-items-center gap-3">
-                    <h5 class="fw-bold mb-0 text-dark">
-                        <i class="bi bi-people-fill text-danger me-2"></i> Lista de Colaboradores
-                    </h5>
-                    <button class="btn btn-sm btn-outline-secondary shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#painelFiltros" aria-expanded="false" aria-controls="painelFiltros">
-                        <i class="bi bi-funnel-fill me-1"></i> Filtros
-                    </button>
+    <!-- Coluna Direita: Lista de Colaboradores e Filtros -->
+    <div class="lo-col-8">
+        <article class="lo-card" style="padding: 0; overflow: hidden;">
+            <!-- Topo do Painel de Usuários -->
+            <div style="padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--line);" class="lo-between">
+                <div>
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--ink);">Lista de Colaboradores</h3>
+                    <p style="margin: 2px 0 0; font-size: 13px; color: var(--muted);">Gerencie o status e permissões da equipe</p>
                 </div>
                 
-                {% if eh_admin %}
-                <button class="btn btn-sm btn-outline-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalImportar" title="Importar planilha de usuários">
-                    <i class="bi bi-file-earmark-excel me-1"></i> Importar em Massa
-                </button>
-                {% endif %}
-            </div>
-
-            <!-- Painel de Filtros -->
-            <div class="collapse mb-4 {% if current_filters.search or current_filters.filial or current_filters.perfil or current_filters.status != 'ativo' %}show{% endif %}" id="painelFiltros">
-                <div class="card card-body bg-light border-0 shadow-sm">
-                    <form method="GET" action="{{ url_for('main.usuarios') }}" class="row g-3 align-items-end">
-                        <!-- Campos de filtro omitidos por brevidade visual (se mantêm iguais) -->
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold text-muted" for="fBusca">Pesquisar</label>
-                            <input type="text" id="fBusca" name="search" class="form-control form-control-sm shadow-sm" placeholder="Nome ou e-mail..." value="{{ current_filters.search }}" onchange="this.form.submit()">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold text-muted" for="fFilial">Filial</label>
-                            <select id="fFilial" name="filial" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()">
-                                <option value="">Todas</option>
-                                {% for f in filiais %}<option value="{{ f }}" {% if current_filters.filial == f %}selected{% endif %}>{{ f }}</option>{% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label small fw-bold text-muted" for="fPerfil">Perfil</label>
-                            <select id="fPerfil" name="perfil" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()">
-                                <option value="">Todos</option>
-                                <option value="Admin" {% if current_filters.perfil == 'Admin' %}selected{% endif %}>Admin</option>
-                                <option value="Gerente Geral" {% if current_filters.perfil == 'Gerente Geral' %}selected{% endif %}>Ger. Geral</option>
-                                <option value="Gerente Filial" {% if current_filters.perfil == 'Gerente Filial' %}selected{% endif %}>Ger. Filial</option>
-                                <option value="Agente de Visita" {% if current_filters.perfil == 'Agente de Visita' %}selected{% endif %}>Ag. de Visita</option>
-                                <option value="Corretor" {% if current_filters.perfil == 'Corretor' %}selected{% endif %}>Corretor</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label small fw-bold text-muted" for="fStatus">Status</label>
-                            <select id="fStatus" name="status" class="form-select form-select-sm shadow-sm" onchange="this.form.submit()">
-                                <option value="ativo" {% if current_filters.status == 'ativo' %}selected{% endif %} class="text-success fw-bold">Ativos</option>
-                                <option value="inativo" {% if current_filters.status == 'inativo' %}selected{% endif %} class="text-danger fw-bold">Inativos</option>
-                                <option value="todos" {% if current_filters.status == 'todos' %}selected{% endif %}>Todos</option>
-                            </select>
-                        </div>
-                        <div class="col-md-1 text-end">
-                            <a href="{{ url_for('main.usuarios') }}" class="btn btn-sm btn-outline-danger w-100 shadow-sm" title="Limpar Filtros" aria-label="Limpar filtros"><i class="bi bi-eraser-fill"></i></a>
-                        </div>
-                    </form>
+                <div class="lo-row" style="padding: 0; gap: 8px;">
+                    {% if eh_admin %}
+                    <button type="button" class="lo-btn lo-btn-sm lo-btn-primary" data-lo-modal-target="modalImportar">
+                        <i class="bi bi-file-earmark-excel"></i>
+                        Importar em massa
+                    </button>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Tabela de Usuários -->
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
+            <!-- Filtros Integrados -->
+            <div style="padding: var(--space-3) var(--space-5); background: var(--glass); border-bottom: 1px solid var(--line);">
+                <form method="GET" action="{{ url_for('main.usuarios') }}">
+                    <div class="lo-grid" style="gap: var(--space-2); align-items: flex-end;">
+                        <div class="lo-col-4">
+                            <div class="lo-field">
+                                <label class="lo-label" for="fBusca">Pesquisar</label>
+                                <input type="text" id="fBusca" name="search" class="lo-input" style="padding: 7px 12px; font-size: 13.5px;" placeholder="Nome ou e-mail..." value="{{ current_filters.search }}" onchange="this.form.submit()">
+                            </div>
+                        </div>
+
+                        <div class="lo-col-3">
+                            <div class="lo-field">
+                                <label class="lo-label" for="fFilial">Filial</label>
+                                <select id="fFilial" name="filial" class="lo-select" style="padding: 7px 32px 7px 12px; font-size: 13.5px;" onchange="this.form.submit()">
+                                    <option value="">Todas as filiais</option>
+                                    {% for f in filiais %}<option value="{{ f }}" {% if current_filters.filial == f %}selected{% endif %}>{{ f }}</option>{% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="lo-col-2">
+                            <div class="lo-field">
+                                <label class="lo-label" for="fPerfil">Perfil</label>
+                                <select id="fPerfil" name="perfil" class="lo-select" style="padding: 7px 32px 7px 12px; font-size: 13.5px;" onchange="this.form.submit()">
+                                    <option value="">Todos</option>
+                                    <option value="Admin" {% if current_filters.perfil == 'Admin' %}selected{% endif %}>Admin</option>
+                                    <option value="Gerente Geral" {% if current_filters.perfil == 'Gerente Geral' %}selected{% endif %}>Ger. Geral</option>
+                                    <option value="Gerente Filial" {% if current_filters.perfil == 'Gerente Filial' %}selected{% endif %}>Ger. Filial</option>
+                                    <option value="Agente de Visita" {% if current_filters.perfil == 'Agente de Visita' %}selected{% endif %}>Agente</option>
+                                    <option value="Corretor" {% if current_filters.perfil == 'Corretor' %}selected{% endif %}>Corretor</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="lo-col-2">
+                            <div class="lo-field">
+                                <label class="lo-label" for="fStatus">Status</label>
+                                <select id="fStatus" name="status" class="lo-select" style="padding: 7px 32px 7px 12px; font-size: 13.5px;" onchange="this.form.submit()">
+                                    <option value="ativo" {% if current_filters.status == 'ativo' %}selected{% endif %}>Ativos</option>
+                                    <option value="inativo" {% if current_filters.status == 'inativo' %}selected{% endif %}>Inativos</option>
+                                    <option value="todos" {% if current_filters.status == 'todos' %}selected{% endif %}>Todos</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="lo-col-1" style="display: flex; justify-content: flex-end;">
+                            <a href="{{ url_for('main.usuarios') }}" class="lo-rbtn" style="width: 38px; height: 38px;" title="Limpar filtros" aria-label="Limpar filtros">
+                                <i class="bi bi-x-circle"></i>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabela de Dados (DataTable Manual Lello) -->
+            <div class="lo-table-wrap" style="border: 0; border-radius: 0;">
+                <table class="lo-table">
+                    <thead>
                         <tr>
-                            <th class="small text-muted text-uppercase text-center border-0">Status</th>
-                            <th class="small text-muted text-uppercase border-0">Nome</th>
-                            <th class="small text-muted text-uppercase border-0">Filial</th>
-                            <th class="small text-muted text-uppercase border-0">Perfil</th>
-                            <th class="small text-muted text-uppercase text-center border-0">Ações</th>
+                            <th scope="col" style="width: 90px; text-align: center;">Status</th>
+                            <th scope="col">Colaborador</th>
+                            <th scope="col">Filial</th>
+                            <th scope="col">Perfil</th>
+                            <th scope="col" style="text-align: right; width: 110px;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for u in lista_usuarios %}
                         {% set nome_u = u.nome_exibicao or u.nome %}
                         <tr>
-                            <!-- Status -->
-                            <td class="text-center">
+                            <!-- Status Pill -->
+                            <td style="text-align: center;">
                                 {% if u.ativo %}
-                                    <i class="bi bi-check-circle-fill text-success fs-5" title="Ativo"></i>
+                                    <span class="lo-pill lo-pill-ok" title="Usuário Ativo">
+                                        <i class="bi bi-check-circle-fill"></i> Ativo
+                                    </span>
                                 {% else %}
-                                    <i class="bi bi-x-circle-fill text-danger fs-5" title="Inativo"></i>
+                                    <span class="lo-pill lo-pill-danger" title="Usuário Inativo">
+                                        <i class="bi bi-x-circle-fill"></i> Inativo
+                                    </span>
                                 {% endif %}
                             </td>
-                            
-                            <!-- Foto e Nome -->
+
+                            <!-- Foto, Nome, E-mail e Presença -->
                             <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="position-relative me-3">
-                                        {% if u.foto and u.foto != 'None' and u.foto | trim != '' %}
-                                            <img src="{{ u.foto }}" alt="Foto" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover; border: 2px solid #fff; outline: 1px solid #dee2e6;">
-                                        {% else %}
-                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center shadow-sm fw-bold text-muted" style="width: 38px; height: 38px; border: 1px dashed #adb5bd;">
-                                                {{ nome_u[:1]|upper }}
-                                            </div>
-                                        {% endif %}
-                                        
-                                        <!-- Bolinha de online/offline -->
-                                        <span class="position-absolute bottom-0 end-0 bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 18px; height: 18px; transform: translate(25%, 25%); border: 1px solid #dee2e6;">
-                                            <i class="bi {{ 'bi-phone-fill' if u.dispositivo == 'celular' else 'bi-pc-display-horizontal' }} {{ 'text-success' if u.is_online else 'text-danger' }}" style="font-size: 0.65rem;" title="{{ 'Online' if u.is_online else 'Offline' }} ({{ 'Celular' if u.dispositivo == 'celular' else 'PC' }})"></i>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="position: relative;">
+                                        <div class="lo-avatar" style="width: 38px; height: 38px; font-size: 14px;">
+                                            {% if u.foto and u.foto != 'None' and u.foto | trim != '' %}
+                                                <img src="{{ u.foto }}" alt="Foto">
+                                            {% else %}
+                                                <span>{{ nome_u[:1]|upper }}</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- Indicador de Presença Online/Dispositivo -->
+                                        <span style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; border: 1px solid var(--line);" title="{{ 'Online' if u.is_online else 'Offline' }} ({{ 'Celular' if u.dispositivo == 'celular' else 'Computador' }})">
+                                            <i class="bi {{ 'bi-phone-fill' if u.dispositivo == 'celular' else 'bi-laptop' }}" style="font-size: 8px; color: {{ 'var(--ok)' if u.is_online else 'var(--muted)' }};"></i>
                                         </span>
                                     </div>
                                     <div>
-                                        <div class="fw-bold text-dark" style="font-size: 0.95rem;">{{ nome_u }}</div>
-                                        <div class="text-secondary small">{{ u.email }}</div>
+                                        <div style="font-weight: 700; color: var(--ink);">{{ nome_u }}</div>
+                                        <div style="font-size: 12px; color: var(--muted);">{{ u.email }}</div>
                                     </div>
                                 </div>
                             </td>
-                            
+
                             <!-- Filial e Perfil -->
-                            <td><span class="badge bg-light text-dark border">{{ u.filial }}</span></td>
-                            <td><span class="badge bg-light text-dark border">{{ u.perfil }}</span></td>
-                            
-                            <!-- Ações -->
-                            <td class="text-center">
-                                <div class="d-flex justify-content-center align-items-center gap-2">
-                                    <!-- Botão de Editar com NOVOS data attributes para o JS -->
-                                    <button class="btn btn-sm btn-outline-primary border-0" 
+                            <td>
+                                <span class="lo-pill lo-pill-neutral">{{ u.filial }}</span>
+                            </td>
+                            <td>
+                                <span class="lo-pill lo-pill-info">{{ u.perfil }}</span>
+                            </td>
+
+                            <!-- Botões de Ação -->
+                            <td style="text-align: right;">
+                                <div style="display: inline-flex; align-items: center; gap: 4px;">
+                                    <button type="button" class="lo-rbtn" style="width: 32px; height: 32px;"
                                             title="Editar Colaborador" aria-label="Editar"
                                             data-email="{{ u.email }}" 
                                             data-nome="{{ u.nome }}" 
@@ -222,14 +239,14 @@
                                             data-usuarioportal="{{ u.usuario_portal or '' }}"
                                             data-idapple="{{ u.id_apple or '' }}"
                                             onclick="abrirModalEditar(this)">
-                                        <i class="bi bi-pencil-square fs-6"></i>
+                                        <i class="bi bi-pencil" style="font-size: 13px;"></i>
                                     </button>
-                                    
+
                                     {% if u.email != session.get('user_email') and u.ativo %}
-                                    <form method="POST" action="{{ url_for('main.simular_acesso') }}" class="m-0">
+                                    <form method="POST" action="{{ url_for('main.simular_acesso') }}" style="margin: 0; display: inline;">
                                         <input type="hidden" name="email_alvo" value="{{ u.email }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-success border-0" title="Simular acesso" aria-label="Simular acesso">
-                                            <i class="bi bi-box-arrow-in-right fs-6"></i>
+                                        <button type="submit" class="lo-rbtn" style="width: 32px; height: 32px;" title="Simular acesso deste colaborador" aria-label="Simular acesso">
+                                            <i class="bi bi-box-arrow-in-right" style="font-size: 13px; color: var(--ok);"></i>
                                         </button>
                                     </form>
                                     {% endif %}
@@ -238,9 +255,9 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-5">
-                                <i class="bi bi-people d-block fs-1 text-secondary mb-2"></i>
-                                Nenhum colaborador encontrado com esses filtros no sistema.
+                            <td colspan="5" style="text-align: center; padding: 48px 16px; color: var(--muted);">
+                                <i class="bi bi-people" style="font-size: 32px; display: block; margin-bottom: 8px;"></i>
+                                Nenhum colaborador encontrado com os filtros selecionados.
                             </td>
                         </tr>
                         {% endfor %}
@@ -248,186 +265,208 @@
                 </table>
             </div>
 
-            <!-- Paginação -->
+            <!-- Paginação do Design System -->
             {% if total_paginas > 1 %}
-            <nav class="mt-4 d-flex justify-content-center" aria-label="Paginação">
-                <ul class="pagination pagination-sm shadow-sm mb-0">
-                    <li class="page-item {% if page == 1 %}disabled{% endif %}">
-                        <a class="page-link text-dark" href="{{ url_for('main.usuarios', page=page-1, search=current_filters.search, filial=current_filters.filial, perfil=current_filters.perfil, status=current_filters.status) }}">
-                            <i class="bi bi-chevron-left"></i> Anterior
-                        </a>
-                    </li>
+            <div style="padding: var(--space-4); border-top: 1px solid var(--line);">
+                <nav class="lo-pagination" aria-label="Navegação entre páginas">
+                    <a class="lo-page-link {% if page == 1 %}disabled{% endif %}" href="{{ url_for('main.usuarios', page=page-1, search=current_filters.search, filial=current_filters.filial, perfil=current_filters.perfil, status=current_filters.status) }}" aria-label="Página anterior">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                    
                     {% for p in range(1, total_paginas + 1) %}
-                    <li class="page-item {% if p == page %}active{% endif %}">
-                        <a class="page-link {% if p == page %}bg-primary border-primary text-white{% else %}text-dark{% endif %}" href="{{ url_for('main.usuarios', page=p, search=current_filters.search, filial=current_filters.filial, perfil=current_filters.perfil, status=current_filters.status) }}">
-                            {{ p }}
-                        </a>
-                    </li>
+                    <a class="lo-page-link {% if p == page %}active{% endif %}" href="{{ url_for('main.usuarios', page=p, search=current_filters.search, filial=current_filters.filial, perfil=current_filters.perfil, status=current_filters.status) }}">
+                        {{ p }}
+                    </a>
                     {% endfor %}
-                    <li class="page-item {% if page == total_paginas %}disabled{% endif %}">
-                        <a class="page-link text-dark" href="{{ url_for('main.usuarios', page=page+1, search=current_filters.search, filial=current_filters.filial, perfil=current_filters.perfil, status=current_filters.status) }}">
-                            Próxima <i class="bi bi-chevron-right"></i>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
+
+                    <a class="lo-page-link {% if page == total_paginas %}disabled{% endif %}" href="{{ url_for('main.usuarios', page=page+1, search=current_filters.search, filial=current_filters.filial, perfil=current_filters.perfil, status=current_filters.status) }}" aria-label="Próxima página">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </nav>
+            </div>
             {% endif %}
-        </div>
+        </article>
     </div>
 </div>
 
-<!-- Modal: Editar Colaborador -->
-<div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-labelledby="tituloEditar" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow">
-      <div class="modal-header bg-light border-0">
-        <h5 class="modal-title fw-bold text-dark" id="tituloEditar"><i class="bi bi-pencil-square text-danger me-2"></i> Editar Colaborador</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
+<!-- =========================================================================
+     MODAL NATIVO: EDITAR COLABORADOR
+     ========================================================================= -->
+<div class="lo-modal-overlay" id="modalEditarUsuario" role="dialog" aria-modal="true" aria-labelledby="tituloEditar">
+    <div class="lo-modal">
+        <div class="lo-modal-hd">
+            <h4 class="lo-modal-title" id="tituloEditar">
+                <i class="bi bi-person-gear" style="color: var(--accent); margin-right: 6px;"></i>
+                Editar Colaborador
+            </h4>
+            <button type="button" class="lo-rbtn" data-lo-modal-close aria-label="Fechar janela">
+                <i class="bi bi-x-lg" style="font-size: 14px;"></i>
+            </button>
+        </div>
 
-      <form method="POST" action="{{ url_for('main.editar_usuario') }}">
-        <input type="hidden" name="email_original" id="editEmailOriginal">
-
-        <div class="modal-body p-4">
+        <form method="POST" action="{{ url_for('main.editar_usuario') }}" data-once>
+            <input type="hidden" name="email_original" id="editEmailOriginal">
             
-            <div class="mb-3 text-center">
-                <div class="position-relative d-inline-block mb-2">
-                    <img id="previewFoto" src="" alt="Foto" class="rounded-circle shadow-sm d-none" style="width: 100px; height: 100px; object-fit: cover; border: 3px solid var(--lello-red);">
-                    <div id="placeholderFoto" class="rounded-circle shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 100px; height: 100px; border: 2px dashed #adb5bd; margin: 0 auto;">
-                        <i class="bi bi-person text-secondary" style="font-size: 3rem;"></i>
+            <div class="lo-modal-bd">
+                <!-- Foto de Perfil no Modal -->
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <div style="position: relative; width: 84px; height: 84px;">
+                        <div class="lo-avatar" style="width: 84px; height: 84px; font-size: 32px; border: 2px solid var(--line);">
+                            <img id="previewFoto" src="" alt="Foto" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+                            <i id="placeholderFoto" class="bi bi-person text-secondary" style="font-size: 36px;"></i>
+                        </div>
                     </div>
-                </div>
-                <div class="mt-2">
-                    <label for="inputFileFoto" class="btn btn-sm btn-outline-secondary rounded-pill shadow-sm"><i class="bi bi-camera me-1"></i> Trocar Foto</label>
-                    <input type="file" id="inputFileFoto" class="d-none" accept="image/*">
+                    <label for="inputFileFoto" class="lo-btn lo-btn-sm lo-btn-ghost">
+                        <i class="bi bi-camera"></i> Trocar foto
+                    </label>
+                    <input type="file" id="inputFileFoto" style="display: none;" accept="image/png, image/jpeg, image/webp">
                     <input type="hidden" name="foto" id="editFoto">
                 </div>
-            </div>
 
-            <div class="mb-3">
-                <label class="form-label small fw-bold text-muted" for="editEmail">E-mail corporativo</label>
-                <input type="email" name="email" id="editEmail" class="form-control shadow-sm" required placeholder="email@lello.com.br">
-            </div>
-
-            <div class="row g-3 mb-3">
-                <div class="col-sm-6">
-                    <label class="form-label small fw-bold text-muted" for="editNome">Nome completo</label>
-                    <input type="text" name="nome" id="editNome" class="form-control shadow-sm" required>
+                <div class="lo-field">
+                    <label class="lo-label" for="editEmail">E-mail corporativo</label>
+                    <input type="email" name="email" id="editEmail" class="lo-input" required placeholder="email@lello.com.br">
                 </div>
-                <div class="col-sm-6">
-                    <label class="form-label small fw-bold text-muted" for="editNomeExibicao">Nome de exibição</label>
-                    <input type="text" name="nome_exibicao" id="editNomeExibicao" class="form-control shadow-sm" required>
-                </div>
-            </div>
 
-            <!-- NOVOS CAMPOS AQUI (EDICAO) -->
-            <div class="row g-3 mb-3">
-                <div class="col-sm-6">
-                    <label class="form-label small fw-bold text-muted" for="editUsuarioPortal">Usuário Portal</label>
-                    <input type="text" name="usuario_portal" id="editUsuarioPortal" class="form-control shadow-sm" placeholder="Para cruzar dados">
+                <div class="lo-grid" style="gap: var(--space-2);">
+                    <div class="lo-col-6">
+                        <div class="lo-field">
+                            <label class="lo-label" for="editNome">Nome completo</label>
+                            <input type="text" name="nome" id="editNome" class="lo-input" required>
+                        </div>
+                    </div>
+                    <div class="lo-col-6">
+                        <div class="lo-field">
+                            <label class="lo-label" for="editNomeExibicao">Nome de exibição</label>
+                            <input type="text" name="nome_exibicao" id="editNomeExibicao" class="lo-input" required>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-sm-6">
-                    <label class="form-label small fw-bold text-muted" for="editIdApple">ID da Apple</label>
-                    <input type="text" name="id_apple" id="editIdApple" class="form-control shadow-sm" placeholder="Conta Apple">
+
+                <div class="lo-grid" style="gap: var(--space-2);">
+                    <div class="lo-col-6">
+                        <div class="lo-field">
+                            <label class="lo-label" for="editUsuarioPortal">Usuário Portal</label>
+                            <input type="text" name="usuario_portal" id="editUsuarioPortal" class="lo-input" placeholder="Para cruzar dados">
+                        </div>
+                    </div>
+                    <div class="lo-col-6">
+                        <div class="lo-field">
+                            <label class="lo-label" for="editIdApple">ID da Apple</label>
+                            <input type="text" name="id_apple" id="editIdApple" class="lo-input" placeholder="Conta Apple">
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="mb-3">
-                <label class="form-label small fw-bold text-muted" for="editFilial">Filial / equipe</label>
-                <select name="filial" id="editFilial" class="form-select shadow-sm" required {% if not eh_admin %}disabled{% endif %}>
-                    {% for f in filiais %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
-                </select>
-            </div>
-
-            <div class="row g-3">
-                <div class="col-sm-6">
-                    <label class="form-label small fw-bold text-muted" for="editPerfil">Perfil de acesso</label>
-                    <select name="perfil" id="editPerfil" class="form-select shadow-sm" required>
-                        <option value="Corretor" selected>Corretor</option>
-                        <option value="Agente de Visita">Agente de Visita</option>
-                        {% if eh_admin or session.get('user_perfil') == 'Gerente Geral' %}
-                            <option value="Gerente Filial">Gerente Filial</option>
-                        {% endif %}
-                        {% if eh_admin %}
-                            <option value="Gerente Geral">Gerente Geral</option>
-                            <option value="Admin">Admin</option>
-                        {% endif %}
+                <div class="lo-field">
+                    <label class="lo-label" for="editFilial">Filial / equipe</label>
+                    <select name="filial" id="editFilial" class="lo-select" required {% if not eh_admin %}disabled{% endif %}>
+                        {% for f in filiais %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
                     </select>
                 </div>
-                <div class="col-sm-6">
-                    <label class="form-label small fw-bold text-muted" for="editAtivo">Status</label>
-                    <select name="ativo" id="editAtivo" class="form-select shadow-sm" required>
-                        <option value="true" class="text-success fw-bold">Ativo (liberado)</option>
-                        <option value="false" class="text-danger fw-bold">Inativo (bloqueado)</option>
-                    </select>
+
+                <div class="lo-grid" style="gap: var(--space-2);">
+                    <div class="lo-col-6">
+                        <div class="lo-field">
+                            <label class="lo-label" for="editPerfil">Perfil de acesso</label>
+                            <select name="perfil" id="editPerfil" class="lo-select" required>
+                                <option value="Corretor" selected>Corretor</option>
+                                <option value="Agente de Visita">Agente de Visita</option>
+                                {% if eh_admin or session.get('user_perfil') == 'Gerente Geral' %}
+                                    <option value="Gerente Filial">Gerente Filial</option>
+                                {% endif %}
+                                {% if eh_admin %}
+                                    <option value="Gerente Geral">Gerente Geral</option>
+                                    <option value="Admin">Admin</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="lo-col-6">
+                        <div class="lo-field">
+                            <label class="lo-label" for="editAtivo">Status da conta</label>
+                            <select name="ativo" id="editAtivo" class="lo-select" required>
+                                <option value="true">Ativo (Acesso Liberado)</option>
+                                <option value="false">Inativo (Acesso Bloqueado)</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="modal-footer border-0 bg-light d-flex justify-content-between">
-            <div class="d-flex gap-2">
-                {% if eh_admin %}
-                <button type="submit" formaction="{{ url_for('main.excluir_usuario') }}" onclick="return confirm('ATENÇÃO: Deseja realmente excluir este colaborador?');" class="btn btn-outline-danger shadow-sm fw-bold" title="Excluir" aria-label="Excluir colaborador">
-                    <i class="bi bi-trash"></i>
-                </button>
-                {% endif %}
-                <button type="submit" formaction="{{ url_for('main.reenviar_convite') }}" class="btn btn-outline-info shadow-sm fw-bold" title="Reenviar convite por e-mail" aria-label="Reenviar convite">
-                    <i class="bi bi-envelope-paper"></i>
+            <div class="lo-modal-ft">
+                <div style="margin-right: auto; display: flex; gap: 6px;">
+                    {% if eh_admin %}
+                    <button type="submit" formaction="{{ url_for('main.excluir_usuario') }}" onclick="return confirm('ATENÇÃO: Deseja realmente excluir este colaborador do sistema?');" class="lo-btn lo-btn-sm lo-btn-danger" title="Excluir Colaborador">
+                        <i class="bi bi-trash"></i> Excluir
+                    </button>
+                    {% endif %}
+                    <button type="submit" formaction="{{ url_for('main.reenviar_convite') }}" class="lo-btn lo-btn-sm lo-btn-ghost" title="Reenviar convite de acesso por e-mail">
+                        <i class="bi bi-envelope"></i> Reenviar convite
+                    </button>
+                </div>
+
+                <button type="button" class="lo-btn lo-btn-ghost" data-lo-modal-close>Cancelar</button>
+                <button type="submit" class="lo-btn lo-btn-fill">
+                    <i class="bi bi-check2"></i> Salvar alterações
                 </button>
             </div>
-            <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary fw-bold shadow-sm"><i class="bi bi-check2 me-1"></i> Salvar</button>
-            </div>
-        </div>
-      </form>
+        </form>
     </div>
-  </div>
 </div>
 
-<!-- Modal: Importar planilha -->
+<!-- =========================================================================
+     MODAL NATIVO: IMPORTAR EM MASSA (.CSV)
+     ========================================================================= -->
 {% if eh_admin %}
-<div class="modal fade" id="modalImportar" tabindex="-1" aria-labelledby="tituloImportar" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow">
-      <!-- (Omitido por brevidade visual: modal import continua intacto) -->
-      <div class="modal-header bg-light border-0">
-        <h5 class="modal-title fw-bold text-dark" id="tituloImportar"><i class="bi bi-file-earmark-excel text-success me-2"></i> Importar Colaboradores</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
+<div class="lo-modal-overlay" id="modalImportar" role="dialog" aria-modal="true" aria-labelledby="tituloImportar">
+    <div class="lo-modal">
+        <div class="lo-modal-hd">
+            <h4 class="lo-modal-title" id="tituloImportar">
+                <i class="bi bi-file-earmark-excel" style="color: var(--ok); margin-right: 6px;"></i>
+                Importar Colaboradores em Massa
+            </h4>
+            <button type="button" class="lo-rbtn" data-lo-modal-close aria-label="Fechar janela">
+                <i class="bi bi-x-lg" style="font-size: 14px;"></i>
+            </button>
+        </div>
 
-      <form method="POST" action="{{ url_for('main.importar_usuarios') }}" enctype="multipart/form-data">
-        <div class="modal-body p-4">
-            <div class="alert alert-info small shadow-sm border-0 mb-4">
-                <i class="bi bi-info-circle-fill me-1"></i>
-                Salve o Excel no formato <b>CSV (separado por vírgulas)</b>. <br>A 1ª linha deve conter:
-                <code class="d-block bg-white px-2 py-1 rounded mt-2 border">nome, email, filial, perfil, enviar_email</code>
-                <span class="d-block mt-2 text-secondary"><i class="bi bi-lightbulb text-warning"></i> Em <b>enviar_email</b>, use <b>sim</b> para notificar ou <b>nao</b> para cadastrar silenciosamente.</span>
+        <form method="POST" action="{{ url_for('main.importar_usuarios') }}" enctype="multipart/form-data" data-once>
+            <div class="lo-modal-bd">
+                <div class="lo-callout lo-callout-info">
+                    <div class="ic"><i class="bi bi-info-circle-fill"></i></div>
+                    <div>
+                        O arquivo deve ser um <strong>CSV (separado por vírgulas)</strong>. A primeira linha deve conter exatamente os cabeçalhos:
+                        <code style="display: block; background: var(--surface); padding: 6px 8px; border-radius: 6px; margin-top: 6px; border: 1px solid var(--line); font-family: monospace;">nome, email, filial, perfil, enviar_email</code>
+                    </div>
+                </div>
+
+                <div class="lo-field">
+                    <label class="lo-label" for="arquivoCsv">Selecione o arquivo CSV</label>
+                    <input type="file" id="arquivoCsv" name="arquivo_csv" class="lo-input" accept=".csv" required>
+                </div>
             </div>
-            <div class="mb-3">
-                <label class="form-label small fw-bold text-muted" for="arquivoCsv">Selecione o arquivo (.csv)</label>
-                <input type="file" id="arquivoCsv" name="arquivo_csv" class="form-control shadow-sm" accept=".csv" required>
+
+            <div class="lo-modal-ft">
+                <button type="button" class="lo-btn lo-btn-ghost" data-lo-modal-close>Cancelar</button>
+                <button type="submit" class="lo-btn lo-btn-fill">
+                    <i class="bi bi-upload"></i> Processar importação
+                </button>
             </div>
-        </div>
-        <div class="modal-footer border-0 bg-light">
-            <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-success fw-bold shadow-sm"><i class="bi bi-upload me-1"></i> Iniciar Importação</button>
-        </div>
-      </form>
+        </form>
     </div>
-  </div>
 </div>
 {% endif %}
+{% endblock %}
 
-<!-- Correção do JavaScript -->
+{% block scripts %}
 <script>
 const emailLogado = "{{ session.get('user_email', '') }}";
 const perfilLogado = "{{ session.get('user_perfil', '') }}";
 
 function travar(el, travado) {
     el.style.pointerEvents = travado ? 'none' : 'auto';
-    el.classList.toggle('bg-light', travado);
-    el.classList.toggle('text-muted', travado);
+    el.style.opacity = travado ? '0.6' : '1';
 }
 
 function mostrarFoto(src) {
@@ -436,14 +475,12 @@ function mostrarFoto(src) {
     document.getElementById('editFoto').value = src || '';
     if (src && src.trim() !== '' && src !== 'None') {
         preview.src = src;
-        preview.classList.remove('d-none');
-        placeholder.classList.add('d-none');
-        placeholder.classList.remove('d-flex');
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
     } else {
         preview.removeAttribute('src');
-        preview.classList.add('d-none');
-        placeholder.classList.remove('d-none');
-        placeholder.classList.add('d-flex');
+        preview.style.display = 'none';
+        placeholder.style.display = 'block';
     }
 }
 
@@ -457,7 +494,6 @@ function abrirModalEditar(btn) {
     document.getElementById('editNome').value = d.nome;
     document.getElementById('editNomeExibicao').value = d.nomeexibicao || d.nome;
     
-    // PREENCHE OS NOVOS CAMPOS NO MODAL
     document.getElementById('editUsuarioPortal').value = d.usuarioportal || '';
     document.getElementById('editIdApple').value = d.idapple || '';
     
@@ -470,7 +506,8 @@ function abrirModalEditar(btn) {
     let opcaoExiste = false;
     for (let i = 0; i < selectPerfil.options.length; i++) {
         if (selectPerfil.options[i].value === d.perfil) {
-            opcaoExiste = true; break;
+            opcaoExiste = true; 
+            break;
         }
     }
     if (!opcaoExiste) {
@@ -480,16 +517,14 @@ function abrirModalEditar(btn) {
 
     const trava = (d.email.toLowerCase() === emailLogado.toLowerCase()) && (perfilLogado !== 'Admin');
     inputEmail.readOnly = trava;
-    inputEmail.classList.toggle('bg-light', trava);
-    inputEmail.classList.toggle('text-muted', trava);
+    inputEmail.style.opacity = trava ? '0.6' : '1';
     travar(selectPerfil, trava);
     travar(selectAtivo, trava);
 
     document.getElementById('inputFileFoto').value = '';
     mostrarFoto(d.foto);
 
-    var myModal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
-    myModal.show();
+    window.openLoModal('modalEditarUsuario');
 }
 
 document.getElementById('inputFileFoto').addEventListener('change', function (event) {
@@ -505,7 +540,7 @@ document.getElementById('inputFileFoto').addEventListener('change', function (ev
             canvas.width = Math.round(img.width * escala);
             canvas.height = Math.round(img.height * escala);
             canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-            mostrarFoto(canvas.toDataURL('image/jpeg', 0.7));
+            mostrarFoto(canvas.toDataURL('image/jpeg', 0.75));
         };
         img.src = e.target.result;
     };
