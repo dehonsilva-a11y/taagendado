@@ -1,82 +1,71 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="claro">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#C10232">
+    <meta name="theme-color" content="#C20332">
     <title>Entrar · Lello</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=5">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='design-system.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=6">
 </head>
-<body class="auth">
-    <div class="auth-shell">
-        <section class="auth-brand">
-            <img src="{{ url_for('static', filename='img/lello-logo-branco.png') }}" alt="Lello">
-            <p class="tag mb-0">Suas visitas e comissões, sempre à mão.
-                <small>Acompanhe os resultados em um só lugar.</small>
-            </p>
-        </section>
-
-        <section class="auth-panel flex-column">
-            <div class="auth-card">
-                <h1>Entrar no portal</h1>
-                <p class="lead-sm">Use o e-mail cadastrado na Lello para acessar.</p>
-
+<body style="background:var(--bg);">
+    <div style="min-height:100dvh; display:grid; grid-template-columns: repeat(auto-fit, minmax(320px,1fr));">
+        <div style="background: radial-gradient(120% 140% at 0% 0%, #8A0F2A 0%, #5C0521 55%, #2A0110 100%); color:#fff; display:flex; flex-direction:column; justify-content:space-between; padding: clamp(24px,6vw,64px);">
+            <div>
+                <img src="{{ url_for('static', filename='img/lello-logo-branco.png') }}" alt="Lello" style="height:40px; width:auto;">
+                <h1 style="margin: clamp(24px,8vw,64px) 0 0; font-size: clamp(28px,5vw,56px); font-weight:800; line-height:1.05;">Suas visitas e comissões,<br>sempre à mão</h1>
+                <p style="margin:12px 0 0; opacity:.9; font-size:clamp(16px,2vw,20px);">Acompanhe os resultados em um só lugar.</p>
+            </div>
+            <div style="opacity:.7; font-size:13px;">&copy; 2026 Lello Imóveis · <a href="https://www.lello.com.br/politica-de-privacidade/lello-imoveis/" target="_blank" rel="noopener noreferrer" style="color:#fff; text-decoration:none;">Política de Privacidade</a></div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:center; padding: clamp(20px,6vw,64px);">
+            <div class="lo-card" style="width:100%; max-width:420px; padding: var(--space-6); gap: var(--space-5);">
+                <div>
+                    <h2 style="margin:0; font-size:28px; font-weight:800;">Entrar no portal</h2>
+                    <p style="margin:6px 0 0; color:var(--muted);">Use o e-mail cadastrado na Lello para acessar.</p>
+                </div>
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} fw-semibold" role="alert">{{ message }}</div>
+                        <div class="lo-callout">
+                            <div class="ic"><svg class="lo-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+                            <div>{{ message }}</div>
+                        </div>
                     {% endfor %}
                 {% endwith %}
-
-                <button id="btnGoogle" onclick="fazerLoginGoogle()" class="btn-google btn" type="button">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="">
-                    Entrar com o Google
-                </button>
-                
-                <button id="btnApple" onclick="fazerLoginApple()" class="btn-apple btn" type="button">
-                    <i class="bi bi-apple"></i>
-                    Entrar com a Apple
-                </button>
-
-                <div id="loading" class="mt-3 d-none text-center small fw-semibold" style="color: var(--lello-red);" role="status">
-                    <span class="spinner-border spinner-border-sm me-1"></span> Verificando seu acesso...
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <button id="btnGoogle" onclick="fazerLoginGoogle()" class="lo-btn" style="justify-content:center;">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" style="width:18px; height:18px;">
+                        Entrar com o Google
+                    </button>
+                    <button id="btnApple" onclick="fazerLoginApple()" class="lo-btn" style="justify-content:center;">
+                        <i class="bi bi-apple" style="font-size:18px;"></i>
+                        Entrar com a Apple
+                    </button>
                 </div>
-
-                <p class="auth-foot mb-0">Sem acesso? Fale com o gerente da sua filial.</p>
+                <div id="loading" style="display:none; text-align:center; color:var(--muted); font-size:13px;">
+                    <span class="spinner-border spinner-border-sm" role="status"></span> Verificando seu acesso...
+                </div>
+                <div style="text-align:center; color:var(--muted); font-size:13px;">Sem acesso? Fale com o gerente da sua filial.</div>
             </div>
-
-            <!-- NOVO RODAPÉ (COPYRIGHT E PRIVACIDADE) -->
-            <div class="mt-4 text-center" style="font-size: 0.85rem; color: var(--muted);">
-                &copy; 2026 Lello Imóveis 
-                <br class="d-lg-none"> <!-- Quebra a linha no celular -->
-                <span class="d-none d-lg-inline mx-1">&bull;</span> <!-- Bolinha separadora no PC -->
-                <a href="https://www.lello.com.br/politica-de-privacidade/lello-imoveis/" target="_blank" rel="noopener noreferrer" class="text-decoration-none fw-semibold" style="color: var(--lello-wine); transition: color 0.2s;">
-                    Política de Privacidade
-                </a>
-            </div>
-        </section>
+        </div>
     </div>
 
-    <!-- Firebase (Compat SDK) -->
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
-
-    <script id="firebase-config-data" type="application/json">
-        {{ firebase_config | tojson | safe }}
-    </script>
-
+    <script id="firebase-config-data" type="application/json">{{ firebase_config | tojson | safe }}</script>
     <script>
         const configData = document.getElementById('firebase-config-data').textContent;
         const firebaseConfig = JSON.parse(configData);
-
         firebase.initializeApp(firebaseConfig);
-        
-        // Inicializa os dois provedores
         const providerGoogle = new firebase.auth.GoogleAuthProvider();
         const providerApple = new firebase.auth.OAuthProvider('apple.com');
         providerApple.addScope('email');
         providerApple.addScope('name');
+    </script>
+    <script src="{{ url_for('static', filename='login-firebase.js') }}"></script>
+</body>
+</html>
 
         function alternarCarregamento(carregando) {
             const btnGoogle = document.getElementById('btnGoogle');
