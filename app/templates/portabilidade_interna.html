@@ -3,26 +3,22 @@
 {% block page_title %}Portabilidade Interna{% endblock %}
 
 {% block content %}
-{# Separa o primeiro nome e o sobrenome a partir do nome na sessão #}
 {% set partes = (session.get('user_nome') or '').split(' ') %}
 {% set primeiro_nome = partes[0] if partes else '' %}
 {% set ultimo_nome = partes[1:] | join(' ') if partes|length > 1 else '' %}
 {% set email_usuario = session.get('user_email') or '' %}
-
-{# Valores fixos adicionais #}
 {% set area_atuacao = 'Comercial B2C (Locação)' %}
 {% set cpf = '000.000.000-00' %}
 
-<div class="surface surface-pad h-100 d-flex flex-column" style="min-height: 80vh; padding: 0 !important; overflow: hidden;">
-    
-    <!-- O iFrame montado com os parâmetros preenchidos -->
-    <iframe 
-        src="https://share.hsforms.com/1BFVzXhMnTnGfGkUPebDYAActupq?firstname={{ primeiro_nome | urlencode }}&lastname={{ ultimo_nome | urlencode }}&email={{ email_usuario | urlencode }}&area_de_atuacao_lello={{ area_atuacao | urlencode }}&cpf={{ cpf | urlencode }}" 
-        width="100%" 
-        height="100%" 
-        style="border: none; flex-grow: 1; border-radius: inherit;" 
-        title="Portabilidade Interna Lello">
-    </iframe>
-
+<div class="lo-stack" style="padding: var(--space-4); height: calc(100vh - 140px);">
+    <div class="lo-card" style="padding:0; overflow:hidden; flex:1; min-height:0;">
+        <iframe 
+            src="https://share.hsforms.com/1BFVzXhMnTnGfGkUPebDYAActupq?firstname={{ primeiro_nome | urlencode }}&lastname={{ ultimo_nome | urlencode }}&email={{ email_usuario | urlencode }}&area_de_atuacao_lello={{ area_atuacao | urlencode }}&cpf={{ cpf | urlencode }}" 
+            width="100%" 
+            height="100%" 
+            style="border:0; display:block;" 
+            title="Portabilidade Interna Lello">
+        </iframe>
+    </div>
 </div>
 {% endblock %}
