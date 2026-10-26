@@ -134,9 +134,9 @@ body {
     font-family: var(--font-sans);
     background-color: var(--bg);
     color: var(--ink);
-    min-height: 100dvh;
+    height: 100vh; /* Substitua min-height por height: 100vh */
     width: 100%;
-    overflow-x: hidden;
+    overflow: hidden; /* Adicione isso para matar qualquer scroll global */
     position: relative;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -216,9 +216,10 @@ button, input, select, textarea {
 .lo-shell {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    min-height: 100dvh;
+    height: 100%; /* Mude para 100% */
     width: 100%;
     max-width: 100vw;
+    overflow: hidden;
 }
 
 @media (min-width: 992px) {
@@ -252,8 +253,9 @@ button, input, select, textarea {
 
 @media (min-width: 992px) {
     .lo-sidebar {
-        position: sticky;
-        top: 0;
+        position: relative; /* Remove o sticky que estava cortando o fundo */
+        top: auto;
+        height: 100%; /* Força a ir até o final da tela */
         transform: none;
         box-shadow: none;
         z-index: 40;
@@ -267,6 +269,7 @@ button, input, select, textarea {
     justify-content: space-between;
     gap: 12px;
     border-bottom: 1px solid var(--line);
+    height: 66px; /* Altura fixa para o mobile */
 }
 
 .lo-sidebar-brand {
@@ -465,6 +468,9 @@ button, input, select, textarea {
     flex-direction: column;
     min-width: 0;
     width: 100%;
+    height: 100%; /* Mude para 100% */
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch; 
 }
 
 .lo-header {
@@ -481,11 +487,21 @@ button, input, select, textarea {
     justify-content: space-between;
     gap: 12px;
     width: 100%;
+    
+    /* TRAVAS DE TAMANHO */
+    height: 66px; /* Altura exata para o celular */
+    flex-shrink: 0; /* Impede que o cabeçalho encolha com o zoom */
 }
 
 @media (min-width: 992px) {
     .lo-header {
         padding: 16px 32px;
+        height: 78px; /* Altura exata para o computador */
+        flex-shrink: 0; /* Garante que não vai encolher no PC */
+    }
+
+    .lo-sidebar-hd {
+        height: 78px; /* Mantém igual ao cabeçalho central */
     }
 }
 
@@ -598,11 +614,10 @@ button, input, select, textarea {
    -------------------------------------------------------------------------- */
 .lo-content {
     flex: 1;
-    max-width: 1200px; /* Largura controlada e elegante no PC */
+    max-width: none; /* Remove a trava de 1200px para ocupar a tela toda */
     width: 100%;
-    margin: 0 auto;
+    margin: 0; /* Remove a centralização forçada */
     padding: 14px;
-    /* Espaço para a TabBar inferior nunca cobrir o conteúdo no celular */
     padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
     display: flex;
     flex-direction: column;
@@ -620,8 +635,8 @@ button, input, select, textarea {
 
 @media (min-width: 992px) {
     .lo-content {
-        padding: 28px 36px;
-        padding-bottom: 40px; /* Sem barra no PC, sem espaço extra */
+        padding: 32px; /* Deixa o espaço superior e lateral iguais (32px) */
+        padding-bottom: 40px; 
         gap: 24px;
     }
 }

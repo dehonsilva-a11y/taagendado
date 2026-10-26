@@ -19,7 +19,7 @@
             <span class="lo-kicker">Portal do Corretor Lello</span>
             <h2 class="lo-card-hero-title">Olá, {{ session.get('user_nome', 'Colaborador') }}</h2>
             <p class="lo-card-hero-desc">
-                Tudo o que você precisa para acompanhar indicações, portabilidades e seus ganhos em um único ambiente, pensado para aproximar as pessoas da vida em comum.
+                Acompanhe suas indicações, portabilidades e comissões em um só lugar.
             </p>
         </div>
         <div class="lo-row" style="padding: 0; margin-top: var(--space-2);">
@@ -57,7 +57,7 @@
             </div>
             <div class="lo-shortcut-info">
                 <span class="lo-shortcut-title">Campanha de Indicações</span>
-                <span class="lo-shortcut-desc">Ganhe com a portabilidade de imóveis ocupados</span>
+                <span class="lo-shortcut-desc">Indique imóveis ocupados e ganhe com a portabilidade.</span>
             </div>
             <i class="bi bi-chevron-right lo-shortcut-arrow"></i>
         </a>
@@ -70,7 +70,7 @@
             </div>
             <div class="lo-shortcut-info">
                 <span class="lo-shortcut-title">Portabilidade Interna</span>
-                <span class="lo-shortcut-desc">Indique imóveis da carteira interna Lello</span>
+                <span class="lo-shortcut-desc">Indique imóveis da carteira Lello.</span>
             </div>
             <i class="bi bi-chevron-right lo-shortcut-arrow"></i>
         </a>
@@ -79,11 +79,11 @@
         {% if pode_portabilidade_externa %}
         <a href="{{ url_for('main.portabilidade_externa') }}" class="lo-shortcut-card">
             <div class="lo-shortcut-icon">
-                <i class="bi bi-box-arrow-up-right"></i>
+                <i class="bi bi-arrow-left-right"></i>
             </div>
             <div class="lo-shortcut-info">
                 <span class="lo-shortcut-title">Portabilidade Externa</span>
-                <span class="lo-shortcut-desc">Traga imóveis de outras imobiliárias</span>
+                <span class="lo-shortcut-desc">Traga imóveis de outras imobiliárias para a Lello.</span>
             </div>
             <i class="bi bi-chevron-right lo-shortcut-arrow"></i>
         </a>
@@ -95,8 +95,8 @@
                 <i class="bi bi-graph-up-arrow"></i>
             </div>
             <div class="lo-shortcut-info">
-                <span class="lo-shortcut-title">Meus ganhos</span>
-                <span class="lo-shortcut-desc">Consulte suas comissões e datas de pagamento</span>
+                <span class="lo-shortcut-title">Seus ganhos</span>
+                <span class="lo-shortcut-desc">Consulte comissões e previsões de pagamento.</span>
             </div>
             <i class="bi bi-chevron-right lo-shortcut-arrow"></i>
         </a>
@@ -109,7 +109,7 @@
             </div>
             <div class="lo-shortcut-info">
                 <span class="lo-shortcut-title">Relatório de Comissões</span>
-                <span class="lo-shortcut-desc">Consolidado por filial, corretor e período</span>
+                <span class="lo-shortcut-desc">Consulte resultados por filial, corretor e período.</span>
             </div>
             <i class="bi bi-chevron-right lo-shortcut-arrow"></i>
         </a>
@@ -121,8 +121,8 @@
                 <i class="bi bi-people"></i>
             </div>
             <div class="lo-shortcut-info">
-                <span class="lo-shortcut-title">Gerenciar equipe</span>
-                <span class="lo-shortcut-desc">Cadastros, perfis e presença de corretores</span>
+                <span class="lo-shortcut-title">Gestão de Equipe</span>
+                <span class="lo-shortcut-desc">Gerencie cadastros e acessos.</span>
             </div>
             <i class="bi bi-chevron-right lo-shortcut-arrow"></i>
         </a>
@@ -134,8 +134,8 @@
                 <i class="bi bi-shield-lock"></i>
             </div>
             <div class="lo-shortcut-info">
-                <span class="lo-shortcut-title">Matriz de acessos</span>
-                <span class="lo-shortcut-desc">Configuração de permissões por perfil de usuário</span>
+                <span class="lo-shortcut-title">Matriz de Permissões</span>
+                <span class="lo-shortcut-desc">Configure os acessos por perfil de usuário.</span>
             </div>
             <i class="bi bi-chevron-right lo-shortcut-arrow"></i>
         </a>
@@ -145,33 +145,12 @@
                 <i class="bi bi-cloud-arrow-up"></i>
             </div>
             <div class="lo-shortcut-info">
-                <span class="lo-shortcut-title">Importar planilhas</span>
-                <span class="lo-shortcut-desc">Carga de dados Excel direto para o Firebase</span>
+                <span class="lo-shortcut-title">Importação de Planilhas</span>
+                <span class="lo-shortcut-desc">Importe planilhas Excel para atualizar os dados.</span>
             </div>
             <i class="bi bi-chevron-right lo-shortcut-arrow"></i>
         </a>
         {% endif %}
     </div>
 </section>
-
-<!-- Card Informativo sobre a Campanha Vigente -->
-<article class="lo-card" style="border-left: 4px solid var(--accent);">
-    <div class="lo-between">
-        <div style="display: flex; align-items: center; gap: 14px;">
-            <div class="lo-avatar" style="background: var(--accent-soft); color: var(--accent);">
-                <i class="bi bi-stars"></i>
-            </div>
-            <div>
-                <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--ink);">Campanha de Portabilidade Lello</h4>
-                <p style="margin: 3px 0 0; font-size: 13.5px; color: var(--muted);">
-                    Ganhe 2 taxas de administração sobre o aluguel líquido por cada contrato assinado.
-                </p>
-            </div>
-        </div>
-        <a href="{{ url_for('main.indicacao') }}" class="lo-btn lo-btn-sm lo-btn-primary">
-            Conhecer regras
-            <i class="bi bi-arrow-right"></i>
-        </a>
-    </div>
-</article>
 {% endblock %}
