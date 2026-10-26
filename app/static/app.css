@@ -677,7 +677,10 @@ button, input, select, textarea {
     border-top: 1px solid var(--line) !important;
     border-radius: 0 !important;
     box-shadow: 0 -3px 18px rgba(30, 11, 17, 0.08) !important;
-    z-index: 1000 !important;
+    
+    /* ALTERAÇÃO AQUI: Diminuindo a camada para ficar atrás do menu */
+    z-index: 150 !important; 
+    
     display: grid !important;
     grid-template-columns: repeat(5, 1fr) !important;
     gap: 2px !important;

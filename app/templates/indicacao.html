@@ -2,13 +2,26 @@
 %} {% block content %}
 <!-- SOBREPOSIÇÃO DE COR DE FUNDO EXCLUSIVA PARA ESTA PÁGINA -->
 <style>
-  /* Força o fundo da página e da área de conteúdo principal para branco */
-  body,
-  .lo-shell,
-  .lo-main {
-    background-color: #ffffff !important;
-    --bg: #ffffff; /* Sobrescreve a variável de fundo globalmente nesta view */
-  }
+    /* Força o fundo da página para branco */
+    body, .lo-shell, .lo-main {
+        background-color: #FFFFFF !important;
+        --bg: #FFFFFF; 
+    }
+
+    /* Ajustes específicos para celular */
+    @media (max-width: 768px) {
+        .mobile-center {
+            text-align: center !important;
+            align-items: center !important;
+        }
+        .mobile-img {
+            max-width: 260px !important; /* Deixa as imagens menores e mais delicadas no celular */
+            margin: 0 auto !important; /* Centraliza as imagens */
+        }
+        .mobile-title {
+            font-size: 28px !important; /* Ajusta o tamanho da fonte */
+        }
+    }
 </style>
 
 <div
@@ -17,9 +30,9 @@
 >
   <!-- 1. SEÇÃO SUPERIOR: BANNER PRINCIPAL (TEXTO + IMAGEM) -->
   <section class="lo-grid" style="align-items: center; min-height: 400px;">
-        <!-- Texto ocupando metade da tela (6 colunas) -->
-        <div class="lo-col-12 lo-col-6" style="display: flex; flex-direction: column; gap: var(--space-4);">
-            <h1 style="margin: 0; font-size: clamp(28px, 4.5vw, 38px); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; color: var(--ink);">
+        <!-- Texto -->
+        <div class="lo-col-12 lo-col-6 mobile-center" style="display: flex; flex-direction: column; gap: var(--space-4);">
+            <h1 class="mobile-title" style="margin: 0; font-size: clamp(28px, 4.5vw, 42px); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; color: var(--ink);">
                 Ganhe uma <span style="color: var(--accent);">grana extra</span><br>
                 indicando imóveis ocupados<br>
                 para <span style="color: var(--accent);">portabilidade!</span>
@@ -36,10 +49,11 @@
             </div>
         </div>
 
-        <!-- Imagem ocupando a outra metade (6 colunas), permitindo que ela cresça até 600px -->
-        <div class="lo-col-12 lo-col-6" style="display: flex; justify-content: flex-end;">
+        <!-- Imagem -->
+        <div class="lo-col-12 lo-col-6" style="display: flex; justify-content: center;">
             <img src="{{ url_for('static', filename='img/ativo_23_100.png') }}" 
                  alt="Campanha de Portabilidade Lello" 
+                 class="mobile-img"
                  style="width: 100%; max-width: 600px; height: auto; object-fit: contain;">
         </div>
     </section>
@@ -139,28 +153,31 @@
 
   <!-- 3. QUEM PODE PARTICIPAR (TEXTO + IMAGEM) -->
   <section class="lo-grid" style="align-items: center; padding: var(--space-5) 0;">
-        <div class="lo-col-12 lo-col-6" style="display: flex; justify-content: flex-start;">
+        <!-- Imagem -->
+        <div class="lo-col-12 lo-col-6" style="display: flex; justify-content: center;">
             <img src="{{ url_for('static', filename='img/ativo_25_100.png') }}" 
                  alt="Participe da Campanha" 
-                 style="width: 100%; max-width: 600px; height: auto; margin: 0;">
+                 class="mobile-img"
+                 style="width: 100%; max-width: 600px; height: auto; margin: 0 auto;">
         </div>
 
-        <div class="lo-col-12 lo-col-6" style="display: flex; flex-direction: column; gap: var(--space-3);">
-            <h2 style="margin: 0; font-size: clamp(24px, 3vw, 33px); font-weight: 800; line-height: 1.1; color: var(--ink);">
+        <!-- Texto -->
+        <div class="lo-col-12 lo-col-6 mobile-center" style="display: flex; flex-direction: column; gap: var(--space-3);">
+            <h2 class="mobile-title" style="margin: 0; font-size: clamp(24px, 3vw, 32px); font-weight: 800; line-height: 1.1; color: var(--ink);">
                 Esses prêmios podem ser seus! <br>
                 <span style="color: var(--accent);">Corra e indique!</span>
             </h2>
 
-            <p style="margin: 0; font-size: 16px; line-height: 1.5; color: var(--muted);">
+            <p style="margin: 0; font-size: 15px; line-height: 1.5; color: var(--muted);">
                 <strong>Colaboradores corporativos, captadores, executivos comerciais, Inside Sales, corretores, vendas, gerentes e colaboradores Lello Condomínios</strong> estão habilitados para participar da campanha e aumentar suas comissões com a portabilidade de imóveis!
             </p>
 
-            <p style="margin: 0; font-size: 15px; color: var(--ink);">
+            <p style="margin: 0; font-size: 14.5px; color: var(--ink);">
                 <strong>Quem não participa:</strong> Telefonistas, recepcionistas e E1.
             </p>
 
             <div style="margin-top: var(--space-2);">
-                <a href="#indicar" onclick="rolarParaIndicacao(event)" class="lo-btn lo-btn-fill lo-btn-lg">
+                <a href="#indicar" onclick="rolarParaIndicacao(event)" class="lo-btn lo-btn-primary lo-btn-lg">
                     Indicar Imóvel
                 </a>
             </div>
