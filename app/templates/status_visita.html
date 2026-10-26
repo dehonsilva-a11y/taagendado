@@ -21,8 +21,8 @@ page_subtitle %}
     <form method="GET" action="{{ url_for('main.status_visita') }}">
             <div class="lo-grid" style="align-items: flex-end;">
                 
-                <!-- Filtro de Mês (Ocupa 4 colunas no PC) -->
-                <div class="lo-col-12 lo-col-md-4">
+                <!-- Filtro de Mês (Ocupa 3 ou 5 colunas dependendo do acesso) -->
+                <div class="lo-col-12 {% if pode_filtrar %}lo-col-md-3{% else %}lo-col-md-5{% endif %}">
                     <div class="lo-field">
                         <label class="lo-label" for="mes">Mês de referência</label>
                         {% set mes_sel = mes_selecionado | default(9) | int %}
@@ -43,8 +43,8 @@ page_subtitle %}
                     </div>
                 </div>
 
-                <!-- Filtro de Ano (Ocupa 4 colunas no PC) -->
-                <div class="lo-col-12 lo-col-md-4">
+                <!-- Filtro de Ano (Ocupa 3 ou 5 colunas dependendo do acesso) -->
+                <div class="lo-col-12 {% if pode_filtrar %}lo-col-md-3{% else %}lo-col-md-5{% endif %}">
                     <div class="lo-field">
                         <label class="lo-label" for="ano">Ano</label>
                         {% set ano_sel = ano_selecionado | default(2026) | int %}
@@ -55,39 +55,38 @@ page_subtitle %}
                     </div>
                 </div>
 
-                <!-- Botão Consultar (Ocupa 4 colunas no PC) -->
+                <!-- Filtro de Colaborador (Exibido SÓ para quem é Gerente ou Admin) -->
+                {% if pode_filtrar %}
                 <div class="lo-col-12 lo-col-md-4">
+                    <div class="lo-field">
+                        <label class="lo-label" for="colaborador">Colaborador</label>
+                        <select class="lo-select" id="colaborador" name="colaborador" required>
+                            {% for colab in colaboradores_disponiveis %}
+                            <option value="{{ colab }}" {% if colaborador_selecionado == colab %}selected{% endif %}>{{ colab }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Botão Consultar -->
+                <div class="lo-col-12 lo-col-md-2">
                     <button type="submit" class="lo-btn lo-btn-fill" style="width: 100%;">
                         <i class="bi bi-search"></i> Consultar
                     </button>
                 </div>
             </div>
         </form>
-  </article>
+    </article>
 
-  <!-- ÁREA DE RESULTADOS -->
-  <article class="lo-card" style="padding: 0; overflow: hidden">
-    {% if visitas %}
-            <div class="lo-stack" style="padding: var(--space-4); gap: 12px; background: var(--bg);">
+    <!-- ÁREA DE RESULTADOS -->
+    <article class="lo-card" style="padding: 0; overflow: hidden; border: 0; box-shadow: none; background: transparent;">
+        
+        {% if visitas %}
+            <div class="lo-stack" style="padding: 0; gap: 12px; background: transparent;">
                 {% for visita in visitas %}
                 
-                <!-- Define a cor da barra lateral com base no status -->
-                {% set status_lower = visita.status|lower %}
-                {% if 'realizada' in status_lower %}
-                    {% set cor_barra = 'var(--info)' %} <!-- Azul -->
-                    {% set cor_pill = 'var(--info-bg)' %}
-                    {% set text_pill = 'var(--info-text)' %}
-                {% elif 'não efetivada' in status_lower or 'cancelada' in status_lower %}
-                    {% set cor_barra = 'var(--danger)' %} <!-- Vermelho -->
-                    {% set cor_pill = 'var(--danger)' %}
-                    {% set text_pill = '#FFFFFF' %}
-                {% else %}
-                    {% set cor_barra = 'var(--ok)' %} <!-- Verde (Fazer/Agendada) -->
-                    {% set cor_pill = 'var(--ok)' %}
-                    {% set text_pill = '#FFFFFF' %}
-                {% endif %}
-
-                <!-- Cartão da Visita -->
+                <!-- Cartão da Visita (Sempre Vermelho) -->
                 <div style="
                     display: flex; 
                     flex-direction: column; 
@@ -95,14 +94,14 @@ page_subtitle %}
                     padding: 16px 20px; 
                     background: var(--surface); 
                     border-radius: var(--radius-md); 
-                    box-shadow: 0 2px 8px rgba(30, 11, 17, 0.06); 
-                    border-left: 6px solid {{ cor_barra }};
+                    box-shadow: var(--shadow-card); 
+                    border-left: 6px solid var(--accent);
                     position: relative;
                 ">
                     <!-- Linha 1: Horário e Status -->
                     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                         
-                        <!-- Pega apenas o horário (ex: "08:00") dividindo a data -->
+                        <!-- Extração do Horário -->
                         {% set partes_data = visita.data_formatada.split(' ') %}
                         {% set hora_visita = partes_data[1] if partes_data|length > 1 else '--:--' %}
                         
@@ -111,8 +110,8 @@ page_subtitle %}
                         </span>
                         
                         <span style="
-                            background: {{ cor_pill }}; 
-                            color: {{ text_pill }}; 
+                            background: var(--accent); 
+                            color: #FFFFFF; 
                             font-size: 11px; 
                             font-weight: 700; 
                             padding: 4px 10px; 
@@ -128,10 +127,47 @@ page_subtitle %}
                         </span>
                     </div>
 
-                    <!-- Linha 2: Endereço / Bairro / Tipo -->
-                    <div style="font-size: 14px; color: var(--muted); line-height: 1.4;">
-                        <strong>{{ visita.tipo_imovel }}</strong> em {{ visita.bairro }}<br>
-                        <small>Cód: {{ visita.codigo }}</small>
+                    <!-- Linha 2: Endereço / IDs / Finalidade -->
+                    <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 4px;">
+                        <!-- Endereço em destaque -->
+                        <span style="font-size: 15px; color: var(--ink); font-weight: 600; line-height: 1.4;">
+                            {{ visita.endereco }}
+                        </span>
+                        
+                        <!-- Mini-painel de dados (Grid) -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; padding-top: 12px; border-top: 1px solid var(--line);">
+                            
+                            <!-- Bloco: Código do Imóvel -->
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.06em;">
+                                    <i class="bi bi-house-door" style="margin-right: 2px;"></i> Imóvel
+                                </span>
+                                <span style="font-size: 14px; color: var(--ink); font-weight: 600;">
+                                    {{ visita.id_imovel }}
+                                </span>
+                            </div>
+                            
+                            <!-- Bloco: ID da Visita -->
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.06em;">
+                                    <i class="bi bi-calendar-event" style="margin-right: 2px;"></i> Visita
+                                </span>
+                                <span style="font-size: 14px; color: var(--ink); font-weight: 600;">
+                                    {{ visita.id_visita }}
+                                </span>
+                            </div>
+                            
+                            <!-- Bloco: Finalidade -->
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.06em;">
+                                    <i class="bi bi-tag" style="margin-right: 2px;"></i> Finalidade
+                                </span>
+                                <span style="font-size: 14px; color: var(--ink); font-weight: 600;">
+                                    {{ visita.finalidade }}
+                                </span>
+                            </div>
+                            
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
