@@ -76,6 +76,12 @@
                         <span>Seus ganhos</span>
                     </a>
                     {% endif %}
+                    {% if 'status_visita' in minhas_permissoes or is_admin %}
+                    <a href="{{ url_for('main.status_visita') }}" class="lo-nav-item {% if request.endpoint == 'main.status_visita' %}active{% endif %}" {% if request.endpoint == 'main.status_visita' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-calendar-check"></i>
+                        <span>Status das Visitas</span>
+                    </a>
+                    {% endif %}
                 </div>
 
                 <!-- Grupo: Campanhas & Portabilidade -->
@@ -226,34 +232,29 @@
             <i class="bi bi-grid-1x2{% if request.endpoint == 'main.home' %}-fill{% endif %}"></i>
             <span>Início</span>
         </a>
+
         {% if 'visitas' in minhas_permissoes or is_admin %}
         <a href="{{ url_for('main.visitas') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.visitas' %}active{% endif %}">
             <i class="bi bi-graph-up-arrow"></i>
             <span>Ganhos</span>
         </a>
         {% endif %}
+
+        {% if 'status_visita' in minhas_permissoes or is_admin %}
+        <!-- Ícone corrigido de bi-graph-up-arrow para bi-calendar-check -->
+        <a href="{{ url_for('main.status_visita') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.status_visita' %}active{% endif %}">
+            <i class="bi bi-calendar-check{% if request.endpoint == 'main.status_visita' %}-fill{% endif %}"></i>
+            <span>Visitas</span>
+        </a>
+        {% endif %}
+
         {% if pode_indicacao %}
         <a href="{{ url_for('main.indicacao') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.indicacao' %}active{% endif %}">
             <i class="bi bi-megaphone{% if request.endpoint == 'main.indicacao' %}-fill{% endif %}"></i>
             <span>Indicar</span>
         </a>
         {% endif %}
-        {% if pode_comissoes %}
-        <a href="{{ url_for('main.comissoes') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.comissoes' %}active{% endif %}">
-            <i class="bi bi-cash-stack"></i>
-            <span>Comissões</span>
-        </a>
-        {% elif pode_usuarios %}
-        <a href="{{ url_for('main.usuarios') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.usuarios' %}active{% endif %}">
-            <i class="bi bi-people{% if request.endpoint == 'main.usuarios' %}-fill{% endif %}"></i>
-            <span>Equipe</span>
-        </a>
-        {% else %}
-        <a href="{{ url_for('main.perfil') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.perfil' %}active{% endif %}">
-            <i class="bi bi-person{% if request.endpoint == 'main.perfil' %}-fill{% endif %}"></i>
-            <span>Perfil</span>
-        </a>
-        {% endif %}
+        
         <button type="button" class="lo-tab lo-tab-link" data-sidebar-toggle aria-label="Abrir todas as opções">
             <i class="bi bi-list"></i>
             <span>Menu</span>

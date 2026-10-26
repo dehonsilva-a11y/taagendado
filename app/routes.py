@@ -22,6 +22,7 @@ PAGINAS_SISTEMA = [
     {'id': 'portabilidade_externa', 'nome': 'Portabilidade Externa', 'icone': 'bi-box-arrow-up-right'},
     {'id': 'importar_dados', 'nome': 'Importar Dados', 'icone': 'bi-box-arrow-up-right'},
     {'id': 'comissoes', 'nome': 'Relatório de Comissões', 'icone': 'bi-cash-stack'},
+    {'id': 'status_visita', 'nome': 'Status das Visitas', 'icone': 'bi-calendar-check'},
 ]
 PERFIS_SISTEMA = ['Corretor', 'Agente de Visita', 'Gerente Filial', 'Gerente Geral', 'Admin']
 
@@ -66,6 +67,89 @@ def home():
 @main_bp.route('/indica_lello')
 def indica_lello():
     return render_template('indica_lello.html')
+
+@main_bp.route('/status_visita')
+def status_visita():
+    # 1. Pega os dados do usuário para fazer o filtro no banco
+    email_usuario = session.get('user_email')
+    user_doc = db.collection('usuarios').document(email_usuario).get()
+    
+    # Aqui precisamos usar o Nome ou o Usuario Portal, dependendo de como está no seu banco.
+    # Como no seu exemplo a coluna tem o nome completo ("Maria de Fátima De Jesus Dias"), 
+    # vou puxar o 'nome' do cadastro. Se for outro campo, altere o .get('nome') abaixo!
+    nome_cruzamento = ""
+    if user_doc.exists:
+        nome_cruzamento = user_doc.to_dict().get('nome', '').strip()
+
+    # 2. Resgata os parâmetros da URL
+    mes_args = request.args.get('mes')
+    ano_args = request.args.get('ano')
+    
+    visitas = []
+    
+    # Se não tem filtros ainda na URL (entrou na página pela primeira vez)
+    if not mes_args or not ano_args:
+        hoje = datetime.now()
+        mes_padrao = hoje.month - 1 if hoje.month > 1 else 12
+        ano_padrao = hoje.year if hoje.month > 1 else hoje.year - 1
+        
+        return render_template('status_visita.html',
+                               mes_selecionado=mes_padrao,
+                               ano_selecionado=ano_padrao,
+                               buscou=False,
+                               visitas=[])
+
+    # --- Se ele clicou em consultar ---
+    mes_selecionado = int(mes_args)
+    ano_selecionado = int(ano_args)
+
+    # A data do seu banco vem como "20/10/2026 15:00", então buscar "/10/2026" funciona perfeitamente!
+    str_busca_br = f"/{mes_selecionado:02d}/{ano_selecionado}"
+    
+    # Set para impedir que o mesmo ID de Visita apareça duplicado na tela
+    visitas_unicas = set()
+
+    if nome_cruzamento:
+        # ATENÇÃO 1: Coloque o nome real da tabela no Firestore no lugar de 'NOME_DA_SUA_TABELA_AQUI'
+        # ATENÇÃO 2: A coluna filtro estou usando 'Atendente_Colaborador'. Você também pode usar 'Nome_Responsavel_Colaborador'
+        docs = db.collection('dt_visita_periodo_agendamento').where('Nome_Responsavel_Colaborador', '==', nome_cruzamento).stream()
+        
+        for doc in docs:
+            dados = doc.to_dict() or {}
+            
+            # Pega a nova coluna de data informada
+            data_raw = str(dados.get('Data_Agendamento', '')).strip()
+            
+            # Filtro de Data
+            if str_busca_br in data_raw:
+                
+                # Identificador Único da Visita
+                id_visita = str(dados.get('Id_Visita', '')).strip()
+                
+                # Trava de Duplicidade
+                if id_visita and id_visita in visitas_unicas:
+                    continue
+                    
+                if id_visita and id_visita.lower() not in ['nan', 'none']:
+                    visitas_unicas.add(id_visita)
+                
+                # Alimentando a lista pro HTML usando as chaves exatas do seu banco
+                visitas.append({
+                    'codigo': id_visita,
+                    'tipo_imovel': dados.get('Tipo_Apartamento', 'Imóvel Genérico').title(),
+                    'bairro': dados.get('Bairro', 'Bairro não informado').title(),
+                    'data_formatada': data_raw,  # Vai mandar ex: "20/10/2026 15:00"
+                    'status': dados.get('Status', 'Agendada').title()
+                })
+                
+    # Ordena as visitas para ficarem empilhadas da mais recente para a mais antiga pela data
+    visitas = sorted(visitas, key=lambda k: k['data_formatada'], reverse=True)
+
+    return render_template('status_visita.html',
+                           mes_selecionado=mes_selecionado,
+                           ano_selecionado=ano_selecionado,
+                           buscou=True,
+                           visitas=visitas)
 
 @main_bp.route('/portabilidade_interna')
 def portabilidade_interna():
