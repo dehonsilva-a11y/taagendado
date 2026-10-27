@@ -5,12 +5,13 @@
 
 {% block content %}
 {% set is_admin = session.get('user_perfil') == 'Admin' %}
-{% set pode_visitas = 'visitas' in minhas_permissoes or is_admin %}
-{% set pode_indicacao = 'indicacao' in minhas_permissoes or is_admin %}
-{% set pode_equipe = 'usuarios' in minhas_permissoes or is_admin %}
-{% set pode_portabilidade_interna = 'portabilidade_interna' in minhas_permissoes or is_admin %}
-{% set pode_portabilidade_externa = 'portabilidade_externa' in minhas_permissoes or is_admin %}
-{% set pode_comissoes = 'comissoes' in minhas_permissoes or is_admin %}
+{% set is_admin = session.get('user_perfil') == 'Admin' %}
+{% set pode_visitas = ('visitas' in minhas_permissoes) or is_admin %}
+{% set pode_indicacao = ('indicacao' in minhas_permissoes) or is_admin %}
+{% set pode_equipe = ('usuarios' in minhas_permissoes) or is_admin %}
+{% set pode_portabilidade_interna = ('portabilidade_interna' in minhas_permissoes) or is_admin %}
+{% set pode_portabilidade_externa = ('portabilidade_externa' in minhas_permissoes) or is_admin %}
+{% set pode_comissoes = ('comissoes' in minhas_permissoes) or is_admin %}
 
 <!-- Hero Card de Boas-Vindas -->
 <article class="lo-card lo-card-hero">

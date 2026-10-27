@@ -36,7 +36,7 @@ def registrar_log_auditoria(acao):
 
 @main_bp.context_processor
 def injetar_dados_globais():
-    # --- 1. LÓGICA DA FOTO DE PERFIL (Seu código original) ---
+    # --- 1. LÓGICA DA FOTO DE PERFIL ---
     foto = ''
     email = session.get('user_email')
     if email:
@@ -53,11 +53,26 @@ def injetar_dados_globais():
                 MEMORIA_CACHE[email]['foto'] = foto
                 MEMORIA_CACHE[email]['tempo'] = agora
 
-    # --- 2. LÓGICA DA MATRIZ DE ACESSOS (Novo) ---
+    # --- 2. LÓGICA DA MATRIZ DE ACESSOS (CORREÇÃO) ---
     perfil = session.get('user_perfil', 'Corretor')
-    acessos = MEMORIA_CACHE.get('matriz_acessos', {}).get(perfil, [])
+    
+    # Se a matriz não existir no cache, força a leitura do banco de dados na hora
+    if 'matriz_acessos' not in MEMORIA_CACHE:
+        doc = db.collection('configuracoes').document('matriz_acessos').get()
+        if doc.exists:
+            MEMORIA_CACHE['matriz_acessos'] = doc.to_dict()
+        else:
+            # Matriz padrão de emergência
+            MEMORIA_CACHE['matriz_acessos'] = {p: ['home'] for p in PERFIS_SISTEMA}
+            MEMORIA_CACHE['matriz_acessos']['Admin'] = ['home', 'usuarios', 'permissoes', 'comissoes', 'visitas', 'status_visita', 'indicacao', 'portabilidade_interna', 'portabilidade_externa', 'importar_dados']
 
-    # --- 3. MANDA AS DUAS VARIÁVEIS PARA O HTML ---
+    # Puxa exatamente a lista de páginas que o perfil logado tem acesso
+    acessos = MEMORIA_CACHE['matriz_acessos'].get(perfil, [])
+
+    # Força a HOME para todo mundo
+    if 'home' not in acessos:
+        acessos.append('home')
+
     return dict(current_user_foto=foto, minhas_permissoes=acessos)
 
 @main_bp.route('/')
