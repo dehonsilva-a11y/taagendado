@@ -292,13 +292,63 @@
     <script id="firebase-config-data" type="application/json">{{ firebase_config | tojson | safe }}</script>
     
     <script>
-        const configData = document.getElementById('firebase-config-data').textContent;
-        const firebaseConfig = JSON.parse(configData);
-        firebase.initializeApp(firebaseConfig);
-        const providerGoogle = new firebase.auth.GoogleAuthProvider();
-        const providerApple = new firebase.auth.OAuthProvider('apple.com');
-        providerApple.addScope('email');
-        providerApple.addScope('name');
+        let providerGoogle, providerApple;
+
+        // 1. Inicializa o Firebase assim que possível
+        function inicializarFirebase() {
+            if (typeof firebase !== 'undefined' && !providerGoogle) {
+                const configData = document.getElementById('firebase-config-data').textContent;
+                const firebaseConfig = JSON.parse(configData);
+                if (firebase.apps.length === 0) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                providerGoogle = new firebase.auth.GoogleAuthProvider();
+                providerApple = new firebase.auth.OAuthProvider('apple.com');
+                providerApple.addScope('email');
+                providerApple.addScope('name');
+            }
+        }
+
+        // Tenta carregar normalmente para quem tem internet boa
+        inicializarFirebase();
+
+        // 2. MÁGICA: Auto-reparo silencioso para Celular e Internet Lenta
+        async function garantirFirebase() {
+            // Se já carregou, segue a vida
+            if (typeof firebase !== 'undefined') {
+                inicializarFirebase();
+                return true;
+            }
+
+            // Se clicou muito rápido, mostra o carregamento e espera o script baixar
+            return new Promise((resolve) => {
+                let tentativas = 0;
+                const intervalo = setInterval(() => {
+                    tentativas++;
+                    
+                    if (typeof firebase !== 'undefined') {
+                        clearInterval(intervalo);
+                        inicializarFirebase();
+                        resolve(true);
+                    } else if (tentativas > 10) { 
+                        // Se demorou mais de 5 segundos, força o download silenciosamente
+                        clearInterval(intervalo);
+                        const scriptApp = document.createElement('script');
+                        scriptApp.src = "https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js";
+                        scriptApp.onload = () => {
+                            const scriptAuth = document.createElement('script');
+                            scriptAuth.src = "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js";
+                            scriptAuth.onload = () => {
+                                inicializarFirebase();
+                                resolve(true);
+                            };
+                            document.head.appendChild(scriptAuth);
+                        };
+                        document.head.appendChild(scriptApp);
+                    }
+                }, 500); // Checa a cada meio segundo
+            });
+        }
 
         function alternarCarregamento(carregando) {
             const btnGoogle = document.getElementById('btnGoogle');
@@ -323,24 +373,28 @@
                 if (resposta.ok && dados && dados.status === 'success') {
                     window.location.href = "/";
                 } else if (dados && dados.status === 'bloqueado') {
-                    await firebase.auth().signOut();
+                    if (typeof firebase !== 'undefined') await firebase.auth().signOut();
                     window.location.href = "/bloqueado";
                 } else {
                     const mensagem = dados?.message || 'Falha na validação do acesso.';
                     alert(mensagem);
-                    await firebase.auth().signOut();
+                    if (typeof firebase !== 'undefined') await firebase.auth().signOut();
                     alternarCarregamento(false);
                 }
             } catch (err) {
                 console.error("Erro na comunicação com o servidor:", err);
                 alert("Erro de conexão com o servidor. Tente novamente.");
-                await firebase.auth().signOut();
+                if (typeof firebase !== 'undefined') await firebase.auth().signOut();
                 alternarCarregamento(false);
             }
         }
 
         async function fazerLoginGoogle() {
-            alternarCarregamento(true);
+            alternarCarregamento(true); // Gira a rodinha
+            
+            // Garante que o Firebase está pronto (silenciosamente)
+            await garantirFirebase();
+            
             try {
                 const result = await firebase.auth().signInWithPopup(providerGoogle);
                 const token = await result.user.getIdToken();
@@ -348,7 +402,7 @@
             } catch (error) {
                 console.error("Erro no login Google:", error);
                 if (error.code === 'auth/unauthorized-domain') {
-                    alert('Este domínio ainda não foi autorizado no Firebase Console. Adicione o domínio em Authentication > Settings > Authorized domains.');
+                    alert('Este domínio ainda não foi autorizado no Firebase Console.');
                 } else if (error.code !== 'auth/popup-closed-by-user') {
                     alert(`Não foi possível autenticar: ${error.message}`);
                 }
@@ -358,6 +412,8 @@
 
         async function fazerLoginApple() {
             alternarCarregamento(true);
+            await garantirFirebase();
+            
             try {
                 const result = await firebase.auth().signInWithPopup(providerApple);
                 const token = await result.user.getIdToken();
