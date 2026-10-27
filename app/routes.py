@@ -91,32 +91,34 @@ def status_visita():
         usuarios_query = db.collection('usuarios').where('ativo', '==', True).stream()
         for doc in usuarios_query:
             dados = doc.to_dict() or {}
-            # Trava para o Gerente Filial ver só a própria filial
             if gerente_filial and dados.get('filial') != filial_logada:
                 continue
-            
             nome_colab = dados.get('nome', '').strip()
             if nome_colab:
                 colaboradores_disponiveis.append(nome_colab)
-                
-        # Remove duplicados e ordena em ordem alfabética
         colaboradores_disponiveis = sorted(list(set(colaboradores_disponiveis)))
 
-    # 4. Resgata os parâmetros da URL
+    # 4. Resgata os parâmetros da URL (incluindo o novo filtro de status)
     mes_args = request.args.get('mes')
     ano_args = request.args.get('ano')
     colaborador_args = request.args.get('colaborador')
+    status_filtro = request.args.get('status_filtro', 'Todos') # Padrão é mostrar todos
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    
+    if per_page not in [25, 50, 100, 250, 500]:
+        per_page = 50
 
-    # Trava de segurança: se não puder filtrar, força o nome dele mesmo
     if not pode_filtrar:
         colaborador_args = nome_cruzamento
-    # Se for gerente e não escolheu ninguém no dropdown ainda, usa o dele como fallback
     elif not colaborador_args:
         colaborador_args = nome_cruzamento
 
     visitas = []
+    status_disponiveis = set() # Guarda os status únicos encontrados naquele mês
     
-    # Validação do estado inicial da página
+    # Estado inicial
     if not mes_args or not ano_args:
         hoje = datetime.now()
         mes_padrao = hoje.month - 1 if hoje.month > 1 else 12
@@ -127,11 +129,14 @@ def status_visita():
                                ano_selecionado=ano_padrao,
                                colaborador_selecionado=colaborador_args,
                                colaboradores_disponiveis=colaboradores_disponiveis,
+                               status_selecionado=status_filtro,
+                               status_disponiveis=[],
                                pode_filtrar=pode_filtrar,
+                               per_page=per_page,
                                buscou=False,
                                visitas=[])
 
-    # --- Se ele clicou em consultar ---
+    # --- Processamento da busca ---
     mes_selecionado = int(mes_args)
     ano_selecionado = int(ano_args)
 
@@ -139,45 +144,67 @@ def status_visita():
     visitas_unicas = set()
 
     if colaborador_args:
-        # Busca no Firestore restrito ao colaborador selecionado
         docs = db.collection('dt_visita_periodo_agendamento').where('Nome_Responsavel_Colaborador', '==', colaborador_args).stream()
         
         for doc in docs:
             dados = doc.to_dict() or {}
             data_raw = str(dados.get('Data_Agendamento', '')).strip()
             
-            # Filtro de Data
             if str_busca_br in data_raw:
                 id_visita = str(dados.get('Id_Visita', '')).strip()
-                
-                # Trava de Duplicidade
                 if id_visita and id_visita in visitas_unicas:
                     continue
+                
+                # Extrai o status da GN e adiciona na lista de opções para o HTML
+                status_gn = str(dados.get('Status_GN', 'Sem status')).strip().title()
+                status_disponiveis.add(status_gn)
+                
+                # Se o usuário escolheu um status específico e não bate, pula essa linha
+                if status_filtro != 'Todos' and status_filtro != status_gn:
+                    continue
+                
                 if id_visita and id_visita.lower() not in ['nan', 'none']:
                     visitas_unicas.add(id_visita)
                 
-                # Capturando os novos campos solicitados
                 visitas.append({
                     'id_visita': id_visita,
                     'id_imovel': str(dados.get('Id_Imovel', '')).strip(),
                     'tipo_imovel': dados.get('Tipo_Apartamento', 'Imóvel Genérico').title(),
-                    'endereco': dados.get('Endereco', dados.get('Bairro', '')).title(), # Puxa Endereço; usa Bairro como fallback se Endereço vier vazio
+                    'endereco': dados.get('Endereco', dados.get('Bairro', '')).title(),
                     'finalidade': dados.get('Finalidade', 'Não informada').title(),
                     'data_formatada': data_raw, 
-                    'status': dados.get('Status', 'Agendada').title()
+                    'status': status_gn
                 })
                 
-    # Ordena as visitas para ficarem empilhadas da mais recente para a mais antiga
+    # Ordena do mais recente para o mais antigo e organiza a lista de status em ordem alfabética
     visitas = sorted(visitas, key=lambda k: k['data_formatada'], reverse=True)
+    status_disponiveis = sorted(list(status_disponiveis))
+
+    # --- LÓGICA DE PAGINAÇÃO ---
+    total_visitas = len(visitas)
+    total_paginas = (total_visitas + per_page - 1) // per_page
+    
+    if page > total_paginas and total_paginas > 0:
+        page = total_paginas
+        
+    inicio = (page - 1) * per_page
+    fim = inicio + per_page
+    visitas_paginadas = visitas[inicio:fim]
 
     return render_template('status_visita.html',
                            mes_selecionado=mes_selecionado,
                            ano_selecionado=ano_selecionado,
                            colaborador_selecionado=colaborador_args,
                            colaboradores_disponiveis=colaboradores_disponiveis,
+                           status_selecionado=status_filtro,
+                           status_disponiveis=status_disponiveis,
                            pode_filtrar=pode_filtrar,
                            buscou=True,
-                           visitas=visitas)
+                           visitas=visitas_paginadas,
+                           page=page,
+                           per_page=per_page,
+                           total_paginas=total_paginas,
+                           total_visitas=total_visitas)
 
 @main_bp.route('/portabilidade_interna')
 def portabilidade_interna():
@@ -474,16 +501,22 @@ def excluir_usuario():
     flash('Colaborador removido!', 'success')
     return redirect(url_for('main.usuarios'))
 
-
-
 @main_bp.route('/visitas')
 def visitas():
-    # 1. Pega os dados do usuário logado para descobrir o usuario_portal
+    import datetime as dt 
+    
+    # 1. Pega os dados do usuário logado e o perfil
     email_usuario = session.get('user_email')
+    perfil_logado = session.get('user_perfil', 'Corretor')
+    
     user_doc = db.collection('usuarios').document(email_usuario).get()
     usuario_portal = ""
+    nome_colaborador = ""
+    
     if user_doc.exists:
-        usuario_portal = user_doc.to_dict().get('usuario_portal', '').strip()
+        dados_user = user_doc.to_dict()
+        usuario_portal = dados_user.get('usuario_portal', '').strip()
+        nome_colaborador = dados_user.get('nome', '').strip()
 
     # 2. Lógica de Datas (Padrão: Mês Anterior)
     hoje = datetime.now()
@@ -496,38 +529,71 @@ def visitas():
     ultimo_dia = calendar.monthrange(ano_selecionado, mes_selecionado)[1]
     periodo_str = f"Período 01 a {ultimo_dia:02d}/{mes_selecionado:02d}/{ano_selecionado}"
     
+    # Mês e ano do repasse
     mes_pagamento = mes_selecionado + 1 if mes_selecionado < 12 else 1
     ano_pagamento = ano_selecionado if mes_selecionado < 12 else ano_selecionado + 1
-    data_pagamento_str = f"10/{mes_pagamento:02d}/{ano_pagamento}"
+
+    # --- NOVO: Define as regras de busca, colunas, comissão e DATA por perfil ---
+    if perfil_logado == 'Agente de Visita':
+        colecao_banco = 'dt_gestao_negocios_finalizados'
+        coluna_filtro = 'Atendimento_Colaborador_Visita'
+        coluna_valor = 'Valores de Proposta_Vr_Interm' 
+        valor_busca = nome_colaborador 
+        taxa_comissao = 0.03
+        taxa_str = "3%"
+        
+        # Data Repasse: 1º dia útil do mês seguinte
+        data_pag = dt.date(ano_pagamento, mes_pagamento, 1)
+        while data_pag.weekday() >= 5: # Pula Sábado(5) e Domingo(6)
+            data_pag += dt.timedelta(days=1)
+            
+        data_pagamento_str = data_pag.strftime("%d/%m/%Y")
+        texto_rodape_data = "1º dia útil do mês subsequente"
+        
+    else: # Corretor
+        colecao_banco = 'dt_ctrl_pagamento_visita'
+        coluna_filtro = 'Colaborador'
+        coluna_valor = 'Negocio_Valor_fechado'         
+        valor_busca = usuario_portal 
+        taxa_comissao = 0.20
+        taxa_str = "20%"
+        
+        # Data Repasse: Dia 10 do mês seguinte
+        data_pag = dt.date(ano_pagamento, mes_pagamento, 10)
+        data_pagamento_str = data_pag.strftime("%d/%m/%Y")
+        texto_rodape_data = "Dia 10 do mês subsequente"
 
     # 3. Lógica de Cálculo de Valores
     contratos_unicos = set()
     valor_total_fechado = 0.0
     
-    if usuario_portal:
-        docs = db.collection('dt_ctrl_pagamento_visita').where('Colaborador', '==', usuario_portal).stream()
+    if valor_busca:
+        docs = db.collection(colecao_banco).where(coluna_filtro, '==', valor_busca).stream()
         
         str_busca_br = f"/{mes_selecionado:02d}/{ano_selecionado}"
         str_busca_us = f"{ano_selecionado}-{mes_selecionado:02d}"
         
         for doc in docs:
             dados = doc.to_dict() or {}
-            data_referencia = str(dados.get('Negocio_Data_status', ''))
+            
+            data_referencia = str(dados.get('Negocio_Data_status', 
+                                  dados.get('Data_Status', 
+                                  dados.get('Gestao_Data_Status', ''))))
             
             if str_busca_br in data_referencia or str_busca_us in data_referencia:
                 
-                contrato = str(dados.get('Negocio_Contrato', '')).strip()
+                contrato = str(dados.get('Negocio_Contrato', 
+                               dados.get('Contrato_Codigo', 
+                               dados.get('Gestao_GN', '')))).strip()
                 
-                # A TRAVA DE DUPLICIDADE: Se o contrato já foi computado antes, pula pro próximo registro!
                 if contrato and contrato in contratos_unicos:
                     continue
                 
-                # Se for um contrato novo, adiciona na lista de únicos
                 if contrato and contrato.lower() not in ['nan', 'none']:
                     contratos_unicos.add(contrato)
                 
-                # Faz o tratamento do valor e soma (agora apenas 1 vez por contrato)
-                valor_raw = str(dados.get('Negocio_Valor_fechado', '0'))
+                valor_raw = str(dados.get(coluna_valor, '0'))
+                
                 try:
                     valor_raw = valor_raw.replace('R$', '').strip()
                     if '.' in valor_raw and ',' in valor_raw:
@@ -541,10 +607,8 @@ def visitas():
                     
                 valor_total_fechado += valor_clean
 
-    # 4. Aplica a comissão de 20%
-    valor_ganho = valor_total_fechado * 0.20
-    
-    # Formatação visual final para reais
+    # 4. Aplica a comissão correta
+    valor_ganho = valor_total_fechado * taxa_comissao
     valor_ganho_formatado = f"{valor_ganho:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
 
     return render_template('visitas.html', 
@@ -552,8 +616,10 @@ def visitas():
                            ano_selecionado=ano_selecionado,
                            periodo_str=periodo_str,
                            data_pagamento_str=data_pagamento_str,
+                           texto_rodape_data=texto_rodape_data, 
                            total_contratos=len(contratos_unicos),
-                           valor_ganho_formatado=valor_ganho_formatado)
+                           valor_ganho_formatado=valor_ganho_formatado,
+                           taxa_str=taxa_str)
 
 @main_bp.route('/simular_acesso', methods=['POST'])
 def simular_acesso():

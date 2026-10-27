@@ -59,29 +59,35 @@
 
     <!-- Grade de Métricas Detalhadas (KPIs Lello DS) -->
     <div class="lo-kpis">
+        
+        <!-- Cartão 1: Quantidade de Contratos (Restaurado) -->
         <article class="lo-kpi">
             <span class="k-lbl">Contratos assinados</span>
             <div class="k-val">{{ total_contratos }}</div>
             <div class="k-foot">Válidos para o fechamento deste mês</div>
         </article>
 
+        <!-- Cartão 2: Valor Base -->
         <article class="lo-kpi">
             <span class="k-lbl">Valor base apurado</span>
             <div class="k-val">R$ {{ valor_ganho_formatado }}</div>
             <div class="k-foot">Sobre o valor fechado dos imóveis</div>
         </article>
 
+        <!-- Cartão 3: Taxa Dinâmica -->
         <article class="lo-kpi">
             <span class="k-lbl">Taxa de comissão</span>
-            <div class="k-val">20%</div>
-            <div class="k-foot">Conforme regra padrão da campanha</div>
+            <div class="k-val">{{ taxa_str }}</div>
+            <div class="k-foot">Conforme perfil do colaborador</div>
         </article>
 
+        <!-- Cartão 4: Data de Repasse Dinâmica -->
         <article class="lo-kpi">
             <span class="k-lbl">Data do repasse</span>
             <div class="k-val">{{ data_pagamento_str }}</div>
-            <div class="k-foot">Todo dia 10 do mês subsequente</div>
+            <div class="k-foot">{{ texto_rodape_data }}</div>
         </article>
+        
     </div>
 
     <!-- Nota Informativa -->
