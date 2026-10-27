@@ -53,27 +53,29 @@ def injetar_dados_globais():
                 MEMORIA_CACHE[email]['foto'] = foto
                 MEMORIA_CACHE[email]['tempo'] = agora
 
-    # --- 2. LÓGICA DA MATRIZ DE ACESSOS (CORREÇÃO) ---
-    perfil = session.get('user_perfil', 'Corretor')
+    # --- 2. LÓGICA DA MATRIZ DE ACESSOS (CORRIGIDA) ---
+    perfil_logado = session.get('user_perfil', 'Corretor').strip()
     
-    # Se a matriz não existir no cache, força a leitura do banco de dados na hora
+    # Se não tiver no cache, puxa do banco
     if 'matriz_acessos' not in MEMORIA_CACHE:
         doc = db.collection('configuracoes').document('matriz_acessos').get()
         if doc.exists:
             MEMORIA_CACHE['matriz_acessos'] = doc.to_dict()
         else:
-            # Matriz padrão de emergência
             MEMORIA_CACHE['matriz_acessos'] = {p: ['home'] for p in PERFIS_SISTEMA}
-            MEMORIA_CACHE['matriz_acessos']['Admin'] = ['home', 'usuarios', 'permissoes', 'comissoes', 'visitas', 'status_visita', 'indicacao', 'portabilidade_interna', 'portabilidade_externa', 'importar_dados']
 
-    # Puxa exatamente a lista de páginas que o perfil logado tem acesso
-    acessos = MEMORIA_CACHE['matriz_acessos'].get(perfil, [])
+    # BUSCA SEGURA IGNORANDO DIFERENÇAS DE MAIÚSCULAS OU ESPAÇOS
+    acessos_permitidos = ['home']
+    for chave_banco, permissoes in MEMORIA_CACHE.get('matriz_acessos', {}).items():
+        if chave_banco.strip().lower() == perfil_logado.lower():
+            acessos_permitidos = permissoes
+            break
 
-    # Força a HOME para todo mundo
-    if 'home' not in acessos:
-        acessos.append('home')
+    # Garante que todo mundo sempre veja a Home
+    if 'home' not in acessos_permitidos:
+        acessos_permitidos.append('home')
 
-    return dict(current_user_foto=foto, minhas_permissoes=acessos)
+    return dict(current_user_foto=foto, minhas_permissoes=acessos_permitidos)
 
 @main_bp.route('/')
 def home():
@@ -638,49 +640,55 @@ def visitas():
 
 @main_bp.route('/simular_acesso', methods=['POST'])
 def simular_acesso():
-    if session.get('user_perfil') != 'Admin' and not session.get('admin_original'):
+    perfil_logado = session.get('user_perfil', '')
+    
+    # Agora permite Admin, Gerente Geral e Gerente Filial
+    if perfil_logado not in ['Admin', 'Gerente Geral', 'Gerente Filial'] and not session.get('admin_original'):
+        flash('Acesso negado.', 'floating_danger')
         return redirect(url_for('main.home'))
 
     email_alvo = request.form.get('email_alvo', '').strip().lower()
     
     user_doc = db.collection('usuarios').document(email_alvo).get()
     if not user_doc.exists:
-        flash('Usuário não encontrado.', 'danger')
-        registrar_log_auditoria(f"Iniciou a SIMULAÇÃO DE ACESSO do usuário {email_alvo}")
+        flash('Usuário não encontrado.', 'floating_danger')
         return redirect(url_for('main.usuarios'))
         
     user_data = user_doc.to_dict() or {}
     
-    # Salva o seu e-mail de Admin antes de trocar a identidade, se já não estiver salvo
+    # Salva o seu e-mail original antes de trocar a identidade (mantivemos a variável 'admin_original' por padrão)
     if 'admin_original' not in session:
         session['admin_original'] = session.get('user_email')
         
-    # Atualiza a sessão para os dados do colaborador
+    # Atualiza a sessão para os dados do colaborador alvo
     session['user_email'] = email_alvo
     session['user_nome'] = user_data.get('nome_exibicao', user_data.get('nome', 'Usuário'))
     session['user_filial'] = user_data.get('filial', 'Matriz')
     session['user_perfil'] = user_data.get('perfil', 'Corretor')
     
+    registrar_log_auditoria(f"Iniciou a SIMULAÇÃO DE ACESSO do usuário {email_alvo}")
     flash(f'Simulando o acesso de {session["user_nome"]}.', 'floating_info')
     return redirect(url_for('main.home'))
 
 @main_bp.route('/restaurar_acesso')
 def restaurar_acesso():
-    admin_email = session.get('admin_original')
-    if not admin_email:
-        registrar_log_auditoria(f"Encerrou a simulação e RESTAUROU o acesso de Admin")
+    email_original = session.get('admin_original')
+    if not email_original:
         return redirect(url_for('main.home'))
         
-    user_doc = db.collection('usuarios').document(admin_email).get()
+    user_doc = db.collection('usuarios').document(email_original).get()
     if user_doc.exists:
         user_data = user_doc.to_dict() or {}
-        session['user_email'] = admin_email
-        session['user_nome'] = user_data.get('nome_exibicao', user_data.get('nome', 'Admin'))
+        session['user_email'] = email_original
+        session['user_nome'] = user_data.get('nome_exibicao', user_data.get('nome', 'Usuário'))
         session['user_filial'] = user_data.get('filial', 'Matriz')
-        session['user_perfil'] = user_data.get('perfil', 'Admin')
+        
+        # CORREÇÃO CRÍTICA: Devolve o perfil REAL do usuário (antes estava fixo em 'Admin')
+        session['user_perfil'] = user_data.get('perfil', 'Corretor')
         
     session.pop('admin_original', None)
-    flash('Acesso de Administrador restaurado.', 'floating_success')
+    registrar_log_auditoria(f"Encerrou a simulação e RESTAUROU o acesso original")
+    flash('Seu acesso original foi restaurado.', 'floating_success')
     return redirect(url_for('main.usuarios'))
 
 @main_bp.before_request
@@ -689,12 +697,9 @@ def registrar_atividade():
         if 'online_users' not in MEMORIA_CACHE:
             MEMORIA_CACHE['online_users'] = {}
             
-        # Lê a "identidade" do navegador
         user_agent = request.headers.get('User-Agent', '').lower()
         is_mobile = 'mobi' in user_agent or 'android' in user_agent or 'iphone' in user_agent
         
-        # O PULO DO GATO: Se estiver simulando, marca o ponto para o Admin original!
-        # Se não estiver simulando, marca para o usuário logado normalmente.
         email_ativo = session.get('admin_original') if session.get('admin_original') else session['user_email']
         
         MEMORIA_CACHE['online_users'][email_ativo] = {
@@ -703,34 +708,39 @@ def registrar_atividade():
         }
 
         endpoint = request.endpoint
-        # Só analisa se for uma rota do sistema (ignora login, imagens e css)
         if endpoint and endpoint.startswith('main.') and endpoint not in ['main.home', 'main.perfil']:
             tela_acessada = endpoint.split('.')[1] 
             
-            # --- NOVO: Mapeamento de rotas de ação para a tela principal ---
+            # Adicionadas todas as rotas internas que validam na página mãe
             rotas_filhas = {
                 'editar_usuario': 'usuarios',
                 'excluir_usuario': 'usuarios',
                 'simular_acesso': 'usuarios',
-                'restaurar_acesso': 'usuarios'
+                'restaurar_acesso': 'usuarios',
+                'importar_usuarios': 'usuarios',
+                'reenviar_convite': 'usuarios'
             }
             
-            # Se for uma ação (ex: editar_usuario), verifica se tem acesso à tela mãe (usuarios)
             tela_para_validar = rotas_filhas.get(tela_acessada, tela_acessada)
+            perfil_logado = session.get('user_perfil', 'Corretor').strip()
             
-            perfil_logado = session.get('user_perfil', 'Corretor')
-            
-            # Se a memória estiver vazia, carrega do Firebase (1 vez)
             if 'matriz_acessos' not in MEMORIA_CACHE:
                 doc = db.collection('configuracoes').document('matriz_acessos').get()
-                MEMORIA_CACHE['matriz_acessos'] = doc.to_dict() if doc.exists else {}
+                if doc.exists:
+                    MEMORIA_CACHE['matriz_acessos'] = doc.to_dict()
+                else:
+                    MEMORIA_CACHE['matriz_acessos'] = {p: ['home'] for p in PERFIS_SISTEMA}
                 
-            acessos_permitidos = MEMORIA_CACHE['matriz_acessos'].get(perfil_logado, ['home'])
+            # BUSCA SEGURA IGNORANDO CAIXA ALTA/BAIXA
+            acessos_permitidos = ['home']
+            for chave_banco, permissoes in MEMORIA_CACHE.get('matriz_acessos', {}).items():
+                if chave_banco.strip().lower() == perfil_logado.lower():
+                    acessos_permitidos = permissoes
+                    break
             
-            # Se a tela (ou a tela mãe) não estiver na lista dele, bloqueia!
-            if tela_para_validar not in acessos_permitidos and perfil_logado != 'Admin':
+            if tela_para_validar not in acessos_permitidos and perfil_logado.lower() != 'admin':
                 if tela_acessada == 'restaurar_acesso' and 'admin_original' in session:
-                    pass # allow
+                    pass
                 else:
                     registrar_log_auditoria(f"TENTATIVA DE INVASÃO: Bloqueado na rota '{tela_acessada}'")
                     flash(f'Acesso restrito. O seu perfil ({perfil_logado}) não tem permissão para esta ação.', 'floating_danger')
