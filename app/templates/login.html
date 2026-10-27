@@ -109,7 +109,7 @@
             width: 100%;
             max-width: 440px;
             padding: clamp(24px, 4.5vw, 40px);
-            gap: var(--space-5);
+            gap: var(--space-4);
             box-shadow: var(--shadow-float);
         }
 
@@ -156,10 +156,12 @@
             display: flex;
             align-items: center;
             gap: 14px;
-            margin: 4px 0;
+            margin: 8px 0;
             color: var(--muted);
             font-size: 12.5px;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .lo-divider::before, .lo-divider::after {
@@ -204,7 +206,7 @@
 </head>
 <body>
     <div class="auth-container">
-        <!-- Lado da Marca (Manual Lello: Vermelho & Bordô, Acolhedor) -->
+        <!-- Lado da Marca -->
         <section class="auth-brand-side">
             <div>
                 <img src="{{ url_for('static', filename='img/lello-logo-branco.png') }}" alt="Lello Imóveis" class="auth-brand-logo">
@@ -238,9 +240,6 @@
                     <h2 style="margin: 4px 0 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink);">
                         Entrar no portal
                     </h2>
-                    <p style="margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.4;">
-                        Utilize o seu e-mail cadastrados na Lello.
-                    </p>
                 </div>
 
                 <!-- Avisos e Alertas Flash -->
@@ -253,6 +252,25 @@
                     {% endfor %}
                 {% endwith %}
 
+                <!-- NOVO: Formulário de E-mail e Senha -->
+                <form id="formEmailLogin" onsubmit="fazerLoginEmail(event)" class="lo-stack lo-stack-sm">
+                    <div class="lo-field">
+                        <label class="lo-label" for="emailLogin">E-mail</label>
+                        <input type="email" id="emailLogin" class="lo-input" required placeholder="seu@email.com" autocomplete="email">
+                    </div>
+                    
+                    <div class="lo-field">
+                        <label class="lo-label" for="senhaLogin">Senha</label>
+                        <input type="password" id="senhaLogin" class="lo-input" required placeholder="Sua senha de acesso" autocomplete="current-password">
+                    </div>
+
+                    <button type="submit" id="btnEmail" class="lo-btn lo-btn-fill" style="width: 100%; margin-top: 8px; height: 48px;">
+                        Entrar com E-mail
+                    </button>
+                </form>
+
+                <div class="lo-divider">ou acesse com</div>
+
                 <!-- Botões de Provedor de Acesso SSO -->
                 <div class="lo-stack lo-stack-sm">
                     <button type="button" id="btnGoogle" onclick="fazerLoginGoogle()" class="lo-sso-btn" aria-label="Entrar com o Google">
@@ -262,12 +280,12 @@
                             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                         </svg>
-                        <span>Entrar com o Google</span>
+                        <span>Conta Google</span>
                     </button>
 
                     <button type="button" id="btnApple" onclick="fazerLoginApple()" class="lo-sso-btn" aria-label="Entrar com a Apple">
                         <i class="bi bi-apple" style="font-size: 20px; line-height: 1;"></i>
-                        <span>Entrar com a Apple</span>
+                        <span>Conta Apple</span>
                     </button>
                 </div>
 
@@ -277,7 +295,6 @@
                     <span>Validando seu acesso no sistema...</span>
                 </div>
 
-                <!-- Apoio e Suporte (Manual Lello: Dizer com quem falar) -->
                 <div class="lo-note" style="text-align: center; border-top: 1px solid var(--line); padding-top: var(--space-4);">
                     <i class="bi bi-shield-check" style="color: var(--ok); margin-right: 4px;"></i>
                     Ambiente seguro e monitorado.
@@ -294,7 +311,6 @@
     <script>
         let providerGoogle, providerApple;
 
-        // 1. Inicializa o Firebase assim que possível
         function inicializarFirebase() {
             if (typeof firebase !== 'undefined' && !providerGoogle) {
                 const configData = document.getElementById('firebase-config-data').textContent;
@@ -309,18 +325,14 @@
             }
         }
 
-        // Tenta carregar normalmente para quem tem internet boa
         inicializarFirebase();
 
-        // 2. MÁGICA: Auto-reparo silencioso para Celular e Internet Lenta
         async function garantirFirebase() {
-            // Se já carregou, segue a vida
             if (typeof firebase !== 'undefined') {
                 inicializarFirebase();
                 return true;
             }
 
-            // Se clicou muito rápido, mostra o carregamento e espera o script baixar
             return new Promise((resolve) => {
                 let tentativas = 0;
                 const intervalo = setInterval(() => {
@@ -331,7 +343,6 @@
                         inicializarFirebase();
                         resolve(true);
                     } else if (tentativas > 10) { 
-                        // Se demorou mais de 5 segundos, força o download silenciosamente
                         clearInterval(intervalo);
                         const scriptApp = document.createElement('script');
                         scriptApp.src = "https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js";
@@ -346,17 +357,19 @@
                         };
                         document.head.appendChild(scriptApp);
                     }
-                }, 500); // Checa a cada meio segundo
+                }, 500); 
             });
         }
 
         function alternarCarregamento(carregando) {
             const btnGoogle = document.getElementById('btnGoogle');
             const btnApple = document.getElementById('btnApple');
+            const btnEmail = document.getElementById('btnEmail');
             const loading = document.getElementById('loading');
             
-            btnGoogle.disabled = carregando;
-            btnApple.disabled = carregando;
+            if (btnGoogle) btnGoogle.disabled = carregando;
+            if (btnApple) btnApple.disabled = carregando;
+            if (btnEmail) btnEmail.disabled = carregando;
             loading.style.display = carregando ? 'flex' : 'none';
         }
 
@@ -389,10 +402,35 @@
             }
         }
 
-        async function fazerLoginGoogle() {
-            alternarCarregamento(true); // Gira a rodinha
+        // NOVO: Função para Login por E-mail e Senha
+        async function fazerLoginEmail(event) {
+            event.preventDefault(); 
+            alternarCarregamento(true);
             
-            // Garante que o Firebase está pronto (silenciosamente)
+            const email = document.getElementById('emailLogin').value.trim();
+            const senha = document.getElementById('senhaLogin').value;
+            
+            await garantirFirebase();
+            
+            try {
+                const result = await firebase.auth().signInWithEmailAndPassword(email, senha);
+                const token = await result.user.getIdToken();
+                await enviarTokenParaBackend(token);
+            } catch (error) {
+                console.error("Erro no login por email:", error);
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                    alert('O E-mail ou a senha informados estão incorretos.');
+                } else if (error.code === 'auth/too-many-requests') {
+                    alert('Muitas tentativas falhas. Aguarde alguns minutos e tente novamente.');
+                } else {
+                    alert(`Não foi possível autenticar: ${error.message}`);
+                }
+                alternarCarregamento(false);
+            }
+        }
+
+        async function fazerLoginGoogle() {
+            alternarCarregamento(true); 
             await garantirFirebase();
             
             try {

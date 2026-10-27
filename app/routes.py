@@ -27,11 +27,8 @@ PAGINAS_SISTEMA = [
 PERFIS_SISTEMA = ['Corretor', 'Agente de Visita', 'Gerente Filial', 'Gerente Geral', 'Admin']
 
 def registrar_log_auditoria(acao):
-    # Pega quem está logado fazendo a ação
     usuario_responsavel = session.get('user_email', 'Sistema')
     agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    
-    # O print manda o texto direto para a aba de Logs da Vercel
     print(f"[AUDITORIA] {agora} | RESPONSÁVEL: {usuario_responsavel} | AÇÃO: {acao}", flush=True)
 
 @main_bp.context_processor
@@ -53,25 +50,24 @@ def injetar_dados_globais():
                 MEMORIA_CACHE[email]['foto'] = foto
                 MEMORIA_CACHE[email]['tempo'] = agora
 
-    # --- 2. LÓGICA DA MATRIZ DE ACESSOS (CORRIGIDA) ---
-    perfil_logado = session.get('user_perfil', 'Corretor').strip()
+    # --- 2. LÓGICA DA MATRIZ DE ACESSOS (CORRIGIDA - CASE INSENSITIVE) ---
+    perfil_raw = session.get('user_perfil')
+    perfil_logado = str(perfil_raw).strip() if perfil_raw else 'Corretor'
     
-    # Se não tiver no cache, puxa do banco
     if 'matriz_acessos' not in MEMORIA_CACHE:
         doc = db.collection('configuracoes').document('matriz_acessos').get()
         if doc.exists:
             MEMORIA_CACHE['matriz_acessos'] = doc.to_dict()
         else:
             MEMORIA_CACHE['matriz_acessos'] = {p: ['home'] for p in PERFIS_SISTEMA}
+            MEMORIA_CACHE['matriz_acessos']['Admin'] = ['home', 'usuarios', 'permissoes', 'comissoes', 'visitas', 'status_visita', 'indicacao', 'portabilidade_interna', 'portabilidade_externa', 'importar_dados']
 
-    # BUSCA SEGURA IGNORANDO DIFERENÇAS DE MAIÚSCULAS OU ESPAÇOS
     acessos_permitidos = ['home']
     for chave_banco, permissoes in MEMORIA_CACHE.get('matriz_acessos', {}).items():
         if chave_banco.strip().lower() == perfil_logado.lower():
             acessos_permitidos = permissoes
             break
 
-    # Garante que todo mundo sempre veja a Home
     if 'home' not in acessos_permitidos:
         acessos_permitidos.append('home')
 
@@ -87,7 +83,6 @@ def indica_lello():
 
 @main_bp.route('/status_visita')
 def status_visita():
-    # 1. Pega os dados básicos do usuário logado
     email_usuario = session.get('user_email')
     perfil_logado = session.get('user_perfil', 'Corretor')
     filial_logada = session.get('user_filial', '')
@@ -97,12 +92,10 @@ def status_visita():
     if user_doc.exists:
         nome_cruzamento = user_doc.to_dict().get('nome', '').strip()
 
-    # 2. Verifica as regras de acesso para o filtro de colaboradores
     pode_ver_todos = perfil_logado in ['Admin', 'Gerente Geral']
     gerente_filial = perfil_logado == 'Gerente Filial'
     pode_filtrar = pode_ver_todos or gerente_filial
 
-    # 3. Puxa a lista de colaboradores (se tiver permissão)
     colaboradores_disponiveis = []
     if pode_filtrar:
         usuarios_query = db.collection('usuarios').where('ativo', '==', True).stream()
@@ -115,11 +108,10 @@ def status_visita():
                 colaboradores_disponiveis.append(nome_colab)
         colaboradores_disponiveis = sorted(list(set(colaboradores_disponiveis)))
 
-    # 4. Resgata os parâmetros da URL (incluindo o novo filtro de status)
     mes_args = request.args.get('mes')
     ano_args = request.args.get('ano')
     colaborador_args = request.args.get('colaborador')
-    status_filtro = request.args.get('status_filtro', 'Todos') # Padrão é mostrar todos
+    status_filtro = request.args.get('status_filtro', 'Todos') 
     
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 50, type=int)
@@ -133,9 +125,8 @@ def status_visita():
         colaborador_args = nome_cruzamento
 
     visitas = []
-    status_disponiveis = set() # Guarda os status únicos encontrados naquele mês
+    status_disponiveis = set() 
     
-    # Estado inicial
     if not mes_args or not ano_args:
         hoje = datetime.now()
         mes_padrao = hoje.month - 1 if hoje.month > 1 else 12
@@ -153,10 +144,8 @@ def status_visita():
                                buscou=False,
                                visitas=[])
 
-    # --- Processamento da busca ---
     mes_selecionado = int(mes_args)
     ano_selecionado = int(ano_args)
-
     str_busca_br = f"/{mes_selecionado:02d}/{ano_selecionado}"
     visitas_unicas = set()
 
@@ -172,11 +161,9 @@ def status_visita():
                 if id_visita and id_visita in visitas_unicas:
                     continue
                 
-                # Extrai o status da GN e adiciona na lista de opções para o HTML
                 status_gn = str(dados.get('Status_GN', 'Sem status')).strip().title()
                 status_disponiveis.add(status_gn)
                 
-                # Se o usuário escolheu um status específico e não bate, pula essa linha
                 if status_filtro != 'Todos' and status_filtro != status_gn:
                     continue
                 
@@ -193,11 +180,9 @@ def status_visita():
                     'status': status_gn
                 })
                 
-    # Ordena do mais recente para o mais antigo e organiza a lista de status em ordem alfabética
     visitas = sorted(visitas, key=lambda k: k['data_formatada'], reverse=True)
     status_disponiveis = sorted(list(status_disponiveis))
 
-    # --- LÓGICA DE PAGINAÇÃO ---
     total_visitas = len(visitas)
     total_paginas = (total_visitas + per_page - 1) // per_page
     
@@ -238,12 +223,16 @@ def indicacao():
 
 @main_bp.route('/perfil', methods=['GET', 'POST'])
 def perfil():
+    from firebase_admin import auth as firebase_auth
+    
     email_usuario = session.get('user_email')
     user_ref = db.collection('usuarios').document(email_usuario)
     
     if request.method == 'POST':
         novo_nome_exibicao = request.form.get('nome_exibicao')
         foto_b64 = request.form.get('foto_base64')
+        nova_senha = request.form.get('nova_senha', '').strip()
+        
         updates = {}
         if novo_nome_exibicao:
             updates['nome_exibicao'] = novo_nome_exibicao
@@ -254,7 +243,31 @@ def perfil():
                 MEMORIA_CACHE[email_usuario]['foto'] = foto_b64
         if updates:
             user_ref.update(updates)
-            flash('Perfil atualizado com sucesso!', 'success')
+            
+        # --- NOVO: Lógica de Atualização de Senha no Firebase ---
+        senha_alterada = False
+        if nova_senha:
+            if session.get('admin_original'):
+                flash('Não é permitido alterar a senha durante uma simulação de acesso.', 'floating_warning')
+            elif len(nova_senha) < 6:
+                flash('A nova senha deve ter pelo menos 6 caracteres.', 'floating_danger')
+            else:
+                try:
+                    # Busca o usuário no Firebase pelo e-mail logado e altera a senha
+                    user_record = firebase_auth.get_user_by_email(email_usuario)
+                    firebase_auth.update_user(user_record.uid, password=nova_senha)
+                    senha_alterada = True
+                except Exception as e:
+                    flash('Erro ao atualizar a senha. Verifique com o suporte.', 'floating_danger')
+
+        # Avisos customizados
+        if senha_alterada and updates:
+            flash('Perfil e senha atualizados com sucesso!', 'floating_success')
+        elif senha_alterada:
+            flash('Senha atualizada com sucesso!', 'floating_success')
+        elif updates:
+            flash('Perfil atualizado com sucesso!', 'floating_success')
+            
         return redirect(url_for('main.perfil'))
 
     user_doc = user_ref.get()
@@ -273,34 +286,27 @@ def perfil():
 def usuarios():
     perfil_logado = session.get('user_perfil')
     
-    # NOVO: Agora permite Admin, Gerente Filial E Gerente Geral
     if perfil_logado not in ['Admin', 'Gerente Filial', 'Gerente Geral']:
         flash('Acesso negado.', 'floating_danger')
         return redirect(url_for('main.home'))
 
-    # --- ADICIONAR NOVO USUÁRIO ---
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
         nome = request.form.get('nome', '').strip()
         enviar_email = request.form.get('enviar_email') 
-        
-        # PEGA OS NOVOS CAMPOS
         usuario_portal = request.form.get('usuario_portal', '').strip()
         id_apple = request.form.get('id_apple', '').strip()
 
-        # REGRAS DE GERÊNCIA (Trava segurança de cadastro)
         if perfil_logado in ['Gerente Filial', 'Gerente Geral']:
             if perfil_logado == 'Gerente Filial':
-                filial = session.get('user_filial') # Força a ser a mesma filial dele
+                filial = session.get('user_filial') 
             else:
-                filial = request.form.get('filial', '').strip() # Ger. Geral escolhe a filial
+                filial = request.form.get('filial', '').strip() 
 
             perfil = request.form.get('perfil', 'Corretor').strip()
             
-            # Gerente Filial não pode criar chefes
             if perfil_logado == 'Gerente Filial' and perfil in ['Admin', 'Gerente Geral', 'Gerente Filial']:
                 perfil = 'Corretor'
-            # Gerente Geral pode criar Ger. Filial, mas não Admin
             elif perfil_logado == 'Gerente Geral' and perfil == 'Admin':
                 perfil = 'Corretor'
         else:
@@ -328,7 +334,6 @@ def usuarios():
         flash(f'Usuário {nome} adicionado com sucesso!', 'success')
         return redirect(url_for('main.usuarios'))
 
-    # --- CARREGAMENTO OTIMIZADO ---
     if 'lista_usuarios' in MEMORIA_CACHE:
         todos_usuarios = MEMORIA_CACHE['lista_usuarios']
     else:
@@ -340,12 +345,10 @@ def usuarios():
             todos_usuarios.append(user_data)
         MEMORIA_CACHE['lista_usuarios'] = todos_usuarios
 
-    # --- LÓGICA DE FILTROS ---
     search_query = request.args.get('search', '').lower()
     perfil_filter = request.args.get('perfil', '')
     status_filter = request.args.get('status', 'ativo')
     
-    # REGRAS DO GERENTE DE FILIAL (Filtro forçado)
     if perfil_logado == 'Gerente Filial':
         filial_filter = session.get('user_filial')
     else:
@@ -374,21 +377,16 @@ def usuarios():
         user_data['dispositivo'] = dados_acesso.get('dispositivo', 'computador')
         lista_usuarios.append(user_data)
         
-    # Ordena a lista
     lista_usuarios = sorted(lista_usuarios, key=lambda x: x.get('nome', ''))
     current_filters = {'search': search_query, 'filial': filial_filter, 'perfil': perfil_filter, 'status': status_filter}
     
-    # --- LÓGICA DE PAGINAÇÃO (EM MEMÓRIA) ---
     page = request.args.get('page', 1, type=int)
     por_pagina = 10
     total_usuarios = len(lista_usuarios)
     total_paginas = (total_usuarios + por_pagina - 1) // por_pagina
     
-    # Calcula onde começa e onde termina o "corte" da lista
     inicio = (page - 1) * por_pagina
     fim = inicio + por_pagina
-    
-    # Fatiando a lista (pega só os 10 da página atual)
     lista_paginada = lista_usuarios[inicio:fim]
     
     return render_template('usuarios.html', 
@@ -400,7 +398,7 @@ def usuarios():
 @main_bp.route('/editar_usuario', methods=['POST'])
 def editar_usuario():
     perfil_logado = session.get('user_perfil')
-    email_logado = session.get('user_email') # Identifica quem está clicando
+    email_logado = session.get('user_email') 
     
     if perfil_logado not in ['Admin', 'Gerente Filial', 'Gerente Geral']: 
         return redirect(url_for('main.home'))
@@ -411,36 +409,27 @@ def editar_usuario():
     nome_exibicao = request.form.get('nome_exibicao', '').strip()
     ativo = request.form.get('ativo') == 'true'
     foto = request.form.get('foto', '').strip()
-    # PEGA OS NOVOS CAMPOS
     usuario_portal = request.form.get('usuario_portal', '').strip()
     id_apple = request.form.get('id_apple', '').strip()
 
     is_self = (email_original == email_logado)
 
-    # REGRAS DE GERÊNCIA (Edição)
     if perfil_logado in ['Gerente Filial', 'Gerente Geral']:
-        
-        # Gerente Filial é travado na própria filial. Gerente Geral pode mudar.
         if perfil_logado == 'Gerente Filial':
             filial = session.get('user_filial')
         else:
             filial = request.form.get('filial', '').strip()
             
-        # Se ele estiver editando a si mesmo, TRAVA o e-mail e o perfil originais
         if is_self:
             novo_email = email_original
             perfil = perfil_logado
         else:
             perfil = request.form.get('perfil', '').strip()
-            
-            # Impede Gerente Filial de dar cargo de chefe
             if perfil_logado == 'Gerente Filial' and perfil in ['Admin', 'Gerente Geral', 'Gerente Filial']:
                 perfil = 'Corretor'
-            # Impede Gerente Geral de criar um Admin
             elif perfil_logado == 'Gerente Geral' and perfil == 'Admin':
                 perfil = 'Corretor'
     else:
-        # Aqui cai o Admin, que pode tudo
         filial = request.form.get('filial', '').strip()
         perfil = request.form.get('perfil', '').strip()
 
@@ -450,12 +439,10 @@ def editar_usuario():
     if doc.exists:
         dados_atuais = doc.to_dict() or {}
         
-        # Bloqueia Gerente Filial de tentar editar alguém de outra filial
         if perfil_logado == 'Gerente Filial' and dados_atuais.get('filial') != session.get('user_filial'):
             flash('Erro de segurança: Acesso negado a outras filiais.', 'floating_danger')
             return redirect(url_for('main.usuarios'))
 
-        # Trava do Status! Se for ele mesmo, força a manter o status atual do banco.
         if is_self and perfil_logado != 'Admin':
             ativo = dados_atuais.get('ativo', True)
 
@@ -484,9 +471,15 @@ def editar_usuario():
         MEMORIA_CACHE.pop('lista_usuarios', None)
         flash('Dados atualizados com sucesso!', 'floating_success')
         
-    return redirect(url_for('main.usuarios'))
+    # CORREÇÃO DA PAGINAÇÃO APÓS A EDIÇÃO
+    pagina_atual = request.form.get('current_page', 1)
+    busca = request.form.get('current_search', '')
+    filial_f = request.form.get('current_filial', '')
+    perfil_f = request.form.get('current_perfil', '')
+    status_f = request.form.get('current_status', 'ativo')
 
-# NOVA ROTA: Reenviar Convite
+    return redirect(url_for('main.usuarios', page=pagina_atual, search=busca, filial=filial_f, perfil=perfil_f, status=status_f))
+
 @main_bp.route('/reenviar_convite', methods=['POST'])
 def reenviar_convite():
     if session.get('user_perfil') != 'Admin': return redirect(url_for('main.home'))
@@ -501,7 +494,13 @@ def reenviar_convite():
     else:
         flash('Erro ao reenviar convite: dados incompletos.', 'danger')
         
-    return redirect(url_for('main.usuarios'))
+    pagina_atual = request.form.get('current_page', 1)
+    busca = request.form.get('current_search', '')
+    filial_f = request.form.get('current_filial', '')
+    perfil_f = request.form.get('current_perfil', '')
+    status_f = request.form.get('current_status', 'ativo')
+
+    return redirect(url_for('main.usuarios', page=pagina_atual, search=busca, filial=filial_f, perfil=perfil_f, status=status_f))
 
 @main_bp.route('/excluir_usuario', methods=['POST'])
 def excluir_usuario():
@@ -511,18 +510,21 @@ def excluir_usuario():
     registrar_log_auditoria(f"EXCLUIU o colaborador {email}")
     db.collection("usuarios").document(email).delete()
     if email in MEMORIA_CACHE: del MEMORIA_CACHE[email]
-    
-    # Força o painel a recarregar a lista nova do Firebase
     MEMORIA_CACHE.pop('lista_usuarios', None)
-    
     flash('Colaborador removido!', 'success')
-    return redirect(url_for('main.usuarios'))
+    
+    pagina_atual = request.form.get('current_page', 1)
+    busca = request.form.get('current_search', '')
+    filial_f = request.form.get('current_filial', '')
+    perfil_f = request.form.get('current_perfil', '')
+    status_f = request.form.get('current_status', 'ativo')
+
+    return redirect(url_for('main.usuarios', page=pagina_atual, search=busca, filial=filial_f, perfil=perfil_f, status=status_f))
 
 @main_bp.route('/visitas')
 def visitas():
     import datetime as dt 
     
-    # 1. Pega os dados do usuário logado e o perfil
     email_usuario = session.get('user_email')
     perfil_logado = session.get('user_perfil', 'Corretor')
     
@@ -535,7 +537,6 @@ def visitas():
         usuario_portal = dados_user.get('usuario_portal', '').strip()
         nome_colaborador = dados_user.get('nome', '').strip()
 
-    # 2. Lógica de Datas (Padrão: Mês Anterior)
     hoje = datetime.now()
     mes_padrao = hoje.month - 1 if hoje.month > 1 else 12
     ano_padrao = hoje.year if hoje.month > 1 else hoje.year - 1
@@ -546,11 +547,9 @@ def visitas():
     ultimo_dia = calendar.monthrange(ano_selecionado, mes_selecionado)[1]
     periodo_str = f"Período 01 a {ultimo_dia:02d}/{mes_selecionado:02d}/{ano_selecionado}"
     
-    # Mês e ano do repasse
     mes_pagamento = mes_selecionado + 1 if mes_selecionado < 12 else 1
     ano_pagamento = ano_selecionado if mes_selecionado < 12 else ano_selecionado + 1
 
-    # --- NOVO: Define as regras de busca, colunas, comissão e DATA por perfil ---
     if perfil_logado == 'Agente de Visita':
         colecao_banco = 'dt_gestao_negocios_finalizados'
         coluna_filtro = 'Atendimento_Colaborador_Visita'
@@ -559,15 +558,14 @@ def visitas():
         taxa_comissao = 0.03
         taxa_str = "3%"
         
-        # Data Repasse: 1º dia útil do mês seguinte
         data_pag = dt.date(ano_pagamento, mes_pagamento, 1)
-        while data_pag.weekday() >= 5: # Pula Sábado(5) e Domingo(6)
+        while data_pag.weekday() >= 5: 
             data_pag += dt.timedelta(days=1)
             
         data_pagamento_str = data_pag.strftime("%d/%m/%Y")
         texto_rodape_data = "1º dia útil do mês subsequente"
         
-    else: # Corretor
+    else: 
         colecao_banco = 'dt_ctrl_pagamento_visita'
         coluna_filtro = 'Colaborador'
         coluna_valor = 'Negocio_Valor_fechado'         
@@ -575,12 +573,10 @@ def visitas():
         taxa_comissao = 0.20
         taxa_str = "20%"
         
-        # Data Repasse: Dia 10 do mês seguinte
         data_pag = dt.date(ano_pagamento, mes_pagamento, 10)
         data_pagamento_str = data_pag.strftime("%d/%m/%Y")
         texto_rodape_data = "Dia 10 do mês subsequente"
 
-    # 3. Lógica de Cálculo de Valores
     contratos_unicos = set()
     valor_total_fechado = 0.0
     
@@ -624,7 +620,6 @@ def visitas():
                     
                 valor_total_fechado += valor_clean
 
-    # 4. Aplica a comissão correta
     valor_ganho = valor_total_fechado * taxa_comissao
     valor_ganho_formatado = f"{valor_ganho:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
 
@@ -642,7 +637,7 @@ def visitas():
 def simular_acesso():
     perfil_logado = session.get('user_perfil', '')
     
-    # Agora permite Admin, Gerente Geral e Gerente Filial
+    # PERMITE QUE GERENTES FAÇAM A SIMULAÇÃO
     if perfil_logado not in ['Admin', 'Gerente Geral', 'Gerente Filial'] and not session.get('admin_original'):
         flash('Acesso negado.', 'floating_danger')
         return redirect(url_for('main.home'))
@@ -656,11 +651,9 @@ def simular_acesso():
         
     user_data = user_doc.to_dict() or {}
     
-    # Salva o seu e-mail original antes de trocar a identidade (mantivemos a variável 'admin_original' por padrão)
     if 'admin_original' not in session:
         session['admin_original'] = session.get('user_email')
         
-    # Atualiza a sessão para os dados do colaborador alvo
     session['user_email'] = email_alvo
     session['user_nome'] = user_data.get('nome_exibicao', user_data.get('nome', 'Usuário'))
     session['user_filial'] = user_data.get('filial', 'Matriz')
@@ -682,8 +675,7 @@ def restaurar_acesso():
         session['user_email'] = email_original
         session['user_nome'] = user_data.get('nome_exibicao', user_data.get('nome', 'Usuário'))
         session['user_filial'] = user_data.get('filial', 'Matriz')
-        
-        # CORREÇÃO CRÍTICA: Devolve o perfil REAL do usuário (antes estava fixo em 'Admin')
+        # CORREÇÃO CRÍTICA PARA DEVOLVER O PERFIL REAL DO GERENTE
         session['user_perfil'] = user_data.get('perfil', 'Corretor')
         
     session.pop('admin_original', None)
@@ -711,7 +703,6 @@ def registrar_atividade():
         if endpoint and endpoint.startswith('main.') and endpoint not in ['main.home', 'main.perfil']:
             tela_acessada = endpoint.split('.')[1] 
             
-            # Adicionadas todas as rotas internas que validam na página mãe
             rotas_filhas = {
                 'editar_usuario': 'usuarios',
                 'excluir_usuario': 'usuarios',
@@ -722,7 +713,9 @@ def registrar_atividade():
             }
             
             tela_para_validar = rotas_filhas.get(tela_acessada, tela_acessada)
-            perfil_logado = session.get('user_perfil', 'Corretor').strip()
+            
+            perfil_raw = session.get('user_perfil')
+            perfil_logado = str(perfil_raw).strip() if perfil_raw else 'Corretor'
             
             if 'matriz_acessos' not in MEMORIA_CACHE:
                 doc = db.collection('configuracoes').document('matriz_acessos').get()
@@ -731,7 +724,6 @@ def registrar_atividade():
                 else:
                     MEMORIA_CACHE['matriz_acessos'] = {p: ['home'] for p in PERFIS_SISTEMA}
                 
-            # BUSCA SEGURA IGNORANDO CAIXA ALTA/BAIXA
             acessos_permitidos = ['home']
             for chave_banco, permissoes in MEMORIA_CACHE.get('matriz_acessos', {}).items():
                 if chave_banco.strip().lower() == perfil_logado.lower():
@@ -748,36 +740,28 @@ def registrar_atividade():
 
 @main_bp.route('/permissoes', methods=['GET', 'POST'])
 def permissoes():
-    # Apenas o Admin Supremo pode mexer aqui
     if session.get('user_perfil') != 'Admin':
         flash('Acesso negado. Apenas Administradores podem configurar permissões.', 'floating_danger')
         return redirect(url_for('main.home'))
 
-    # --- SALVAR AS PERMISSÕES ---
     if request.method == 'POST':
         novas_permissoes = {}
         for perfil in PERFIS_SISTEMA:
-            # Captura todos os checkboxes marcados para aquele perfil
             selecionadas = request.form.getlist(f'permissoes_{perfil}')
             novas_permissoes[perfil] = selecionadas
 
-        # Grava no banco com 1 única gravação
         db.collection('configuracoes').document('matriz_acessos').set(novas_permissoes)
-        
-        # Atualiza a memória
         MEMORIA_CACHE['matriz_acessos'] = novas_permissoes
         registrar_log_auditoria("ATUALIZOU a Matriz de Acessos do sistema")
         
         flash('Permissões atualizadas com sucesso!', 'success')
         return redirect(url_for('main.permissoes'))
 
-    # --- CARREGAR AS PERMISSÕES (USANDO CACHE) ---
     if 'matriz_acessos' not in MEMORIA_CACHE:
         doc = db.collection('configuracoes').document('matriz_acessos').get()
         if doc.exists:
             MEMORIA_CACHE['matriz_acessos'] = doc.to_dict()
         else:
-            # Por padrão, se não existir nada salvo, libera tudo pro Admin e só a Home pro resto
             MEMORIA_CACHE['matriz_acessos'] = {p: ['home', 'usuarios', 'permissoes', 'comissoes'] if p == 'Admin' else ['home'] for p in PERFIS_SISTEMA}
 
     permissoes_atuais = MEMORIA_CACHE['matriz_acessos']
@@ -798,38 +782,32 @@ def importar_usuarios():
         return redirect(url_for('main.usuarios'))
         
     try:
-        # Lê o conteúdo do arquivo
         stream = io.StringIO(arquivo.stream.read().decode("UTF8", errors='ignore'), newline=None)
         
-        # O Excel no Brasil costuma separar por ponto-e-vírgula (;) em vez de vírgula (,)
         try:
             dialect = csv.Sniffer().sniff(stream.read(1024))
             stream.seek(0)
             csv_reader = csv.DictReader(stream, dialect=dialect)
         except:
             stream.seek(0)
-            csv_reader = csv.DictReader(stream, delimiter=';') # Tenta ponto-e-vírgula como fallback
+            csv_reader = csv.DictReader(stream, delimiter=';') 
         
         cadastrados = 0
         
         for row in csv_reader:
-            # Puxa o cabeçalho ignorando espaços e letras maiúsculas
             row_lower = {k.strip().lower() if k else '': v for k, v in row.items()}
             
             email = row_lower.get('email', '').strip().lower()
             if not email:
-                continue # Pula linhas vazias
+                continue 
                 
             nome = row_lower.get('nome', '').strip()
             filial = row_lower.get('filial', '(10) Centro Adm.').strip()
             perfil = row_lower.get('perfil', 'Corretor').strip()
-            
-            # NOVO: Lê a coluna de e-mail (por segurança, se deixarem em branco, o padrão é 'nao')
             enviar_email = row_lower.get('enviar_email', 'nao').strip().lower()
             
             user_ref = db.collection("usuarios").document(email)
             
-            # Só cadastra se o e-mail não existir no banco
             if not user_ref.get().exists:
                 user_ref.set({
                     "nome": nome,
@@ -840,13 +818,11 @@ def importar_usuarios():
                     "ativo": True
                 })
                 
-                # O PULO DO GATO: Dispara o e-mail SÓ se a linha atual pedir!
                 if enviar_email == 'sim':
                     enviar_email_boas_vindas(email, nome, perfil)
                 
                 cadastrados += 1
                 
-        # Limpa o cache para a tela mostrar os novos usuários
         MEMORIA_CACHE.pop('lista_usuarios', None)
         registrar_log_auditoria(f"IMPORTOU em massa {cadastrados} colaboradores via CSV")
         
@@ -859,7 +835,6 @@ def importar_usuarios():
 
 @main_bp.route('/importar_dados', methods=['GET', 'POST'])
 def importar_dados():
-    # Apenas Admin deve ter permissão para criar coleções e fazer cargas em massa
     if session.get('user_perfil') != 'Admin':
         flash('Acesso negado. Apenas Administradores podem importar dados.', 'floating_danger')
         return redirect(url_for('main.home'))
@@ -870,10 +845,8 @@ def importar_dados():
             flash('Nenhum arquivo selecionado.', 'floating_danger')
             return redirect(url_for('main.importar_dados'))
 
-        # Lógica de seleção da coleção (tabela)
         colecao_destino = request.form.get('colecao_destino')
         nova_colecao = request.form.get('nova_colecao','').strip()
-
         colecao_final = nova_colecao if colecao_destino == 'nova' else colecao_destino
 
         if not colecao_final:
@@ -887,10 +860,8 @@ def importar_dados():
             
             coluna_id = request.form.get('coluna_id', '').strip()
             
-            # 1. Busca todos os IDs que JÁ EXISTEM na tabela destino
             ids_existentes = set()
             if coluna_id:
-                # O .select([]) traz APENAS o ID dos documentos, sem os dados, deixando a consulta super rápida
                 docs = db.collection(colecao_final).select([]).stream()
                 for doc in docs:
                     ids_existentes.add(doc.id)
@@ -902,21 +873,15 @@ def importar_dados():
             for reg in registros:
                 if coluna_id and coluna_id in reg:
                     doc_id = str(reg[coluna_id]).strip()
-                    
                     if not doc_id:
                         continue
-                        
-                    # 2. A MÁGICA: Se o ID da planilha já existir no banco, ele pula para a próxima linha
                     if doc_id in ids_existentes:
                         contador_ignorados += 1
                         continue
-                        
                     doc_ref = db.collection(colecao_final).document(doc_id)
                 else:
-                    # Se não informou coluna de ID, gera um ID aleatório
                     doc_ref = db.collection(colecao_final).document()
                 
-                # 3. Salva apenas os registros que passaram no filtro
                 batch.set(doc_ref, reg)
                 contador_novos += 1
                 
@@ -924,7 +889,6 @@ def importar_dados():
                     batch.commit()
                     batch = db.batch()
             
-            # Comita o restante
             if contador_novos % 500 != 0:
                 batch.commit()
 
@@ -940,21 +904,15 @@ def importar_dados():
             
         return redirect(url_for('main.importar_dados'))
 
-    # Método GET: Pega a lista de tabelas existentes para popular o dropdown
     colecoes_firebase = [colecao.id for colecao in db.collections()]
     return render_template('importar_dados.html', colecoes=colecoes_firebase)
 
-
-# ============================================================================
-# RELATÓRIO DE COMISSÕES
-# ============================================================================
 @main_bp.route('/comissoes', methods=['GET'])
 def comissoes():
     perfil_logado = session.get('user_perfil')
     email_logado = session.get('user_email')
     filial_logada = session.get('user_filial')
 
-    # --- Regras de acesso por perfil ---
     pode_ver_todos = perfil_logado in ['Admin', 'Gerente Geral']
     gerente_filial = perfil_logado == 'Gerente Filial'
     e_corretor = perfil_logado in ['Corretor', 'Agente de Visita']
@@ -963,7 +921,6 @@ def comissoes():
         flash('Acesso negado. Você não tem permissão para visualizar relatórios de comissões.', 'floating_danger')
         return redirect(url_for('main.home'))
 
-    # --- Filtros de período ---
     hoje = datetime.now()
     mes_padrao = hoje.month - 1 if hoje.month > 1 else 12
     ano_padrao = hoje.year if hoje.month > 1 else hoje.year - 1
@@ -975,25 +932,20 @@ def comissoes():
     str_busca_br = f"/{mes_selecionado:02d}/{ano_selecionado}"
     str_busca_us = f"{ano_selecionado}-{mes_selecionado:02d}"
 
-    # --- Filtro de filial e corretor ---
     filial_filtro = request.args.get('filial', '').strip()
     corretor_filtro = request.args.get('corretor', '').strip()
 
     if e_corretor:
-        # Corretor vê apenas o próprio usuario_portal
         user_doc = db.collection('usuarios').document(email_logado).get()
         usuario_portal_meu = user_doc.to_dict().get('usuario_portal', '') if user_doc.exists else ''
         colaboradores = [usuario_portal_meu] if usuario_portal_meu else []
         filial_filtro = filial_logada
     elif gerente_filial:
-        # Gerente Filial só vê corretores da própria filial
         filial_filtro = filial_logada
-        colaboradores = None  # será preenchido abaixo
+        colaboradores = None 
     else:
-        # Admin / Gerente Geral: filtro opcional
         colaboradores = None
 
-    # --- Carregar lista de corretores elegíveis (para dropdown e iteração) ---
     usuarios_query = db.collection('usuarios').where('perfil', '==', 'Corretor').where('ativo', '==', True).stream()
     todos_corretores = []
     for doc in usuarios_query:
@@ -1005,14 +957,11 @@ def comissoes():
             continue
         todos_corretores.append(dados)
 
-    # Determinar lista de colaboradores (usuario_portal) a consultar
     if colaboradores is None:
         colaboradores = [c.get('usuario_portal', '') for c in todos_corretores if c.get('usuario_portal')]
 
-    # --- Mapear email -> dados do corretor para exibição ---
     mapa_corretor = {c.get('usuario_portal'): c for c in todos_corretores}
 
-    # --- Consultar comissões por colaborador ---
     resultados = []
     total_contratos_geral = 0
     valor_fechado_geral = 0.0
@@ -1071,10 +1020,8 @@ def comissoes():
         valor_fechado_geral += valor_total_fechado
         comissao_geral += valor_ganho
 
-    # Ordenar por nome
     resultados.sort(key=lambda x: x.get('nome', ''))
 
-    # Lista de filiais para o dropdown (só Admin/Gerente)
     filiais_disponiveis = []
     if pode_ver_todos or gerente_filial:
         filiais_set = set()
