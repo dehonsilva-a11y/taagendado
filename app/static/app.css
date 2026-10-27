@@ -681,8 +681,10 @@ button, input, select, textarea {
     /* ALTERAÇÃO AQUI: Diminuindo a camada para ficar atrás do menu */
     z-index: 150 !important; 
     
+    /* MÁGICA DINÂMICA: Divide o espaço por igual dependendo de quantos botões existirem */
     display: grid !important;
-    grid-template-columns: repeat(5, 1fr) !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: minmax(0, 1fr) !important;
     gap: 2px !important;
     box-sizing: border-box !important;
 }

@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <!-- Design System Lello (Tokens & Componentes Oficiais) -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=16">
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=17">
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -241,7 +241,6 @@
         {% endif %}
 
         {% if 'status_visita' in minhas_permissoes or is_admin %}
-        <!-- Ícone corrigido de bi-graph-up-arrow para bi-calendar-check -->
         <a href="{{ url_for('main.status_visita') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.status_visita' %}active{% endif %}">
             <i class="bi bi-calendar-check{% if request.endpoint == 'main.status_visita' %}-fill{% endif %}"></i>
             <span>Visitas</span>
@@ -254,11 +253,6 @@
             <span>Indicar</span>
         </a>
         {% endif %}
-        
-        <button type="button" class="lo-tab lo-tab-link" data-sidebar-toggle aria-label="Abrir todas as opções">
-            <i class="bi bi-list"></i>
-            <span>Menu</span>
-        </button>
     </nav>
 
     <!-- Overlay para fechamento de menu mobile -->
