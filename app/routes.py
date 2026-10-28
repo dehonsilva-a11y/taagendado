@@ -244,19 +244,22 @@ def perfil():
         if updates:
             user_ref.update(updates)
             
-        # --- NOVO: Lógica de Atualização de Senha no Firebase ---
+        # --- Lógica de Atualização de Senha no Firebase ---
         senha_alterada = False
         if nova_senha:
-            if session.get('admin_original'):
-                flash('Não é permitido alterar a senha durante uma simulação de acesso.', 'floating_warning')
-            elif len(nova_senha) < 6:
+            if len(nova_senha) < 6:
                 flash('A nova senha deve ter pelo menos 6 caracteres.', 'floating_danger')
             else:
                 try:
-                    # Busca o usuário no Firebase pelo e-mail logado e altera a senha
+                    # Busca o usuário no Firebase pelo e-mail e altera a senha
                     user_record = firebase_auth.get_user_by_email(email_usuario)
                     firebase_auth.update_user(user_record.uid, password=nova_senha)
                     senha_alterada = True
+                    
+                    # Registra nos logs caso um Gerente/Admin altere a senha de alguém
+                    if session.get('admin_original'):
+                        registrar_log_auditoria(f"ALTEROU a senha de {email_usuario} durante simulação de acesso")
+                        
                 except Exception as e:
                     flash('Erro ao atualizar a senha. Verifique com o suporte.', 'floating_danger')
 
