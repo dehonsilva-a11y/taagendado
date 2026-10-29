@@ -293,18 +293,48 @@
     <script>
         // 1. Registra o Service Worker (Obrigatório para PWA)
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}").catch(() => {});
-            });
+            navigator.serviceWorker.register('/static/sw.js').catch(console.error);
         }
 
-        // 2. Lógica de PWA (Botão, Popup e iOS)
-        let deferredPrompt;
-        const pwaNavGroup = document.getElementById('pwa-nav-group');
-        const btnInstallMenu = document.getElementById('btn-install-menu');
-        const pwaPopup = document.getElementById('pwa-popup');
-        const btnInstallPopup = document.getElementById('btn-install-popup');
-        const btnClosePopup = document.getElementById('btn-close-popup');
+        const btnMenu = document.getElementById('pwa-nav-group');
+        const popupInstalar = document.getElementById('pwa-popup');
+        let eventoInstalacao;
+
+        // 2. O Chrome avisa que o App passou nos testes e está pronto para instalar
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); // Impede o popup padrão feio do Google
+            eventoInstalacao = e;
+            
+            // Libera o nosso botão no menu e o popup
+            if (btnMenu) btnMenu.style.display = 'block';
+            if (popupInstalar && !sessionStorage.getItem('popupFechado')) {
+                popupInstalar.style.display = 'block';
+            }
+        });
+
+        // 3. Função que dispara a instalação
+        async function instalarApp() {
+            if (!eventoInstalacao) return;
+            
+            eventoInstalacao.prompt(); // Mostra a telinha oficial de instalação do celular
+            
+            const { outcome } = await eventoInstalacao.userChoice;
+            if (outcome === 'accepted') {
+                if (btnMenu) btnMenu.style.display = 'none';
+                if (popupInstalar) popupInstalar.style.display = 'none';
+            }
+            eventoInstalacao = null;
+        }
+
+        // 4. Liga os botões na nossa função
+        document.getElementById('btn-install-menu')?.addEventListener('click', instalarApp);
+        document.getElementById('btn-install-popup')?.addEventListener('click', instalarApp);
+        
+        // 5. Botão de fechar o popup (para não incomodar mais)
+        document.getElementById('btn-close-popup')?.addEventListener('click', () => {
+            if (popupInstalar) popupInstalar.style.display = 'none';
+            sessionStorage.setItem('popupFechado', 'true');
+        });
 
         // Detecta se é um iPhone/iPad (iOS não tem suporte automático para o evento beforeinstallprompt)
         const isIos = () => {

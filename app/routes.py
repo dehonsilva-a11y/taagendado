@@ -27,7 +27,7 @@ PAGINAS_SISTEMA = [
 PERFIS_SISTEMA = ['Corretor', 'Agente de Visita', 'Gerente Filial', 'Gerente Geral', 'Admin']
 
 # NOVO: Gera a versão automaticamente toda vez que você executa o Python
-APP_VERSION = "v" + datetime.now().strftime("%y.%m%d.%H%M")
+APP_VERSION = "v" + datetime.now().strftime("%y%m%d%H%M")
 
 def registrar_log_auditoria(acao):
     usuario_responsavel = session.get('user_email', 'Sistema')
