@@ -291,14 +291,14 @@
     <!-- Scripts do Design System e PWA -->
     <script src="{{ url_for('static', filename='app.js') }}?v=12"></script>
     <script>
-        // Registra o Service Worker (necessário para o Android habilitar a instalação)
+        // 1. Registra o Service Worker (Obrigatório para PWA)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}").catch(() => {});
             });
         }
 
-        // Lógica de exibição do botão e do popup
+        // 2. Lógica de PWA (Botão, Popup e iOS)
         let deferredPrompt;
         const pwaNavGroup = document.getElementById('pwa-nav-group');
         const btnInstallMenu = document.getElementById('btn-install-menu');
@@ -306,21 +306,46 @@
         const btnInstallPopup = document.getElementById('btn-install-popup');
         const btnClosePopup = document.getElementById('btn-close-popup');
 
-        // Esse evento SÓ é disparado pelo celular se a pessoa AINDA NÃO instalou o app
+        // Detecta se é um iPhone/iPad (iOS não tem suporte automático para o evento beforeinstallprompt)
+        const isIos = () => {
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            return /iphone|ipad|ipod/.test(userAgent);
+        };
+        
+        // Verifica se o app já está rodando em tela cheia (Standalone)
+        const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+
+        // A - Lógica para Android (Chrome)
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             
-            // Mostra o botão no menu
             if (pwaNavGroup) pwaNavGroup.style.display = 'block';
             
-            // Só mostra o popup chato se a pessoa não fechou ele antes nesta mesma sessão
             if (pwaPopup && !sessionStorage.getItem('pwa-popup-closed')) {
+                // Modifica o texto para Android
+                document.querySelector('#pwa-popup p').innerText = "Acesse mais rápido direto da sua tela inicial, sem precisar abrir o navegador.";
+                btnInstallPopup.style.display = 'block';
                 pwaPopup.style.display = 'block';
             }
         });
 
-        // Função que aciona a instalação da Apple/Android
+        // B - Lógica Manual para iPhone (iOS)
+        if (isIos() && !isInStandaloneMode()) {
+            if (pwaNavGroup) pwaNavGroup.style.display = 'block';
+            
+            if (pwaPopup && !sessionStorage.getItem('pwa-popup-closed')) {
+                // Modifica o texto para ensinar o usuário do iPhone
+                document.querySelector('#pwa-popup h4').innerText = "Instalar no iPhone";
+                document.querySelector('#pwa-popup p').innerHTML = "Toque no ícone de <b>Compartilhar</b> <i class='bi bi-box-arrow-up'></i> na barra inferior e depois em <b>Adicionar à Tela de Início</b> <i class='bi bi-plus-square'></i>.";
+                
+                // O botão de instalar direto não funciona na Apple, então a gente oculta ele
+                if (btnInstallPopup) btnInstallPopup.style.display = 'none';
+                pwaPopup.style.display = 'block';
+            }
+        }
+
+        // 3. Ações de Clique
         async function installPWA() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
@@ -330,25 +355,26 @@
                     if (pwaNavGroup) pwaNavGroup.style.display = 'none';
                 }
                 deferredPrompt = null;
+            } else if (isIos()) {
+                alert("Para instalar no iPhone, toque no botão 'Compartilhar' e depois em 'Adicionar à Tela de Início'.");
             }
         }
 
-        // Ações de clique
         if (btnInstallMenu) btnInstallMenu.addEventListener('click', installPWA);
         if (btnInstallPopup) btnInstallPopup.addEventListener('click', installPWA);
+        
         if (btnClosePopup) {
             btnClosePopup.addEventListener('click', () => {
-                pwaPopup.style.display = 'none';
-                sessionStorage.setItem('pwa-popup-closed', 'true'); // Grava que ele fechou pra não encher o saco
+                if (pwaPopup) pwaPopup.style.display = 'none';
+                sessionStorage.setItem('pwa-popup-closed', 'true'); 
             });
         }
 
-        // Limpeza após instalar com sucesso
+        // Limpeza quando a instalação for concluída
         window.addEventListener('appinstalled', () => {
             if (pwaPopup) pwaPopup.style.display = 'none';
             if (pwaNavGroup) pwaNavGroup.style.display = 'none';
         });
     </script>
-    {% block scripts %}{% endblock %}
 </body>
 </html>
