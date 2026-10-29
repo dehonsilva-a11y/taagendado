@@ -26,10 +26,14 @@ PAGINAS_SISTEMA = [
 ]
 PERFIS_SISTEMA = ['Corretor', 'Agente de Visita', 'Gerente Filial', 'Gerente Geral', 'Admin']
 
+# NOVO: Gera a versão automaticamente toda vez que você executa o Python
+APP_VERSION = "v" + datetime.now().strftime("%y.%m%d.%H%M")
+
 def registrar_log_auditoria(acao):
     usuario_responsavel = session.get('user_email', 'Sistema')
     agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     print(f"[AUDITORIA] {agora} | RESPONSÁVEL: {usuario_responsavel} | AÇÃO: {acao}", flush=True)
+
 
 @main_bp.context_processor
 def injetar_dados_globais():
@@ -71,7 +75,7 @@ def injetar_dados_globais():
     if 'home' not in acessos_permitidos:
         acessos_permitidos.append('home')
 
-    return dict(current_user_foto=foto, minhas_permissoes=acessos_permitidos)
+    return dict(current_user_foto=foto, minhas_permissoes=acessos_permitidos, app_version=APP_VERSION)
 
 @main_bp.route('/')
 def home():

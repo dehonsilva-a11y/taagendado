@@ -144,6 +144,20 @@
                 {% endif %}
             </nav>
 
+            <div class="lo-nav-group" id="pwa-nav-group" style="display: none; margin-top: auto; padding-top: 16px;">
+                    <button type="button" id="btn-install-menu" class="lo-nav-item" style="width: 100%; border: none; text-align: left; background: var(--accent-soft); color: var(--accent); cursor: pointer;">
+                        <i class="bi bi-download"></i>
+                        <span>Instalar App</span>
+                    </button>
+                </div>
+
+            </nav>
+
+            <!-- NOVO: Número da Versão -->
+            <div style="text-align: center; padding: 12px 16px 0; font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em;">
+                VERSÃO {{ app_version }}
+            </div>
+
             <!-- Rodapé da Sidebar (Ações Rápidas & Perfil) -->
             <div class="lo-sidebar-ft" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 12px 16px;">
                 <!-- Link para o perfil clicando no nome/filial -->
@@ -258,8 +272,83 @@
     <!-- Overlay para fechamento de menu mobile -->
     <div class="lo-overlay" id="lelloOverlay" data-sidebar-toggle></div>
 
-    <!-- Scripts do Design System -->
+    <div id="pwa-popup" class="lo-card" style="display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 380px; z-index: 1050; padding: 16px; box-shadow: var(--shadow-float); border: 2px solid var(--accent);">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <div style="width: 46px; height: 46px; background: var(--accent); color: white; border-radius: 12px; display: grid; place-items: center; font-size: 22px; flex: none;">
+                <i class="bi bi-app-indicator"></i>
+            </div>
+            <div style="flex: 1;">
+                <h4 style="margin: 0 0 4px; font-size: 15px; font-weight: 800; color: var(--ink);">Instalar Portal Lello</h4>
+                <p style="margin: 0 0 12px; font-size: 13.5px; color: var(--muted); line-height: 1.4;">Acesse mais rápido direto da sua tela inicial, sem precisar abrir o navegador.</p>
+                <div style="display: flex; gap: 8px;">
+                    <button id="btn-install-popup" class="lo-btn lo-btn-sm lo-btn-fill" style="flex: 1;">Instalar agora</button>
+                    <button id="btn-close-popup" class="lo-btn lo-btn-sm lo-btn-ghost" style="flex: none; padding: 4px 10px;" aria-label="Fechar aviso"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts do Design System e PWA -->
     <script src="{{ url_for('static', filename='app.js') }}?v=12"></script>
+    <script>
+        // Registra o Service Worker (necessário para o Android habilitar a instalação)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}").catch(() => {});
+            });
+        }
+
+        // Lógica de exibição do botão e do popup
+        let deferredPrompt;
+        const pwaNavGroup = document.getElementById('pwa-nav-group');
+        const btnInstallMenu = document.getElementById('btn-install-menu');
+        const pwaPopup = document.getElementById('pwa-popup');
+        const btnInstallPopup = document.getElementById('btn-install-popup');
+        const btnClosePopup = document.getElementById('btn-close-popup');
+
+        // Esse evento SÓ é disparado pelo celular se a pessoa AINDA NÃO instalou o app
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Mostra o botão no menu
+            if (pwaNavGroup) pwaNavGroup.style.display = 'block';
+            
+            // Só mostra o popup chato se a pessoa não fechou ele antes nesta mesma sessão
+            if (pwaPopup && !sessionStorage.getItem('pwa-popup-closed')) {
+                pwaPopup.style.display = 'block';
+            }
+        });
+
+        // Função que aciona a instalação da Apple/Android
+        async function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    if (pwaPopup) pwaPopup.style.display = 'none';
+                    if (pwaNavGroup) pwaNavGroup.style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        }
+
+        // Ações de clique
+        if (btnInstallMenu) btnInstallMenu.addEventListener('click', installPWA);
+        if (btnInstallPopup) btnInstallPopup.addEventListener('click', installPWA);
+        if (btnClosePopup) {
+            btnClosePopup.addEventListener('click', () => {
+                pwaPopup.style.display = 'none';
+                sessionStorage.setItem('pwa-popup-closed', 'true'); // Grava que ele fechou pra não encher o saco
+            });
+        }
+
+        // Limpeza após instalar com sucesso
+        window.addEventListener('appinstalled', () => {
+            if (pwaPopup) pwaPopup.style.display = 'none';
+            if (pwaNavGroup) pwaNavGroup.style.display = 'none';
+        });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
