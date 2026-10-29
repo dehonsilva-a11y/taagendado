@@ -81,6 +81,10 @@ def injetar_dados_globais():
 def home():
     return render_template('home.html')
 
+@main_bp.route('/instalar')
+def instalar():
+    return render_template('instalar.html')
+
 @main_bp.route('/indica_lello')
 def indica_lello():
     return render_template('indica_lello.html')

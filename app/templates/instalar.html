@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Instalar App · Portal Lello{% endblock %}
+{% block page_title %}Instalar Aplicativo{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; padding-top: var(--space-4);">
+    <article class="lo-card" style="text-align: center; padding: 40px 24px; max-width: 480px; width: 100%;">
+        
+        <img src="{{ url_for('static', filename='icon-192.png') }}" alt="Ícone do App" style="width: 96px; height: 96px; border-radius: 20px; margin-bottom: 24px; box-shadow: 0 8px 16px rgba(194, 3, 50, 0.15);">
+        
+        <h2 style="margin: 0 0 8px; font-size: 24px; font-weight: 800; color: var(--ink);">Portal Lello no seu celular</h2>
+        <p style="margin: 0; font-size: 15px; color: var(--muted); line-height: 1.5;">
+            Instale o nosso aplicativo oficial para acessar suas visitas e comissões de forma muito mais rápida, direto da sua tela inicial.
+        </p>
+        
+        <button id="btnInstalarAcao" class="lo-btn lo-btn-fill lo-btn-lg" style="width: 100%; margin-top: 32px; height: 54px; font-size: 16px;">
+            <i class="bi bi-download"></i> Baixar e Instalar App
+        </button>
+        
+        <!-- Caixa de instrução manual (Fica oculta até clicar no botão) -->
+        <div id="msgManual" style="display: none; margin-top: 24px; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; text-align: left; animation: fadeIn 0.3s ease;">
+            <h4 style="margin: 0 0 8px; color: var(--ink); font-size: 15.5px; font-weight: 700;">
+                <i class="bi bi-info-circle-fill" style="color: var(--accent); margin-right: 6px;"></i> 
+                Como instalar:
+            </h4>
+            <p id="textoManual" style="margin: 0; font-size: 14.5px; color: var(--muted); line-height: 1.5;"></p>
+        </div>
+    </article>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('btnInstalarAcao').addEventListener('click', async () => {
+        const btn = document.getElementById('btnInstalarAcao');
+        const msgBox = document.getElementById('msgManual');
+        const texto = document.getElementById('textoManual');
+        
+        // Verifica se é iPhone/iPad ou se já está rodando como App
+        const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+        const isStandalone = ('standalone' in window.navigator) && (window.navigator.standalone);
+
+        // 1. Se o app JÁ estiver instalado e aberto
+        if (isStandalone || window.matchMedia('(display-mode: standalone)').matches) {
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Aplicativo já está instalado!';
+            btn.style.background = 'var(--ok)';
+            btn.style.borderColor = 'var(--ok)';
+            btn.disabled = true;
+            return;
+        }
+
+        // 2. Se for Android/Chrome e o evento de instalação foi capturado
+        if (window.deferredPrompt) {
+            window.deferredPrompt.prompt();
+            const { outcome } = await window.deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                btn.innerHTML = '<i class="bi bi-check"></i> Instalado com sucesso';
+                btn.style.background = 'var(--ok)';
+                btn.disabled = true;
+            }
+            window.deferredPrompt = null;
+        } 
+        // 3. Se for iPhone (A Apple bloqueia a instalação automática)
+        else if (isIos) {
+            msgBox.style.display = 'block';
+            texto.innerHTML = "No seu <b>iPhone</b>, toque no botão de <b>Compartilhar</b> <i class='bi bi-box-arrow-up' style='color: #007AFF'></i> na barra inferior do Safari e depois escolha a opção <br><br><b>Adicionar à Tela de Início</b> <i class='bi bi-plus-square' style='color: var(--ink)'></i>.";
+        } 
+        // 4. Se for pelo Computador ou outro navegador
+        else {
+            msgBox.style.display = 'block';
+            texto.innerHTML = "No seu navegador, toque no menu de opções (geralmente três pontinhos no canto superior) e escolha <b>Adicionar à tela inicial</b> ou <b>Instalar aplicativo</b>.";
+        }
+    });
+</script>
+{% endblock %}

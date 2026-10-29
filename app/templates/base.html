@@ -144,11 +144,11 @@
                 {% endif %}
             </nav>
 
-            <div class="lo-nav-group" id="pwa-nav-group" style="display: none; margin-top: auto; padding-top: 16px;">
-                    <button type="button" id="btn-install-menu" class="lo-nav-item" style="width: 100%; border: none; text-align: left; background: var(--accent-soft); color: var(--accent); cursor: pointer;">
+            <div class="lo-nav-group" style="margin-top: auto; padding-top: 16px;">
+                    <a href="{{ url_for('main.instalar') }}" class="lo-nav-item" style="background: var(--accent-soft); color: var(--accent); border-radius: 8px;">
                         <i class="bi bi-download"></i>
-                        <span>Instalar App</span>
-                    </button>
+                        <span style="font-weight: 700;">Instalar App</span>
+                    </a>
                 </div>
 
             </nav>
@@ -291,10 +291,19 @@
     <!-- Scripts do Design System e PWA -->
     <script src="{{ url_for('static', filename='app.js') }}?v=12"></script>
     <script>
-        // 1. Registra o Service Worker (Obrigatório para PWA)
+        // Registra o Service Worker (Obrigatório)
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js').catch(console.error);
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+            });
         }
+
+        // Guarda silenciosamente a permissão de instalar para usar na tela /instalar
+        window.deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            window.deferredPrompt = e;
+        });
 
         const btnMenu = document.getElementById('pwa-nav-group');
         const popupInstalar = document.getElementById('pwa-popup');
