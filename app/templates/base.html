@@ -144,6 +144,11 @@
                 {% endif %}
             </nav>
 
+            <!-- NOVO: Número da Versão -->
+            <div style="text-align: center; padding: 12px 16px 0; font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em;">
+                VERSÃO {{ app_version }}
+            </div>
+
             <div class="lo-nav-group" style="margin-top: auto; padding-top: 16px;">
                     <a href="{{ url_for('main.instalar') }}" class="lo-nav-item" style="background: var(--accent-soft); color: var(--accent); border-radius: 8px;">
                         <i class="bi bi-download"></i>
@@ -152,11 +157,6 @@
                 </div>
 
             </nav>
-
-            <!-- NOVO: Número da Versão -->
-            <div style="text-align: center; padding: 12px 16px 0; font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em;">
-                VERSÃO {{ app_version }}
-            </div>
 
             <!-- Rodapé da Sidebar (Ações Rápidas & Perfil) -->
             <div class="lo-sidebar-ft" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 12px 16px;">
@@ -290,130 +290,23 @@
 
     <!-- Scripts do Design System e PWA -->
     <script src="{{ url_for('static', filename='app.js') }}?v=12"></script>
+    
     <script>
-        // Registra o Service Worker (Obrigatório)
+        // 1. Registra o Service Worker (Obrigatório para PWA)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}").catch(() => {});
             });
         }
 
-        // Guarda silenciosamente a permissão de instalar para usar na tela /instalar
+        // 2. Guarda a permissão de instalação silenciosamente para a página /instalar usar
         window.deferredPrompt = null;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             window.deferredPrompt = e;
         });
-
-        const btnMenu = document.getElementById('pwa-nav-group');
-        const popupInstalar = document.getElementById('pwa-popup');
-        let eventoInstalacao;
-
-        // 2. O Chrome avisa que o App passou nos testes e está pronto para instalar
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); // Impede o popup padrão feio do Google
-            eventoInstalacao = e;
-            
-            // Libera o nosso botão no menu e o popup
-            if (btnMenu) btnMenu.style.display = 'block';
-            if (popupInstalar && !sessionStorage.getItem('popupFechado')) {
-                popupInstalar.style.display = 'block';
-            }
-        });
-
-        // 3. Função que dispara a instalação
-        async function instalarApp() {
-            if (!eventoInstalacao) return;
-            
-            eventoInstalacao.prompt(); // Mostra a telinha oficial de instalação do celular
-            
-            const { outcome } = await eventoInstalacao.userChoice;
-            if (outcome === 'accepted') {
-                if (btnMenu) btnMenu.style.display = 'none';
-                if (popupInstalar) popupInstalar.style.display = 'none';
-            }
-            eventoInstalacao = null;
-        }
-
-        // 4. Liga os botões na nossa função
-        document.getElementById('btn-install-menu')?.addEventListener('click', instalarApp);
-        document.getElementById('btn-install-popup')?.addEventListener('click', instalarApp);
-        
-        // 5. Botão de fechar o popup (para não incomodar mais)
-        document.getElementById('btn-close-popup')?.addEventListener('click', () => {
-            if (popupInstalar) popupInstalar.style.display = 'none';
-            sessionStorage.setItem('popupFechado', 'true');
-        });
-
-        // Detecta se é um iPhone/iPad (iOS não tem suporte automático para o evento beforeinstallprompt)
-        const isIos = () => {
-            const userAgent = window.navigator.userAgent.toLowerCase();
-            return /iphone|ipad|ipod/.test(userAgent);
-        };
-        
-        // Verifica se o app já está rodando em tela cheia (Standalone)
-        const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
-
-        // A - Lógica para Android (Chrome)
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            
-            if (pwaNavGroup) pwaNavGroup.style.display = 'block';
-            
-            if (pwaPopup && !sessionStorage.getItem('pwa-popup-closed')) {
-                // Modifica o texto para Android
-                document.querySelector('#pwa-popup p').innerText = "Acesse mais rápido direto da sua tela inicial, sem precisar abrir o navegador.";
-                btnInstallPopup.style.display = 'block';
-                pwaPopup.style.display = 'block';
-            }
-        });
-
-        // B - Lógica Manual para iPhone (iOS)
-        if (isIos() && !isInStandaloneMode()) {
-            if (pwaNavGroup) pwaNavGroup.style.display = 'block';
-            
-            if (pwaPopup && !sessionStorage.getItem('pwa-popup-closed')) {
-                // Modifica o texto para ensinar o usuário do iPhone
-                document.querySelector('#pwa-popup h4').innerText = "Instalar no iPhone";
-                document.querySelector('#pwa-popup p').innerHTML = "Toque no ícone de <b>Compartilhar</b> <i class='bi bi-box-arrow-up'></i> na barra inferior e depois em <b>Adicionar à Tela de Início</b> <i class='bi bi-plus-square'></i>.";
-                
-                // O botão de instalar direto não funciona na Apple, então a gente oculta ele
-                if (btnInstallPopup) btnInstallPopup.style.display = 'none';
-                pwaPopup.style.display = 'block';
-            }
-        }
-
-        // 3. Ações de Clique
-        async function installPWA() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    if (pwaPopup) pwaPopup.style.display = 'none';
-                    if (pwaNavGroup) pwaNavGroup.style.display = 'none';
-                }
-                deferredPrompt = null;
-            } else if (isIos()) {
-                alert("Para instalar no iPhone, toque no botão 'Compartilhar' e depois em 'Adicionar à Tela de Início'.");
-            }
-        }
-
-        if (btnInstallMenu) btnInstallMenu.addEventListener('click', installPWA);
-        if (btnInstallPopup) btnInstallPopup.addEventListener('click', installPWA);
-        
-        if (btnClosePopup) {
-            btnClosePopup.addEventListener('click', () => {
-                if (pwaPopup) pwaPopup.style.display = 'none';
-                sessionStorage.setItem('pwa-popup-closed', 'true'); 
-            });
-        }
-
-        // Limpeza quando a instalação for concluída
-        window.addEventListener('appinstalled', () => {
-            if (pwaPopup) pwaPopup.style.display = 'none';
-            if (pwaNavGroup) pwaNavGroup.style.display = 'none';
-        });
     </script>
+    
+    {% block scripts %}{% endblock %}
 </body>
 </html>
