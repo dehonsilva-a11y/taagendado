@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#C20332">
-    <title>Início · Portal Lello</title>
+    <title>{% block title %}Portal Lello{% endblock %}</title>
 
-    <!-- COLE AQUI AS TAGS DE PWA -->
+    <!-- Conecta o App e força o modo Tela Cheia (Standalone) -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Portal Lello">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/fsimage.ico') }}">
 
     <!-- Previne flash de tema no carregamento -->
     <script>
@@ -26,18 +27,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/fsimage.ico') }}">
-
-    <!-- Conecta o App e força o modo Tela Cheia (Standalone) -->
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Portal Lello">
-
-    <!-- Design System Lello (Tokens & Componentes Oficiais) -->
+    
+    <!-- Design System Lello -->
     <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=17">
     {% block head %}{% endblock %}
+
+    <style>
+        @keyframes girarLoader {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
     {% set is_admin = session.get('user_perfil') == 'Admin' %}
@@ -50,11 +49,6 @@
         <div style="width: 48px; height: 48px; border: 4px solid var(--line-strong); border-top-color: var(--accent); border-radius: 50%; animation: girarLoader 0.8s linear infinite;"></div>
         <div style="margin-top: 16px; font-weight: 700; color: var(--ink); font-size: 15px;">Aguarde Processando...</div>
     </div>
-    <style>
-        @keyframes girarLoader {
-            to { transform: rotate(360deg); }
-        }
-    </style>
 
     <!-- Faixa de Simulação (Admin Impersonation) -->
     {% if session.get('admin_original') %}
@@ -87,14 +81,13 @@
                 </button>
             </div>
 
-            <!-- Menus Agrupados por Área (Manual Lello: Grupos em caixa alta) -->
+            <!-- Menus Agrupados por Área -->
             <nav class="lo-sidebar-nav">
-                <!-- Grupo: Operação -->
                 <div class="lo-nav-group">
                     <span class="lo-nav-label">Operação</span>
                     <a href="{{ url_for('main.home') }}" class="lo-nav-item {% if request.endpoint == 'main.home' %}active{% endif %}" {% if request.endpoint == 'main.home' %}aria-current="page"{% endif %}>
                         <i class="bi bi-grid-1x2"></i>
-                        <span>Início</span>
+                        <span>Ferramentas</span>
                     </a>
                     {% if 'visitas' in minhas_permissoes or is_admin %}
                     <a href="{{ url_for('main.visitas') }}" class="lo-nav-item {% if request.endpoint == 'main.visitas' %}active{% endif %}" {% if request.endpoint == 'main.visitas' %}aria-current="page"{% endif %}>
@@ -168,21 +161,18 @@
                     {% endif %}
                 </div>
                 {% endif %}
-            </nav>
-
-            <!-- NOVO: Número da Versão -->
-            <div style="text-align: center; padding: 12px 16px 0; font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em;">
-                VERSÃO {{ app_version }}
-            </div>
-
-            <div class="lo-nav-group" style="margin-top: auto; padding-top: 16px;">
+            
+                <div class="lo-nav-group" style="margin-top: auto; padding-top: 16px;">
                     <a href="{{ url_for('main.instalar') }}" class="lo-nav-item" style="background: var(--accent-soft); color: var(--accent); border-radius: 8px;">
                         <i class="bi bi-download"></i>
                         <span style="font-weight: 700;">Instalar App</span>
                     </a>
                 </div>
-
             </nav>
+
+            <div style="text-align: center; padding: 12px 16px 0; font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em;">
+                VERSÃO {{ app_version }}
+            </div>
 
             <!-- Rodapé da Sidebar (Ações Rápidas & Perfil) -->
             <div class="lo-sidebar-ft" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 12px 16px;">
@@ -203,7 +193,6 @@
                     </div>
                 </a>
                 
-                <!-- Botão de Sair no canto direito -->
                 <a href="{{ url_for('auth.logout') }}" class="lo-rbtn" style="width: 36px; height: 36px; background: var(--danger-bg); color: var(--danger-text); border-color: transparent;" title="Sair da conta">
                     <i class="bi bi-box-arrow-right"></i>
                 </a>
@@ -225,7 +214,6 @@
                 </div>
 
                 <div class="lo-header-right">
-                    <!-- Botão de Perfil Rápido -->
                     <a href="{{ url_for('main.perfil') }}" class="lo-avatar" style="width: 38px; height: 38px; font-size: 14px;" title="Ver meu perfil">
                         {% if current_user_foto and current_user_foto != 'None' and current_user_foto != '' %}
                             <img src="{{ current_user_foto }}" alt="{{ nome_sessao }}">
@@ -236,9 +224,7 @@
                 </div>
             </header>
 
-            <!-- Conteúdo da Página -->
             <main class="lo-content">
-                <!-- Stack de Mensagens Flash -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                     <div class="lo-stack lo-stack-sm" role="status" aria-live="polite">
@@ -266,11 +252,10 @@
         </div>
     </div>
 
-    <!-- Barra de Abas Mobile (TabBar Flutuante Nativa do Celular) -->
     <nav class="lo-tabbar" aria-label="Navegação rápida inferior">
         <a href="{{ url_for('main.home') }}" class="lo-tab lo-tab-link {% if request.endpoint == 'main.home' %}active{% endif %}">
             <i class="bi bi-grid-1x2{% if request.endpoint == 'main.home' %}-fill{% endif %}"></i>
-            <span>Início</span>
+            <span>Ferramentas</span>
         </a>
 
         {% if 'visitas' in minhas_permissoes or is_admin %}
@@ -295,59 +280,35 @@
         {% endif %}
     </nav>
 
-    <!-- Overlay para fechamento de menu mobile -->
     <div class="lo-overlay" id="lelloOverlay" data-sidebar-toggle></div>
 
-    <div id="pwa-popup" class="lo-card" style="display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 380px; z-index: 1050; padding: 16px; box-shadow: var(--shadow-float); border: 2px solid var(--accent);">
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-            <div style="width: 46px; height: 46px; background: var(--accent); color: white; border-radius: 12px; display: grid; place-items: center; font-size: 22px; flex: none;">
-                <i class="bi bi-app-indicator"></i>
-            </div>
-            <div style="flex: 1;">
-                <h4 style="margin: 0 0 4px; font-size: 15px; font-weight: 800; color: var(--ink);">Instalar Portal Lello</h4>
-                <p style="margin: 0 0 12px; font-size: 13.5px; color: var(--muted); line-height: 1.4;">Acesse mais rápido direto da sua tela inicial, sem precisar abrir o navegador.</p>
-                <div style="display: flex; gap: 8px;">
-                    <button id="btn-install-popup" class="lo-btn lo-btn-sm lo-btn-fill" style="flex: 1;">Instalar agora</button>
-                    <button id="btn-close-popup" class="lo-btn lo-btn-sm lo-btn-ghost" style="flex: none; padding: 4px 10px;" aria-label="Fechar aviso"><i class="bi bi-x-lg"></i></button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts do Design System e PWA -->
     <script src="{{ url_for('static', filename='app.js') }}?v=12"></script>
     
     <script>
-        // 1. Registra o Service Worker (Obrigatório para PWA)
+        // Registra o Service Worker (PWA) e Guarda Permissão
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}").catch(() => {});
             });
         }
-
-        // 2. Guarda a permissão de instalação silenciosamente para a página /instalar usar
         window.deferredPrompt = null;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             window.deferredPrompt = e;
         });
-    </script>
-    <!-- Controle do Loader Global -->
-    <script>
-        // 1. Mostra a animação toda vez que o navegador começar a sair de uma página para outra
-        window.addEventListener('beforeunload', () => {
-            document.getElementById('loaderGlobal').style.display = 'flex';
-        });
 
-        // 2. Trava de segurança: Se a pessoa usar o botão de "Voltar" do celular, 
-        // o navegador puxa a página do cache. Isso garante que o loader vai sumir ao voltar.
+        // Controle Seguro do Loader
+        window.addEventListener('beforeunload', () => {
+            const loader = document.getElementById('loaderGlobal');
+            if(loader) loader.style.display = 'flex';
+        });
         window.addEventListener('pageshow', (e) => {
-            if (e.persisted || document.getElementById('loaderGlobal').style.display === 'flex') {
-                document.getElementById('loaderGlobal').style.display = 'none';
+            const loader = document.getElementById('loaderGlobal');
+            if (loader && (e.persisted || loader.style.display === 'flex')) {
+                loader.style.display = 'none';
             }
         });
     </script>
-    
     {% block scripts %}{% endblock %}
 </body>
 </html>
