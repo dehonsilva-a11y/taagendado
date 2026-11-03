@@ -78,7 +78,14 @@ def injetar_dados_globais():
     return dict(current_user_foto=foto, minhas_permissoes=acessos_permitidos, app_version=APP_VERSION)
 
 @main_bp.route('/')
+def hub_inicial():
+    # Esta é a nova página inicial após o login, o Hub de seleção.
+    return render_template('hub.html')
+
+@main_bp.route('/home')
 def home():
+    # Esta é a home original, se você quiser mantê-la.
+    # Você precisará atualizar links que apontavam para main.home para apontarem para onde fizer sentido agora.
     return render_template('home.html')
 
 @main_bp.route('/instalar')

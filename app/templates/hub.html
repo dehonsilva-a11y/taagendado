@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="claro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#C20332">
+    <title>Início · Portal Lello</title>
+
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/fsimage.ico') }}">
+    <script>
+        (function() {
+            var saved = localStorage.getItem('lello-theme') || 'claro';
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=17">
+    
+    <style>
+        body {
+            height: auto !important;
+            min-height: 100dvh !important;
+            overflow-y: auto !important;
+        }
+
+        .lo-hub-layout {
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+            background: var(--bg);
+        }
+
+        .lo-hub-top-bar {
+            display: flex;
+            align-items: stretch;
+            height: 78px; 
+            background: var(--surface);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .lo-hub-fake-sidebar {
+            width: 275.2px; 
+            display: flex;
+            align-items: center;
+        }
+
+        .lo-hub-content-container {
+            flex: 1;
+            padding: var(--space-5) var(--space-4);
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .lo-hub-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--space-4);
+            margin-top: var(--space-5);
+        }
+        
+        .lo-hub-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            padding: var(--space-5);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: var(--ink);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .lo-hub-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-card);
+            border-color: var(--accent);
+        }
+        
+        .lo-hub-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            display: grid;
+            place-items: center;
+            font-size: 24px;
+            margin-bottom: var(--space-3);
+        }
+        
+        .lo-hub-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .lo-hub-card p {
+            margin: 0;
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        @media (max-width: 900px) {
+            .lo-hub-fake-sidebar {
+                width: auto;
+                border-right: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% set nome_sessao = session.get('user_nome') or 'Colaborador' %}
+    
+    <div class="lo-hub-layout">
+        <div class="lo-hub-top-bar">
+            
+            <div class="lo-hub-fake-sidebar">
+                <div class="lo-sidebar-hd" style="border: none; padding: 16px 20px; width: 100%; display: flex; align-items: center;">
+                    <a href="/home" class="lo-sidebar-brand" title="Lello Imóveis">
+                        <img src="{{ url_for('static', filename='img/lello-logo.png') }}" alt="Lello" class="lo-sidebar-logo lo-logo-claro">
+                        <img src="{{ url_for('static', filename='img/lello-logo-branco.png') }}" alt="Lello" class="lo-sidebar-logo lo-logo-escuro">
+                    </a>
+                </div>
+            </div>
+
+            <!-- Padding exato (16px 32px) copiado do inspetor para alinhar o avatar perfeitamente -->
+            <header class="lo-header" style="flex: 1; border-bottom: none; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding: 16px 32px;">
+                <div class="lo-header-right" style="margin-left: auto;">
+                    <a href="/perfil" class="lo-avatar" style="width: 38px; height: 38px; font-size: 14px;" title="Ver meu perfil">
+                        {% if current_user_foto and current_user_foto != 'None' and current_user_foto != '' %}
+                            <img src="{{ current_user_foto }}" alt="{{ nome_sessao }}">
+                        {% else %}
+                            <span>{{ nome_sessao[:1]|upper }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+            </header>
+            
+        </div>
+
+        <main class="lo-hub-content-container">
+            <div class="lo-page-head" style="margin-bottom: 0;">
+                <h1 class="lo-page-title" style="font-size: 28px;">Olá, {{ nome_sessao.split()[0] }}!</h1>
+                <p class="lo-page-subtitle" style="font-size: 16px;">O que deseja aceder hoje?</p>
+            </div>
+            
+            <div class="lo-hub-grid">
+                
+                {% if 'visitas' in minhas_permissoes or session.get('user_perfil') == 'Admin' %}
+                <a href="{{ url_for('main.home') }}" class="lo-hub-card">
+                    <div class="lo-hub-card-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <h3>Os Seus Ganhos & Visitas</h3>
+                    <p>Acompanhe as suas comissões, fechos e desempenho.</p>
+                </a>
+                {% endif %}
+                
+            </div>
+        </main>
+    </div>
+    
+    <script src="{{ url_for('static', filename='app.js') }}?v=12"></script>
+</body>
+</html>
