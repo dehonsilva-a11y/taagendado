@@ -6,6 +6,13 @@
     <meta name="theme-color" content="#C20332">
     <title>Início · Portal Lello</title>
 
+    <!-- Conecta o App e força o modo Tela Cheia (Standalone) -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Portal Lello">
+
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/fsimage.ico') }}">
     <script>
         (function() {
@@ -108,18 +115,18 @@
             line-height: 1.4;
         }
 
-        /* Responsividade refinada: No mobile, a falsa sidebar some e a logo centraliza ou ajusta-se */
+        /* Responsividade refinada */
         @media (max-width: 900px) {
             .lo-hub-fake-sidebar {
                 width: auto;
                 border-right: none;
-                flex: none; /* A logo fica no canto esquerdo */
+                flex: none; 
             }
             .lo-hub-top-bar {
-                height: 64px; /* Cabeçalho menor no celular, como no app original */
+                height: 64px; 
             }
             .lo-hub-header-container {
-                 padding: 0 16px !important; /* Menos padding lateral no mobile */
+                 padding: 0 16px !important; 
             }
         }
     </style>
