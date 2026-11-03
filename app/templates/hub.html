@@ -108,15 +108,34 @@
             line-height: 1.4;
         }
 
+        /* Responsividade refinada: No mobile, a falsa sidebar some e a logo centraliza ou ajusta-se */
         @media (max-width: 900px) {
             .lo-hub-fake-sidebar {
                 width: auto;
                 border-right: none;
+                flex: none; /* A logo fica no canto esquerdo */
+            }
+            .lo-hub-top-bar {
+                height: 64px; /* Cabeçalho menor no celular, como no app original */
+            }
+            .lo-hub-header-container {
+                 padding: 0 16px !important; /* Menos padding lateral no mobile */
             }
         }
     </style>
 </head>
 <body>
+    <!-- LOADER GLOBAL DE NAVEGAÇÃO -->
+    <div id="loaderGlobal" style="display: none; position: fixed; inset: 0; background: var(--bg); z-index: 99999; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+        <div style="width: 48px; height: 48px; border: 4px solid var(--line-strong); border-top-color: var(--accent); border-radius: 50%; animation: girarLoader 0.8s linear infinite;"></div>
+        <div style="margin-top: 16px; font-weight: 700; color: var(--ink); font-size: 15px;">Carregando...</div>
+    </div>
+    <style>
+        @keyframes girarLoader {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
     {% set nome_sessao = session.get('user_nome') or 'Colaborador' %}
     
     <div class="lo-hub-layout">
@@ -131,8 +150,7 @@
                 </div>
             </div>
 
-            <!-- Padding exato (16px 32px) copiado do inspetor para alinhar o avatar perfeitamente -->
-            <header class="lo-header" style="flex: 1; border-bottom: none; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding: 16px 32px;">
+            <header class="lo-header lo-hub-header-container" style="flex: 1; border-bottom: none; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding: 16px 32px;">
                 <div class="lo-header-right" style="margin-left: auto;">
                     <a href="/perfil" class="lo-avatar" style="width: 38px; height: 38px; font-size: 14px;" title="Ver meu perfil">
                         {% if current_user_foto and current_user_foto != 'None' and current_user_foto != '' %}
@@ -169,5 +187,17 @@
     </div>
     
     <script src="{{ url_for('static', filename='app.js') }}?v=12"></script>
+    <script>
+        // Ativação do Loader Global no Hub
+        window.addEventListener('beforeunload', () => {
+            document.getElementById('loaderGlobal').style.display = 'flex';
+        });
+
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted || document.getElementById('loaderGlobal').style.display === 'flex') {
+                document.getElementById('loaderGlobal').style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
