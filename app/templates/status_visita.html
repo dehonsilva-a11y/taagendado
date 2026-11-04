@@ -14,7 +14,7 @@
 <style>
     /* Estilos padrão (Desktop) */
     .status-pill-truncate {
-        background: var(--accent); 
+        background: var(--accent); /* Vermelho forçado para todos os status */
         color: #FFFFFF; 
         font-size: 11px; 
         font-weight: 700; 
@@ -113,11 +113,17 @@
         .pag-dropdown { grid-area: dropdown; justify-self: end; }
         .pag-botoes { grid-area: botoes; justify-self: center; margin-top: 4px; }
         
+        /* Ajuste para as Meta-Tags ficarem lado a lado e mais compactas no telemóvel */
         .meta-tags-container {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            align-items: flex-start;
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+            align-items: center !important;
+        }
+        .meta-tag {
+            font-size: 11px;
+            padding: 3px 6px;
         }
     }
 </style>
@@ -245,7 +251,7 @@
                 background: var(--surface); 
                 border-radius: var(--radius-md); 
                 box-shadow: var(--shadow-card); 
-                border-left: 6px solid {% if is_realizada %}var(--accent){% else %}var(--muted){% endif %};
+                border-left: 6px solid var(--accent); /* Vermelho fixo para todas as bordas esquerdas */
                 position: relative;
             ">
                 <!-- Linha 1: Cabeçalho do Cartão -->
