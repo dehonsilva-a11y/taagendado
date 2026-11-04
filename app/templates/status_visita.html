@@ -82,6 +82,31 @@
         font-weight: 600;
     }
 
+    /* Classes Data e Hora (Desktop) */
+    .visita-card-header {
+        display: flex; 
+        align-items: flex-start; 
+        justify-content: space-between; 
+        gap: 12px; 
+        flex-wrap: wrap;
+    }
+    .visita-datetime {
+        text-align: right; 
+        min-width: 130px;
+    }
+    .visita-time {
+        font-size: 18px; 
+        font-weight: 800; 
+        color: var(--ink); 
+        line-height: 1;
+    }
+    .visita-date {
+        font-size: 12.5px; 
+        color: var(--muted); 
+        font-weight: 600; 
+        margin-top: 4px;
+    }
+
     /* Estilos exclusivos para PC */
     @media (min-width: 769px) {
         .filtros-wrapper.admin-grid { grid-template-columns: 1fr 1fr 3fr 2fr 1.5fr; }
@@ -90,19 +115,44 @@
 
     /* Estilos exclusivos para Celular */
     @media (max-width: 768px) {
-        .status-pill-truncate {
+        /* Ajuste do Endereço (menor e permite quebrar linha) */
+        .endereco-truncate {
+            font-size: 14.5px;
+            white-space: normal; 
+            display: block;
+        }
+
+        /* Ajuste das Tags de Status (menores) */
+        .status-pill-truncate, .status-pill-info {
+            font-size: 9.5px; 
+            padding: 3px 8px;
             white-space: nowrap; 
             overflow: hidden; 
             text-overflow: ellipsis; 
-            max-width: 180px;
-        }
-        .endereco-truncate {
-            display: block;
-            white-space: nowrap; 
-            overflow: hidden; 
-            text-overflow: ellipsis;
+            max-width: 150px;
         }
         
+        /* Ajuste do Bloco de Data e Hora (Alinhado à esquerda na mesma linha) */
+        .visita-card-header {
+            flex-direction: column;
+            gap: 10px !important;
+        }
+        .visita-datetime {
+            text-align: left;
+            min-width: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .visita-time {
+            font-size: 15px; /* Hora menor no celular */
+        }
+        .visita-date {
+            font-size: 11.5px; /* Data menor no celular */
+            margin-top: 0; /* Tira a margem do topo para alinhar ao lado da hora */
+        }
+        
+        /* Paginação */
         .pag-container {
             grid-template-columns: 1fr 1fr;
             grid-template-areas:
@@ -255,7 +305,7 @@
                 position: relative;
             ">
                 <!-- Linha 1: Cabeçalho do Cartão -->
-                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                <div class="visita-card-header">
                     
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px;">
                         <span class="endereco-truncate" title="{{ visita.Endereco }}">
@@ -276,12 +326,12 @@
                         </div>
                     </div>
                     
-                    <div style="text-align: right; min-width: 130px;">
+                    <div class="visita-datetime">
                         {% set partes_data = (visita.Data_Agendamento|string).split(' ') %}
-                        <div style="font-size: 18px; font-weight: 800; color: var(--ink); line-height: 1;">
+                        <div class="visita-time">
                             {{ partes_data[1][:5] if partes_data|length > 1 else '--:--' }}
                         </div>
-                        <div style="font-size: 12.5px; color: var(--muted); font-weight: 600; margin-top: 4px;">
+                        <div class="visita-date">
                             <i class="bi bi-calendar3"></i> {{ partes_data[0] }}
                         </div>
                     </div>
