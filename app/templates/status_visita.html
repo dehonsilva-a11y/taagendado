@@ -22,12 +22,29 @@
         border-radius: var(--radius-pill); 
         letter-spacing: 0.05em; 
         text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
+    
+    .status-pill-info {
+        background: var(--info-bg); 
+        color: var(--info-text);
+        border: 1px solid var(--info);
+        font-size: 11px; 
+        font-weight: 700; 
+        padding: 4px 10px; 
+        border-radius: var(--radius-pill); 
+        letter-spacing: 0.05em; 
+        text-transform: uppercase;
+    }
+
     .endereco-truncate {
-        font-size: 15px; 
+        font-size: 16px; 
         color: var(--ink); 
         line-height: 1.4; 
-        font-weight: 600;
+        font-weight: 800;
+        letter-spacing: -0.01em;
     }
 
     /* GRID RESPONSIVA DA PAGINAÇÃO */
@@ -49,29 +66,35 @@
         display: grid;
         gap: 16px;
         align-items: flex-end;
-        /* Padrão para celular: 1 item por linha */
         grid-template-columns: 1fr; 
     }
 
-    /* Estilos exclusivos para PC (telas maiores que 768px) */
-    @media (min-width: 769px) {
-        .filtros-wrapper.admin-grid {
-            /* Ano | Mês | Colaborador (maior) | Status | Botão */
-            grid-template-columns: 1fr 1fr 3fr 2fr 1.5fr; 
-        }
-        .filtros-wrapper.corretor-grid {
-            /* Ano | Mês | Status (maior) | Botão */
-            grid-template-columns: 1.5fr 1.5fr 3fr 2fr; 
-        }
+    .meta-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12.5px;
+        color: var(--muted);
+        font-weight: 600;
     }
 
-    /* Estilos exclusivos para Celular (telas menores que 768px) */
+    /* Estilos exclusivos para PC */
+    @media (min-width: 769px) {
+        .filtros-wrapper.admin-grid { grid-template-columns: 1fr 1fr 3fr 2fr 1.5fr; }
+        .filtros-wrapper.corretor-grid { grid-template-columns: 1.5fr 1.5fr 3fr 2fr; }
+    }
+
+    /* Estilos exclusivos para Celular */
     @media (max-width: 768px) {
         .status-pill-truncate {
             white-space: nowrap; 
             overflow: hidden; 
             text-overflow: ellipsis; 
-            max-width: 160px;
+            max-width: 180px;
         }
         .endereco-truncate {
             display: block;
@@ -80,7 +103,6 @@
             text-overflow: ellipsis;
         }
         
-        /* Muda o grid da paginação no celular para 2 linhas */
         .pag-container {
             grid-template-columns: 1fr 1fr;
             grid-template-areas:
@@ -90,6 +112,13 @@
         .pag-total { grid-area: total; justify-self: start; }
         .pag-dropdown { grid-area: dropdown; justify-self: end; }
         .pag-botoes { grid-area: botoes; justify-self: center; margin-top: 4px; }
+        
+        .meta-tags-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+        }
     }
 </style>
 
@@ -99,17 +128,14 @@
     <div class="lo-card-hd">
       <div>
         <h2>Filtrar visitas</h2>
-        <p>Selecione o mês e o ano para consultar as visitas agendadas e realizadas</p>
+        <p>Selecione o mês e o ano para consultar o histórico sincronizado</p>
       </div>
     </div>
 
     <form method="GET" action="{{ url_for('main.status_visita') }}">
         <input type="hidden" name="per_page" value="{{ per_page | default(50) }}">
         
-        <!-- Usa a grid de 5 colunas se for Admin, ou 4 colunas se for Corretor -->
         <div class="filtros-wrapper {% if pode_filtrar %}admin-grid{% else %}corretor-grid{% endif %}">
-
-            <!-- Filtro de Ano -->
             <div class="lo-field" style="margin: 0;">
                 <label class="lo-label" for="ano">Ano</label>
                 {% set ano_sel = ano_selecionado | default(2026) | int %}
@@ -119,7 +145,6 @@
                 </select>
             </div>
             
-            <!-- Filtro de Mês -->
             <div class="lo-field" style="margin: 0;">
                 <label class="lo-label" for="mes">Mês</label>
                 {% set mes_sel = mes_selecionado | default(9) | int %}
@@ -139,7 +164,6 @@
                 </select>
             </div>
 
-            <!-- Filtro de Colaborador (Exibido SÓ para Gerente/Admin) -->
             {% if pode_filtrar %}
             <div class="lo-field" style="margin: 0;">
                 <label class="lo-label" for="colaborador">Colaborador</label>
@@ -151,7 +175,6 @@
             </div>
             {% endif %}
 
-            <!-- Filtro de Status -->
             <div class="lo-field" style="margin: 0;">
                 <label class="lo-label" for="status_filtro">Status</label>
                 <select class="lo-select" id="status_filtro" name="status_filtro">
@@ -162,13 +185,11 @@
                 </select>
             </div>
 
-            <!-- Botão Consultar -->
             <div>
                 <button type="submit" class="lo-btn lo-btn-fill" style="width: 100%; height: 42px;">
                     <i class="bi bi-search"></i> Consultar
                 </button>
             </div>
-            
         </div>
     </form>
   </article>
@@ -180,15 +201,12 @@
           
         <!-- PAGINAÇÃO SUPERIOR -->
         <div class="pag-container">
-            
-            <!-- 1. Esquerda: Total de Visitas -->
             <div class="pag-total">
                 <span style="font-size: 14px; font-weight: 700; color: var(--ink);">
                     {{ total_visitas }} visitas
                 </span>
             </div>
             
-            <!-- 2. Centro: Botões de Paginação -->
             <div class="pag-botoes">
                 {% if total_paginas > 1 %}
                 <a href="{{ url_for('main.status_visita', mes=mes_selecionado, ano=ano_selecionado, colaborador=colaborador_selecionado or '', status_filtro=status_selecionado, per_page=per_page, page=page-1) }}" class="lo-btn lo-btn-sm lo-btn-ghost" {% if page <= 1 %}style="pointer-events: none; opacity: 0.4;"{% endif %}>
@@ -201,7 +219,6 @@
                 {% endif %}
             </div>
 
-            <!-- 3. Direita: Dropdown de itens por página -->
             <div class="pag-dropdown">
                 <span style="font-weight: 600; color: var(--ink);">Por pág:</span>
                 {% set per_page_sel = per_page | default(50) | int %}
@@ -215,59 +232,86 @@
             </div>
         </div> 
           
-        <!-- CARDS DE VISITAS -->
         <div class="lo-stack" style="padding: 0; gap: 12px; background: transparent;">
             {% for visita in visitas %}
             
-            <!-- Cartão da Visita (Sempre Vermelho) -->
+            {% set is_realizada = 'Realizada' in visita.Status_Visita %}
+            
             <div style="
                 display: flex; 
                 flex-direction: column; 
-                gap: 14px; 
+                gap: 16px; 
                 padding: 16px 20px; 
                 background: var(--surface); 
                 border-radius: var(--radius-md); 
                 box-shadow: var(--shadow-card); 
-                border-left: 6px solid var(--accent);
+                border-left: 6px solid {% if is_realizada %}var(--accent){% else %}var(--muted){% endif %};
                 position: relative;
             ">
-                <!-- Linha 1: Horário e Status -->
-                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <!-- Linha 1: Cabeçalho do Cartão -->
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
                     
-                    <!-- Extração do Horário -->
-                    {% set partes_data = visita.data_formatada.split(' ') %}
-                    {% set hora_visita = partes_data[1] if partes_data|length > 1 else '--:--' %}
+                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px;">
+                        <span class="endereco-truncate" title="{{ visita.Endereco }}">
+                            {{ visita.Endereco }}
+                        </span>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span class="status-pill-truncate" title="{{ visita.Status_Visita }}">
+                                {% if is_realizada %}<i class="bi bi-check2-circle"></i>{% else %}<i class="bi bi-clock-history"></i>{% endif %}
+                                {{ visita.Status_Visita }}
+                            </span>
+                            
+                            {% if visita.Resultado_Visita and visita.Resultado_Visita != 'null' %}
+                            <span class="status-pill-info" title="Resultado">
+                                {{ visita.Resultado_Visita }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
                     
-                    <span style="font-size: 16px; font-weight: 800; color: var(--ink);">
-                        {{ hora_visita }}
-                    </span>
-                    
-                    <span class="status-pill-truncate" title="{{ visita.status }}">
-                        {{ visita.status }}
-                    </span>
-                    
-                    <span style="margin-left: auto; font-size: 12px; color: var(--muted); font-weight: 600;">
-                        {{ partes_data[0] }}
-                    </span>
+                    <div style="text-align: right; min-width: 130px;">
+                        {% set partes_data = (visita.Data_Agendamento|string).split(' ') %}
+                        <div style="font-size: 18px; font-weight: 800; color: var(--ink); line-height: 1;">
+                            {{ partes_data[1][:5] if partes_data|length > 1 else '--:--' }}
+                        </div>
+                        <div style="font-size: 12.5px; color: var(--muted); font-weight: 600; margin-top: 4px;">
+                            <i class="bi bi-calendar3"></i> {{ partes_data[0] }}
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Linha 2: Endereço e Metadados -->
-                <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
-                    <!-- Endereço com mais contraste (Trunca só no mobile) -->
-                    <span class="endereco-truncate" title="{{ visita.endereco }}">
-                        {{ visita.endereco }}
+                <!-- Linha 2: Metadados Estruturados (IDs e GN) -->
+                <div class="meta-tags-container" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 12px; border-top: 1px dashed var(--line);">
+                    
+                    <span class="meta-tag" title="ID Imóvel">
+                        <i class="bi bi-key"></i> Imóvel: {{ visita.Id_Imovel }}
                     </span>
                     
-                    <!-- Metadados em linha simples -->
-                    <small style="font-size: 13px; color: var(--muted);">
-                        Imóvel: {{ visita.id_imovel }} | Visita: {{ visita.id_visita }} | Fin.: {{ visita.finalidade }}
-                    </small>
+                    <span class="meta-tag" title="ID Visita">
+                        <i class="bi bi-door-open"></i> Visita: {{ visita.Id_Visita }}
+                    </span>
+                    
+                    {% if visita.Id_Atendimento and visita.Id_Atendimento != 'null' %}
+                    <span class="meta-tag" title="ID Atendimento">
+                        <i class="bi bi-person-lines-fill"></i> Atend.: {{ visita.Id_Atendimento }}
+                    </span>
+                    {% endif %}
+                    
+                    {% if visita.Id_gn and visita.Id_gn != 'null' %}
+                    <span class="meta-tag" title="Gestão de Negócio" style="color: var(--ink); border-color: #CBD5E1; background: #F8FAFC;">
+                        <i class="bi bi-briefcase"></i> GN: {{ visita.Id_gn }} 
+                        {% if visita.Status_gn and visita.Status_gn != 'null' %}
+                            ({{ visita.Status_gn }})
+                        {% endif %}
+                    </span>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
         </div>
           
-        <!-- PAGINAÇÃO INFERIOR CENTRALIZADA -->
+        <!-- PAGINAÇÃO INFERIOR -->
         {% if total_paginas > 1 %}
         <div style="display: flex; justify-content: center; align-items: center; padding: 24px 4px 12px; font-size: 13px; color: var(--muted);">
             <div style="display: flex; gap: 8px; align-items: center;">
@@ -283,23 +327,21 @@
         {% endif %}
 
       {% elif buscou %}
-          <!-- Estado Vazio: Buscou mas não achou nada no mês -->
           <div style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 64px 20px;">
               <div style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; background: var(--sunk); color: var(--muted); margin-bottom: 16px;">
                   <i class="bi bi-inbox"></i>
               </div>
               <h3 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 800; color: var(--ink);">Nenhuma visita encontrada</h3>
-              <p style="margin: 0; max-width: 400px; font-size: 14.5px; color: var(--muted);">Não localizamos nenhuma visita registrada para os filtros selecionados.</p>
+              <p style="margin: 0; max-width: 400px; font-size: 14.5px; color: var(--muted);">Não localizamos nenhuma visita na base para os filtros selecionados.</p>
           </div>
 
       {% else %}
-          <!-- Estado Inicial: Fica na tela antes da pessoa fazer a primeira consulta -->
           <div style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 64px 20px;">
               <div style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; background: var(--sunk); color: var(--muted); margin-bottom: 16px;">
-                  <i class="bi bi-calendar-check"></i>
+                  <i class="bi bi-database"></i>
               </div>
-              <h3 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 800; color: var(--ink);">Consulte suas visitas</h3>
-              <p style="margin: 0; max-width: 400px; font-size: 14.5px; color: var(--muted);">Selecione o mês, o ano e o status acima, depois clique em <strong>Consultar</strong> para carregar o seu histórico.</p>
+              <h3 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 800; color: var(--ink);">Histórico</h3>
+              <p style="margin: 0; max-width: 400px; font-size: 14.5px; color: var(--muted);">Selecione o mês e ano acima e clique em <strong>Consultar</strong> para carregar o seu histórico.</p>
           </div>
       {% endif %}
   </article>

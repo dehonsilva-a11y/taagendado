@@ -11,7 +11,7 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/login')
 def login():
     if 'user_id' in session:
-        return redirect(url_for('main.home'))
+        return redirect(url_for('main.hub'))
         
     # Puxa as configurações do .env para mandar para o HTML
     firebase_config = {

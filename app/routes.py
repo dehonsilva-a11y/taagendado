@@ -23,6 +23,7 @@ PAGINAS_SISTEMA = [
     {'id': 'importar_dados', 'nome': 'Importar Dados', 'icone': 'bi-box-arrow-up-right'},
     {'id': 'comissoes', 'nome': 'Relatório de Comissões', 'icone': 'bi-cash-stack'},
     {'id': 'status_visita', 'nome': 'Status das Visitas', 'icone': 'bi-calendar-check'},
+    {'id': 'hub', 'nome': 'Hub de Seleção', 'icone': 'bi-house'},
 ]
 PERFIS_SISTEMA = ['Corretor', 'Agente de Visita', 'Gerente Filial', 'Gerente Geral', 'Admin']
 
@@ -78,14 +79,11 @@ def injetar_dados_globais():
     return dict(current_user_foto=foto, minhas_permissoes=acessos_permitidos, app_version=APP_VERSION)
 
 @main_bp.route('/')
-def hub_inicial():
-    # Esta é a nova página inicial após o login, o Hub de seleção.
+def hub():
     return render_template('hub.html')
 
 @main_bp.route('/home')
 def home():
-    # Esta é a home original, se você quiser mantê-la.
-    # Você precisará atualizar links que apontavam para main.home para apontarem para onde fizer sentido agora.
     return render_template('home.html')
 
 @main_bp.route('/instalar')
@@ -161,41 +159,50 @@ def status_visita():
 
     mes_selecionado = int(mes_args)
     ano_selecionado = int(ano_args)
+    
+    # Datas podem vir como YYYY-MM ou DD/MM/YYYY no databricks
     str_busca_br = f"/{mes_selecionado:02d}/{ano_selecionado}"
+    str_busca_us = f"{ano_selecionado}-{mes_selecionado:02d}"
+    
     visitas_unicas = set()
 
     if colaborador_args:
-        docs = db.collection('dt_visita_periodo_agendamento').where('Nome_Responsavel_Colaborador', '==', colaborador_args).stream()
+        # Usando a nova coleção Databricks_Historico e o novo campo de Colaborador
+        docs = db.collection('Databricks_Historico').where('Colaborador_Visita', '==', colaborador_args).stream()
         
         for doc in docs:
             dados = doc.to_dict() or {}
             data_raw = str(dados.get('Data_Agendamento', '')).strip()
             
-            if str_busca_br in data_raw:
+            if str_busca_br in data_raw or str_busca_us in data_raw:
                 id_visita = str(dados.get('Id_Visita', '')).strip()
                 if id_visita and id_visita in visitas_unicas:
                     continue
                 
-                status_gn = str(dados.get('Status_GN', 'Sem status')).strip().title()
-                status_disponiveis.add(status_gn)
+                status_visita = str(dados.get('Status_Visita', 'Sem status')).strip().title()
+                status_disponiveis.add(status_visita)
                 
-                if status_filtro != 'Todos' and status_filtro != status_gn:
+                if status_filtro != 'Todos' and status_filtro != status_visita:
                     continue
                 
                 if id_visita and id_visita.lower() not in ['nan', 'none']:
                     visitas_unicas.add(id_visita)
                 
                 visitas.append({
-                    'id_visita': id_visita,
-                    'id_imovel': str(dados.get('Id_Imovel', '')).strip(),
-                    'tipo_imovel': dados.get('Tipo_Apartamento', 'Imóvel Genérico').title(),
-                    'endereco': dados.get('Endereco', dados.get('Bairro', '')).title(),
-                    'finalidade': dados.get('Finalidade', 'Não informada').title(),
-                    'data_formatada': data_raw, 
-                    'status': status_gn
+                    'Id_Visita': id_visita,
+                    'Id_Imovel': str(dados.get('Id_Imovel', '')).strip(),
+                    'Endereco': dados.get('Endereco', 'Endereço Indisponível').title(),
+                    'Segmento': dados.get('Segmento', 'Não informado').title(),
+                    'Data_Agendamento': data_raw, 
+                    'Status_Visita': status_visita,
+                    'Resultado_Visita': dados.get('Resultado_Visita', ''),
+                    'Id_Atendimento': str(dados.get('Id_Atendimento', '')).strip(),
+                    'Id_gn': str(dados.get('Id_gn', '')).strip(),
+                    'Status_gn': dados.get('Status_gn', '')
                 })
                 
-    visitas = sorted(visitas, key=lambda k: k['data_formatada'], reverse=True)
+    # Ordena de forma decrescente pela Data
+    visitas = sorted(visitas, key=lambda k: k['Data_Agendamento'], reverse=True)
     status_disponiveis = sorted(list(status_disponiveis))
 
     total_visitas = len(visitas)
@@ -718,7 +725,7 @@ def registrar_atividade():
         }
 
         endpoint = request.endpoint
-        if endpoint and endpoint.startswith('main.') and endpoint not in ['main.home', 'main.perfil']:
+        if endpoint and endpoint.startswith('main.') and endpoint not in ['main.home', 'main.perfil', 'main.hub']:
             tela_acessada = endpoint.split('.')[1] 
             
             rotas_filhas = {
