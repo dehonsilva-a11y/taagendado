@@ -1,4 +1,6 @@
 {
     "git.ignoreLimitWarning": true,
-    "python-envs.defaultEnvManager": "ms-python.python:system"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python.defaultInterpreterPath": "C:\\Users\\robertty.almeida\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "pyrefly.pythonPath": "C:\\Users\\robertty.almeida\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
 }

@@ -158,6 +158,10 @@
                         <i class="bi bi-cloud-arrow-up"></i>
                         <span>Importar dados</span>
                     </a>
+                    <a href="{{ url_for('main.banco_sql') }}" class="lo-nav-item {% if request.endpoint == 'main.banco_sql' %}active{% endif %}" {% if request.endpoint == 'main.banco_sql' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-table"></i>
+                        <span>Planilha SQL</span>
+                    </a>
                     {% endif %}
                 </div>
                 {% endif %}

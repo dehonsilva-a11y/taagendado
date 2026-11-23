@@ -5,10 +5,10 @@
    ========================================================= */
 
 /* ---------- Fontes ---------- */
-@font-face { font-family: 'Anek Latin'; font-weight: 300; font-style: normal; font-display: swap; src: url('fonts/AnekLatin-Light.ttf') format('truetype'); }
-@font-face { font-family: 'Anek Latin'; font-weight: 400; font-style: normal; font-display: swap; src: url('fonts/AnekLatin-Regular.ttf') format('truetype'); }
-@font-face { font-family: 'Anek Latin'; font-weight: 600; font-style: normal; font-display: swap; src: url('fonts/AnekLatin-SemiBold.ttf') format('truetype'); }
-@font-face { font-family: 'Anek Latin'; font-weight: 700; font-style: normal; font-display: swap; src: url('fonts/AnekLatin-Bold.ttf') format('truetype'); }
+@font-face { font-family: 'Anek Latin'; font-weight: 300; font-style: normal; font-display: swap; src: url('../fonts/AnekLatin-Light.ttf') format('truetype'); }
+@font-face { font-family: 'Anek Latin'; font-weight: 400; font-style: normal; font-display: swap; src: url('../fonts/AnekLatin-Regular.ttf') format('truetype'); }
+@font-face { font-family: 'Anek Latin'; font-weight: 600; font-style: normal; font-display: swap; src: url('../fonts/AnekLatin-SemiBold.ttf') format('truetype'); }
+@font-face { font-family: 'Anek Latin'; font-weight: 700; font-style: normal; font-display: swap; src: url('../fonts/AnekLatin-Bold.ttf') format('truetype'); }
 
 /* ---------- Tokens ---------- */
 :root {

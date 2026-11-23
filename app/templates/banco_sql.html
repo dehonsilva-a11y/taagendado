@@ -1,0 +1,502 @@
+{% extends 'base.html' %}
+{% block title %}Planilha SQL · Portal Lello{% endblock %}
+{% block page_title %}Gerenciador SQL (Modo Planilha){% endblock %}
+{% block page_subtitle %}
+<p class="lo-page-subtitle">
+    Visualize, pesquise e edite células diretamente no banco SQLite local — com criptografia automática para a Vercel
+</p>
+{% endblock %}
+
+{% block head %}
+<style>
+    .sql-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-card);
+    }
+    .sql-sheet-wrap {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-card);
+        overflow: hidden;
+    }
+    .sql-scroll {
+        overflow-x: auto;
+        max-height: 68vh;
+        overflow-y: auto;
+    }
+    .sql-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .sql-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: var(--sunk);
+        color: var(--ink);
+        font-weight: 700;
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 2px solid var(--line-strong);
+        border-right: 1px solid var(--line);
+        white-space: nowrap;
+        user-select: none;
+    }
+    .sql-table tbody td {
+        border-bottom: 1px solid var(--line);
+        border-right: 1px solid var(--line);
+        padding: 0;
+        min-width: 150px;
+        max-width: 340px;
+        background: var(--surface);
+        transition: background 0.15s ease;
+    }
+    .sql-table tbody tr:hover td {
+        background: var(--glass);
+    }
+    .sql-cell {
+        width: 100%;
+        min-height: 36px;
+        padding: 8px 10px;
+        border: 2px solid transparent;
+        background: transparent;
+        color: var(--ink);
+        font-family: inherit;
+        font-size: 13px;
+        outline: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: cell;
+    }
+    .sql-cell:focus {
+        background: var(--surface);
+        border-color: var(--focus);
+        box-shadow: 0 0 0 3px var(--info-bg);
+        white-space: normal;
+        overflow: visible;
+        z-index: 2;
+        position: relative;
+    }
+    .sql-cell.saving {
+        background: var(--warn-bg) !important;
+    }
+    .sql-cell.saved {
+        background: var(--ok-bg) !important;
+        border-color: var(--ok) !important;
+    }
+    .sql-cell.error {
+        background: var(--danger-bg) !important;
+        border-color: var(--danger) !important;
+    }
+    .sql-rowid-col {
+        min-width: 70px !important;
+        max-width: 90px !important;
+        text-align: center;
+        font-weight: 700;
+        color: var(--muted);
+        background: var(--sunk) !important;
+        padding: 6px 8px !important;
+        white-space: nowrap;
+    }
+    .sql-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .sql-modal-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(30, 11, 17, 0.55);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+    .sql-modal-backdrop.open {
+        display: flex;
+    }
+    .sql-modal {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-card);
+        padding: 24px;
+        max-width: 560px;
+        width: 100%;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-float);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lo-stack">
+
+    <!-- Aviso de Status de Sincronização Local <-> Vercel -->
+    <div class="lo-callout {% if modo_local %}lo-callout-success{% else %}lo-callout-warning{% endif %}">
+        <div class="ic">
+            <i class="bi {% if modo_local %}bi-shield-lock-fill{% else %}bi-cloud-check-fill{% endif %}"></i>
+        </div>
+        <div style="flex: 1;">
+            {% if modo_local %}
+                <strong>Modo Edição Local Ativo:</strong> Qualquer célula que você alterar abaixo salva na hora em <code>data/dados_analiticos.db</code> e já atualiza automaticamente o arquivo criptografado <code>data/dados_analiticos.enc</code> para a Vercel!
+            {% else %}
+                <strong>Modo Nuvem (Vercel):</strong> O banco foi descriptografado em memória temporária (<code>/tmp</code>). Para que novas alterações fiquem permanentes para todos, edite rodando na sua máquina local e envie o arquivo <code>data/dados_analiticos.enc</code>.
+            {% endif %}
+        </div>
+        <div id="statusSalvamento" class="sql-status-pill" style="background: var(--ok-bg); color: var(--ok-text);">
+            <i class="bi bi-check2-circle"></i>
+            <span>Pronto para editar</span>
+        </div>
+    </div>
+
+    <!-- Barra de Ferramentas da Planilha -->
+    <div class="sql-toolbar">
+        <form method="GET" action="{{ url_for('main.banco_sql') }}" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1;">
+            <div style="min-width: 240px;">
+                <label class="lo-label" style="font-size: 11px; margin-bottom: 2px; display: block;">Tabela SQL Ativa</label>
+                <select name="tabela" class="lo-select" onchange="this.form.submit()" style="font-weight: 700;">
+                    {% for tab in tabelas %}
+                        <option value="{{ tab }}" {% if tab == tabela_ativa %}selected{% endif %}>📊 {{ tab }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="flex: 1; min-width: 220px;">
+                <label class="lo-label" style="font-size: 11px; margin-bottom: 2px; display: block;">Pesquisar em qualquer coluna</label>
+                <div style="display: flex; gap: 6px;">
+                    <input type="text" name="q" value="{{ busca }}" class="lo-input" placeholder="Digite nome, contrato, data, status...">
+                    <button type="submit" class="lo-btn lo-btn-fill">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                    {% if busca %}
+                    <a href="{{ url_for('main.banco_sql', tabela=tabela_ativa) }}" class="lo-btn lo-btn-ghost" title="Limpar filtro">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="width: 110px;">
+                <label class="lo-label" style="font-size: 11px; margin-bottom: 2px; display: block;">Linhas/Pág</label>
+                <select name="per_page" class="lo-select" onchange="this.form.submit()">
+                    {% for qtd in [25, 50, 100, 200] %}
+                        <option value="{{ qtd }}" {% if per_page == qtd %}selected{% endif %}>{{ qtd }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+
+        <!-- Botões de Ação da Planilha -->
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;">
+            <button type="button" class="lo-btn lo-btn-fill" onclick="abrirModalNovaLinha()">
+                <i class="bi bi-plus-lg"></i> Nova Linha
+            </button>
+            <button type="button" class="lo-btn lo-btn-ghost" onclick="adicionarNovaColuna()">
+                <i class="bi bi-layout-three-columns"></i> + Coluna
+            </button>
+            <button type="button" class="lo-btn lo-btn-ghost" onclick="criarNovaTabela()">
+                <i class="bi bi-folder-plus"></i> + Nova Tabela
+            </button>
+            <a href="{{ url_for('main.importar_dados') }}" class="lo-btn lo-btn-ghost" title="Importar planilha Excel inteira">
+                <i class="bi bi-file-earmark-excel"></i> Importar Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- Grade Estilo Planilha Excel -->
+    <div class="sql-sheet-wrap">
+        <div style="padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+                <strong style="color: var(--ink);">{{ tabela_ativa }}</strong>
+                <span style="color: var(--muted); font-size: 13px; margin-left: 8px;">
+                    {{ total_registros }} registro(s) encontrado(s) · {{ colunas|length }} coluna(s)
+                </span>
+            </div>
+            <span style="font-size: 12px; color: var(--muted);">
+                <i class="bi bi-hand-index-thumb"></i> Clique em qualquer célula, altere o valor e pressione <strong>Enter</strong> ou clique fora para salvar automaticamente.
+            </span>
+        </div>
+
+        <div class="sql-scroll">
+            <table class="sql-table">
+                <thead>
+                    <tr>
+                        <th class="sql-rowid-col"># ID</th>
+                        {% for col in colunas %}
+                            <th>{{ col }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if linhas %}
+                        {% for linha in linhas %}
+                            {% set rowid = linha['_rowid_'] %}
+                            <tr id="row-{{ rowid }}">
+                                <td class="sql-rowid-col">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                                        <span>#{{ rowid }}</span>
+                                        <button type="button" onclick="excluirLinha({{ rowid }})" title="Excluir linha #{{ rowid }}" style="border: none; background: transparent; color: var(--danger); cursor: pointer; padding: 2px 4px; border-radius: 4px;">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                {% for col in colunas %}
+                                    {% set val = linha.get(col) %}
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="sql-cell"
+                                            value="{{ '' if val is none else val }}"
+                                            data-original="{{ '' if val is none else val }}"
+                                            data-rowid="{{ rowid }}"
+                                            data-col="{{ col }}"
+                                            onblur="salvarCelula(this)"
+                                            onkeydown="if(event.key === 'Enter'){ this.blur(); }"
+                                        >
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="{{ (colunas|length) + 1 }}" style="padding: 36px; text-align: center; color: var(--muted);">
+                                <i class="bi bi-inbox" style="font-size: 28px; display: block; margin-bottom: 8px;"></i>
+                                Nenhuma linha encontrada nesta tabela. Clique em <strong>"Nova Linha"</strong> ou <strong>"Importar Excel"</strong> para adicionar dados.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginação -->
+        {% if total_paginas > 1 %}
+        <div style="padding: 12px 16px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <span style="font-size: 13px; color: var(--muted);">
+                Página <strong>{{ page }}</strong> de <strong>{{ total_paginas }}</strong>
+            </span>
+            <div style="display: flex; gap: 6px;">
+                {% if page > 1 %}
+                    <a class="lo-btn lo-btn-ghost lo-btn-sm" href="{{ url_for('main.banco_sql', tabela=tabela_ativa, q=busca, per_page=per_page, page=1) }}">« Primeira</a>
+                    <a class="lo-btn lo-btn-ghost lo-btn-sm" href="{{ url_for('main.banco_sql', tabela=tabela_ativa, q=busca, per_page=per_page, page=page-1) }}">‹ Anterior</a>
+                {% endif %}
+                {% if page < total_paginas %}
+                    <a class="lo-btn lo-btn-ghost lo-btn-sm" href="{{ url_for('main.banco_sql', tabela=tabela_ativa, q=busca, per_page=per_page, page=page+1) }}">Próxima ›</a>
+                    <a class="lo-btn lo-btn-ghost lo-btn-sm" href="{{ url_for('main.banco_sql', tabela=tabela_ativa, q=busca, per_page=per_page, page=total_paginas) }}">Última »</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para Adicionar Nova Linha -->
+<div class="sql-modal-backdrop" id="modalNovaLinha">
+    <div class="sql-modal">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0;">Nova Linha em {{ tabela_ativa }}</h3>
+            <button type="button" class="lo-btn lo-btn-ghost lo-btn-sm" onclick="fecharModalNovaLinha()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <form id="formNovaLinha" onsubmit="salvarNovaLinha(event)" class="lo-stack lo-stack-sm">
+            {% for col in colunas %}
+            <div class="lo-field">
+                <label class="lo-label">{{ col }}</label>
+                <input type="text" name="{{ col }}" class="lo-input" placeholder="Valor para {{ col }}">
+            </div>
+            {% endfor %}
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+                <button type="button" class="lo-btn lo-btn-ghost" onclick="fecharModalNovaLinha()">Cancelar</button>
+                <button type="submit" class="lo-btn lo-btn-fill">
+                    <i class="bi bi-check-lg"></i> Inserir Linha
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const TABELA_ATIVA = {{ tabela_ativa|tojson }};
+    const API_URL = {{ url_for('main.banco_sql_api')|tojson }};
+
+    function atualizarBadgeStatus(texto, tipo) {
+        const badge = document.getElementById('statusSalvamento');
+        if (!badge) return;
+        if (tipo === 'saving') {
+            badge.style.background = 'var(--warn-bg)';
+            badge.style.color = 'var(--warn-text)';
+            badge.innerHTML = '<i class="bi bi-arrow-repeat"></i><span>' + texto + '</span>';
+        } else if (tipo === 'error') {
+            badge.style.background = 'var(--danger-bg)';
+            badge.style.color = 'var(--danger-text)';
+            badge.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i><span>' + texto + '</span>';
+        } else {
+            badge.style.background = 'var(--ok-bg)';
+            badge.style.color = 'var(--ok-text)';
+            badge.innerHTML = '<i class="bi bi-shield-check"></i><span>' + texto + '</span>';
+        }
+    }
+
+    async function salvarCelula(inputEl) {
+        const novoValor = inputEl.value;
+        const valorOriginal = inputEl.getAttribute('data-original');
+        if (novoValor === valorOriginal) return;
+
+        const rowid = inputEl.getAttribute('data-rowid');
+        const coluna = inputEl.getAttribute('data-col');
+
+        inputEl.classList.remove('saved', 'error');
+        inputEl.classList.add('saving');
+        atualizarBadgeStatus('Salvando e criptografando...', 'saving');
+
+        try {
+            const resp = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    acao: 'editar_celula',
+                    tabela: TABELA_ATIVA,
+                    rowid: rowid,
+                    coluna: coluna,
+                    valor: novoValor
+                })
+            });
+            const data = await resp.json();
+            inputEl.classList.remove('saving');
+
+            if (resp.ok && data.status === 'success') {
+                inputEl.setAttribute('data-original', novoValor);
+                inputEl.classList.add('saved');
+                atualizarBadgeStatus('Salvo & Criptografado (.enc)', 'ok');
+                setTimeout(() => inputEl.classList.remove('saved'), 1800);
+            } else {
+                inputEl.classList.add('error');
+                atualizarBadgeStatus(data.message || 'Erro ao salvar', 'error');
+            }
+        } catch (err) {
+            inputEl.classList.remove('saving');
+            inputEl.classList.add('error');
+            atualizarBadgeStatus('Falha de conexão', 'error');
+        }
+    }
+
+    function abrirModalNovaLinha() {
+        document.getElementById('modalNovaLinha').classList.add('open');
+    }
+
+    function fecharModalNovaLinha() {
+        document.getElementById('modalNovaLinha').classList.remove('open');
+    }
+
+    async function salvarNovaLinha(event) {
+        event.preventDefault();
+        const form = document.getElementById('formNovaLinha');
+        const formData = new FormData(form);
+        const valores = {};
+        formData.forEach((v, k) => { valores[k] = v; });
+
+        atualizarBadgeStatus('Inserindo linha...', 'saving');
+        const resp = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                acao: 'adicionar_linha',
+                tabela: TABELA_ATIVA,
+                valores: valores
+            })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.status === 'success') {
+            window.location.reload();
+        } else {
+            alert(data.message || 'Erro ao adicionar linha.');
+        }
+    }
+
+    async function excluirLinha(rowid) {
+        if (!confirm('Deseja realmente excluir a linha #' + rowid + ' da tabela ' + TABELA_ATIVA + '?')) return;
+        atualizarBadgeStatus('Excluindo linha...', 'saving');
+        const resp = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                acao: 'excluir_linha',
+                tabela: TABELA_ATIVA,
+                rowid: rowid
+            })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.status === 'success') {
+            const tr = document.getElementById('row-' + rowid);
+            if (tr) tr.remove();
+            atualizarBadgeStatus('Linha #' + rowid + ' excluída & .enc atualizado', 'ok');
+        } else {
+            alert(data.message || 'Erro ao excluir linha.');
+        }
+    }
+
+    async function adicionarNovaColuna() {
+        const nomeCol = prompt('Digite o nome da nova coluna para a tabela "' + TABELA_ATIVA + '":');
+        if (!nomeCol || !nomeCol.trim()) return;
+        const resp = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                acao: 'adicionar_coluna',
+                tabela: TABELA_ATIVA,
+                nova_coluna: nomeCol.trim()
+            })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.status === 'success') {
+            window.location.reload();
+        } else {
+            alert(data.message || 'Erro ao criar coluna.');
+        }
+    }
+
+    async function criarNovaTabela() {
+        const nomeTab = prompt('Digite o nome da nova tabela SQL (use apenas letras, números e _):');
+        if (!nomeTab || !nomeTab.trim()) return;
+        const colsStr = prompt('Digite os nomes das colunas separados por vírgula:', 'ID, Colaborador, Data, Valor');
+        if (!colsStr) return;
+        const colunas = colsStr.split(',').map(c => c.trim()).filter(Boolean);
+
+        const resp = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                acao: 'criar_tabela',
+                tabela: nomeTab.trim(),
+                colunas: colunas
+            })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.status === 'success') {
+            window.location.href = '{{ url_for("main.banco_sql") }}?tabela=' + encodeURIComponent(nomeTab.trim());
+        } else {
+            alert(data.message || 'Erro ao criar tabela.');
+        }
+    }
+</script>
+{% endblock %}

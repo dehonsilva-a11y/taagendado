@@ -5,10 +5,10 @@ import re
 import pandas as pd
 import calendar
 from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 from app import db, MEMORIA_CACHE
-from app.utils import enviar_email_boas_vindas
-from app.database import (
+from app.routes.utils import enviar_email_boas_vindas
+from app.routes.database import (
     obter_conexao_sql,
     listar_tabelas_sql,
     criptografar_banco_local,
@@ -28,6 +28,7 @@ PAGINAS_SISTEMA = [
     {'id': 'portabilidade_interna', 'nome': 'Portabilidade Interna', 'icone': 'bi-arrow-left-right'},
     {'id': 'portabilidade_externa', 'nome': 'Portabilidade Externa', 'icone': 'bi-box-arrow-up-right'},
     {'id': 'importar_dados', 'nome': 'Importar Dados', 'icone': 'bi-box-arrow-up-right'},
+    {'id': 'banco_sql', 'nome': 'Gerenciador SQL (Planilha)', 'icone': 'bi-table'},
     {'id': 'comissoes', 'nome': 'Relatório de Comissões', 'icone': 'bi-cash-stack'},
     {'id': 'status_visita', 'nome': 'Status das Visitas', 'icone': 'bi-calendar-check'},
     {'id': 'hub', 'nome': 'Hub de Seleção', 'icone': 'bi-house'},
@@ -800,7 +801,8 @@ def registrar_atividade():
                 'simular_acesso': 'usuarios',
                 'restaurar_acesso': 'usuarios',
                 'importar_usuarios': 'usuarios',
-                'reenviar_convite': 'usuarios'
+                'reenviar_convite': 'usuarios',
+                'banco_sql_api': 'banco_sql'
             }
             
             tela_para_validar = rotas_filhas.get(tela_acessada, tela_acessada)
@@ -950,10 +952,12 @@ def importar_dados():
             return redirect(url_for('main.importar_dados'))
 
         try:
-            if arquivo.filename.lower().endswith('.csv'):
-                df = pd.read_csv(arquivo, dtype=str).fillna('')
+            nome_arquivo = (arquivo.filename or '').lower()
+            conteudo_bytes = io.BytesIO(arquivo.read())
+            if nome_arquivo.endswith('.csv'):
+                df = pd.read_csv(conteudo_bytes, dtype=str).fillna('')
             else:
-                df = pd.read_excel(arquivo, dtype=str).fillna('')
+                df = pd.read_excel(conteudo_bytes, dtype=str).fillna('')
 
             total_lido = len(df)
             coluna_id = request.form.get('coluna_id', '').strip()
@@ -1175,3 +1179,177 @@ def comissoes():
                            e_corretor=e_corretor,
                            fmt_brl=fmt_brl,
                            periodo_str=f"01 a {ultimo_dia:02d}/{mes_selecionado:02d}/{ano_selecionado}")
+
+
+@main_bp.route('/banco_sql', methods=['GET'])
+def banco_sql():
+    if session.get('user_perfil') != 'Admin':
+        flash('Acesso negado. Apenas Administradores podem acessar o Gerenciador SQL.', 'floating_danger')
+        return redirect(url_for('main.home'))
+
+    tabelas = listar_tabelas_sql()
+    tabela_ativa = request.args.get('tabela', '').strip()
+    if not tabela_ativa or tabela_ativa not in tabelas:
+        tabela_ativa = tabelas[0] if tabelas else ''
+
+    busca = request.args.get('q', '').strip()
+    page = max(1, request.args.get('page', 1, type=int))
+    per_page = request.args.get('per_page', 50, type=int)
+    if per_page not in [25, 50, 100, 200]:
+        per_page = 50
+
+    colunas: list[str] = []
+    linhas: list[dict] = []
+    total_registros = 0
+    total_paginas = 1
+    modo_local = os.path.exists(LOCAL_DB_PATH)
+
+    if tabela_ativa:
+        try:
+            conn = obter_conexao_sql()
+            cursor = conn.cursor()
+
+            cursor.execute(f'PRAGMA table_info("{tabela_ativa}")')
+            colunas = [info['name'] for info in cursor.fetchall()]
+
+            where_sql = ""
+            params: list[str] = []
+            if busca and colunas:
+                condicoes = [f'CAST("{col}" AS TEXT) LIKE ?' for col in colunas]
+                where_sql = " WHERE " + " OR ".join(condicoes)
+                params = [f"%{busca}%" for _ in colunas]
+
+            cursor.execute(f'SELECT COUNT(*) as total FROM "{tabela_ativa}"{where_sql}', params)
+            row_total = cursor.fetchone()
+            total_registros = int(row_total['total']) if row_total else 0
+
+            total_paginas = max(1, (total_registros + per_page - 1) // per_page)
+            if page > total_paginas:
+                page = total_paginas
+
+            offset = (page - 1) * per_page
+            cursor.execute(
+                f'SELECT rowid AS _rowid_, * FROM "{tabela_ativa}"{where_sql} ORDER BY rowid DESC LIMIT ? OFFSET ?',
+                [*params, per_page, offset]
+            )
+            linhas = [dict(r) for r in cursor.fetchall()]
+            conn.close()
+        except Exception as e:
+            flash(f'Erro ao carregar tabela {tabela_ativa}: {e}', 'floating_danger')
+
+    return render_template(
+        'banco_sql.html',
+        tabelas=tabelas,
+        tabela_ativa=tabela_ativa,
+        colunas=colunas,
+        linhas=linhas,
+        busca=busca,
+        page=page,
+        per_page=per_page,
+        total_registros=total_registros,
+        total_paginas=total_paginas,
+        modo_local=modo_local
+    )
+
+
+@main_bp.route('/banco_sql/api', methods=['POST'])
+def banco_sql_api():
+    if session.get('user_perfil') != 'Admin':
+        return jsonify({'status': 'error', 'message': 'Acesso negado.'}), 403
+
+    dados = request.get_json(silent=True) or {}
+    acao = dados.get('acao', '')
+    tabela = str(dados.get('tabela', '')).strip()
+
+    if not re.match(r'^[A-Za-z0-9_]+$', tabela):
+        return jsonify({'status': 'error', 'message': 'Nome de tabela inválido.'}), 400
+
+    try:
+        conn = obter_conexao_sql()
+        cursor = conn.cursor()
+
+        # Verifica colunas existentes na tabela (exceto quando estiver criando uma nova tabela)
+        colunas_validas: list[str] = []
+        if acao != 'criar_tabela':
+            cursor.execute(f'PRAGMA table_info("{tabela}")')
+            colunas_validas = [info['name'] for info in cursor.fetchall()]
+            if not colunas_validas:
+                conn.close()
+                return jsonify({'status': 'error', 'message': 'Tabela não encontrada.'}), 404
+
+        if acao == 'editar_celula':
+            rowid = dados.get('rowid')
+            coluna = str(dados.get('coluna', '')).strip()
+            valor = str(dados.get('valor', ''))
+            if coluna not in colunas_validas:
+                conn.close()
+                return jsonify({'status': 'error', 'message': 'Coluna inválida.'}), 400
+            cursor.execute(f'UPDATE "{tabela}" SET "{coluna}" = ? WHERE rowid = ?', (valor, rowid))
+            conn.commit()
+            registrar_log_auditoria(f"SQL PLANILHA: Editou célula ({coluna}) da linha #{rowid} em '{tabela}'")
+
+        elif acao == 'adicionar_linha':
+            valores_dict = dados.get('valores', {}) or {}
+            cols_inserir = [c for c in colunas_validas if c in valores_dict]
+            if not cols_inserir:
+                cols_inserir = [colunas_validas[0]]
+                vals_inserir = ['']
+            else:
+                vals_inserir = [str(valores_dict.get(c, '')) for c in cols_inserir]
+            cols_sql = ', '.join([f'"{c}"' for c in cols_inserir])
+            placeholders = ', '.join(['?' for _ in cols_inserir])
+            cursor.execute(f'INSERT INTO "{tabela}" ({cols_sql}) VALUES ({placeholders})', vals_inserir)
+            novo_id = cursor.lastrowid
+            conn.commit()
+            registrar_log_auditoria(f"SQL PLANILHA: Adicionou nova linha #{novo_id} em '{tabela}'")
+
+        elif acao == 'excluir_linha':
+            rowid = dados.get('rowid')
+            cursor.execute(f'DELETE FROM "{tabela}" WHERE rowid = ?', (rowid,))
+            conn.commit()
+            registrar_log_auditoria(f"SQL PLANILHA: Excluiu linha #{rowid} de '{tabela}'")
+
+        elif acao == 'adicionar_coluna':
+            nova_coluna = str(dados.get('nova_coluna', '')).strip()
+            if not re.match(r'^[A-Za-z0-9_ ]+$', nova_coluna):
+                conn.close()
+                return jsonify({'status': 'error', 'message': 'Nome de coluna inválido.'}), 400
+            if nova_coluna in colunas_validas:
+                conn.close()
+                return jsonify({'status': 'error', 'message': 'Essa coluna já existe.'}), 400
+            cursor.execute(f'ALTER TABLE "{tabela}" ADD COLUMN "{nova_coluna}" TEXT DEFAULT ""')
+            conn.commit()
+            registrar_log_auditoria(f"SQL PLANILHA: Adicionou coluna '{nova_coluna}' na tabela '{tabela}'")
+
+        elif acao == 'criar_tabela':
+            colunas_iniciais = dados.get('colunas', []) or ['ID', 'Nome', 'Observacao']
+            cols_limpas = [str(c).strip() for c in colunas_iniciais if re.match(r'^[A-Za-z0-9_ ]+$', str(c).strip())]
+            if not cols_limpas:
+                cols_limpas = ['ID', 'Descricao']
+            ddl_cols = ', '.join([f'"{c}" TEXT' for c in cols_limpas])
+            cursor.execute(f'CREATE TABLE IF NOT EXISTS "{tabela}" ({ddl_cols})')
+            conn.commit()
+            registrar_log_auditoria(f"SQL PLANILHA: Criou nova tabela '{tabela}'")
+
+        elif acao == 'criptografar':
+            pass
+
+        else:
+            conn.close()
+            return jsonify({'status': 'error', 'message': 'Ação desconhecida.'}), 400
+
+        conn.close()
+
+        # Sempre que alterar o banco local, já atualiza o arquivo criptografado (.enc) para a Vercel!
+        enc_atualizado = False
+        if os.path.exists(LOCAL_DB_PATH):
+            criptografar_banco_local()
+            enc_atualizado = True
+
+        return jsonify({
+            'status': 'success',
+            'enc_atualizado': enc_atualizado,
+            'message': 'Alteração salva no SQL e criptografada com sucesso!'
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500

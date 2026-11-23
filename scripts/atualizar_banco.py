@@ -1,6 +1,7 @@
 import os
 import sys
 import sqlite3
+from typing import Literal
 import pandas as pd
 
 # Adiciona a pasta raiz do projeto ao sys.path para importar o pacote `app`
@@ -9,7 +10,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from dotenv import load_dotenv
-from app.database import (
+from app.routes.database import (
     LOCAL_DB_PATH,
     ENCRYPTED_DB_PATH,
     DATA_DIR,
@@ -54,7 +55,13 @@ def garantir_chave_no_env():
         print(f"   Valor: {nova_chave}\n")
 
 
-def importar_planilha_para_sql(conn: sqlite3.Connection, caminho_arquivo: str, nome_tabela: str, modo: str = 'replace', coluna_id: str = None):
+def importar_planilha_para_sql(
+    conn: sqlite3.Connection,
+    caminho_arquivo: str,
+    nome_tabela: str,
+    modo: Literal['replace', 'append'] = 'replace',
+    coluna_id: str | None = None
+):
     """
     Importa uma planilha Excel ou CSV para a tabela SQLite especificada.
     - modo='replace': substitui a tabela inteira pela planilha atual.
@@ -81,7 +88,7 @@ def importar_planilha_para_sql(conn: sqlite3.Connection, caminho_arquivo: str, n
     print(f"✅ Tabela '{nome_tabela}' atualizada! ({len(df)} registros gravados de {total_lido} lidos)")
 
 
-def atualizar_banco_noturno(modo: str = 'replace'):
+def atualizar_banco_noturno(modo: Literal['replace', 'append'] = 'replace'):
     """
     Rotina principal de atualização noturna:
     1. Garante que a chave de criptografia exista no .env
@@ -148,5 +155,5 @@ def atualizar_banco_noturno(modo: str = 'replace'):
 
 if __name__ == '__main__':
     # Permite passar --append no terminal se quiser apenas adicionar registros sem limpar a tabela
-    modo_execucao = 'append' if '--append' in sys.argv else 'replace'
+    modo_execucao: Literal['replace', 'append'] = 'append' if '--append' in sys.argv else 'replace'
     atualizar_banco_noturno(modo=modo_execucao)
