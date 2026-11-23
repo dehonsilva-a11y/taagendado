@@ -7,6 +7,7 @@ __pycache__/
 # Ambientes Virtuais
 venv/
 env/
+.venv/
 
 # Configurações do VS Code
 .vscode/
@@ -18,8 +19,16 @@ config/firebase_key.json
 scripts/sdk_Firebase.JSON
 sdk_Firebase.JSON
 
-# Banco de dados locais (se houver)
-banco.db
+# Dados Locais Abertos e Planilhas (NUNCA SUBIR ABERTOS PARA O GITHUB)
+# Apenas o arquivo criptografado (data/dados_analiticos.enc) pode subir!
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+data/planilhas/
+*.xlsx
+*.xls
+*.csv
 
 # Logs
 *.log

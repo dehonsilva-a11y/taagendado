@@ -8,7 +8,14 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app import db, MEMORIA_CACHE
 from app.utils import enviar_email_boas_vindas
-
+from app.database import (
+    obter_conexao_sql,
+    listar_tabelas_sql,
+    criptografar_banco_local,
+    LOCAL_DB_PATH
+)
+import sqlite3
+import os
 main_bp = Blueprint('main', __name__)
 
 # --- CONFIGURAÇÃO DE PÁGINAS DO SISTEMA ---
@@ -100,10 +107,9 @@ def status_visita():
     perfil_logado = session.get('user_perfil', 'Corretor')
     filial_logada = session.get('user_filial', '')
     
+    # Busca o usuário logado para saber o nome
     user_doc = db.collection('usuarios').document(email_usuario).get()
-    nome_cruzamento = ""
-    if user_doc.exists:
-        nome_cruzamento = user_doc.to_dict().get('nome', '').strip()
+    nome_cruzamento = user_doc.to_dict().get('nome', '').strip() if user_doc.exists else ""
 
     pode_ver_todos = perfil_logado in ['Admin', 'Gerente Geral']
     gerente_filial = perfil_logado == 'Gerente Filial'
@@ -160,48 +166,93 @@ def status_visita():
     mes_selecionado = int(mes_args)
     ano_selecionado = int(ano_args)
     
-    # Datas podem vir como YYYY-MM ou DD/MM/YYYY no databricks
-    str_busca_br = f"/{mes_selecionado:02d}/{ano_selecionado}"
-    str_busca_us = f"{ano_selecionado}-{mes_selecionado:02d}"
-    
-    visitas_unicas = set()
-
-    if colaborador_args:
-        # Usando a nova coleção Databricks_Historico e o novo campo de Colaborador
-        docs = db.collection('Databricks_Historico').where('Colaborador_Visita', '==', colaborador_args).stream()
+    # -------------------------------------------------------------
+    # NOVA LÓGICA SQLITE - CUSTO ZERO NO FIREBASE
+    # -------------------------------------------------------------
+    try:
+        conn = obter_conexao_sql()
+        cursor = conn.cursor()
         
-        for doc in docs:
-            dados = doc.to_dict() or {}
-            data_raw = str(dados.get('Data_Agendamento', '')).strip()
+        # Filtro de Data dinâmico (SQL usa % para 'qualquer coisa antes ou depois')
+        padrao_data_br = f"%/{mes_selecionado:02d}/{ano_selecionado}%"
+        padrao_data_us = f"%{ano_selecionado}-{mes_selecionado:02d}%"
+
+        query = """
+            SELECT * FROM Databricks_Historico 
+            WHERE Colaborador_Visita = ? 
+            AND (Data_Agendamento LIKE ? OR Data_Agendamento LIKE ?)
+        """
+        cursor.execute(query, (colaborador_args, padrao_data_br, padrao_data_us))
+        registros_sql = cursor.fetchall()
+        
+        visitas_unicas = set()
+
+        for row in registros_sql:
+            row_dict = dict(row)
+            id_visita = str(row_dict.get('Id_Visita') or '').strip()
+            if id_visita and id_visita in visitas_unicas:
+                continue
             
-            if str_busca_br in data_raw or str_busca_us in data_raw:
-                id_visita = str(dados.get('Id_Visita', '')).strip()
-                if id_visita and id_visita in visitas_unicas:
-                    continue
-                
-                status_visita = str(dados.get('Status_Visita', 'Sem status')).strip().title()
-                status_disponiveis.add(status_visita)
-                
-                if status_filtro != 'Todos' and status_filtro != status_visita:
-                    continue
-                
-                if id_visita and id_visita.lower() not in ['nan', 'none']:
-                    visitas_unicas.add(id_visita)
-                
-                visitas.append({
-                    'Id_Visita': id_visita,
-                    'Id_Imovel': str(dados.get('Id_Imovel', '')).strip(),
-                    'Endereco': dados.get('Endereco', 'Endereço Indisponível').title(),
-                    'Segmento': dados.get('Segmento', 'Não informado').title(),
-                    'Data_Agendamento': data_raw, 
-                    'Status_Visita': status_visita,
-                    'Resultado_Visita': dados.get('Resultado_Visita', ''),
-                    'Id_Atendimento': str(dados.get('Id_Atendimento', '')).strip(),
-                    'Id_gn': str(dados.get('Id_gn', '')).strip(),
-                    'Status_gn': dados.get('Status_gn', '')
-                })
-                
-    # Ordena de forma decrescente pela Data
+            # --- LÓGICA DE STATUS MANTIDA EXATAMENTE IGUAL ---
+            status_visita_original = str(row_dict.get('Status_Visita') or '').strip().title()
+            status_gn = str(row_dict.get('Status_gn') or '').strip().lower()
+            etapa_gn = str(row_dict.get('Etapa_gn') or '').strip().upper()
+            
+            status_calculado = "Em Andamento" 
+            
+            if status_visita_original in ["Canceladas", "Cancelada", "Não Efetivada"]:
+                status_calculado = "Canceladas"
+            elif status_visita_original == "Fazer":
+                status_calculado = "Em Andamento"
+            elif status_visita_original == "Realizada":
+                if status_gn in ['null', 'none', '']:
+                    status_calculado = "Em Andamento"
+                elif status_gn == "sem sucesso":
+                    status_calculado = "Canceladas"
+                elif status_gn in ["com sucesso", "comsucesso"]:
+                    status_calculado = "Contratos"
+                elif status_gn == "em aberto":
+                    if etapa_gn in ["APROVADO /CHECKLIST", "PROPOSTA EM ANDAMENTO", "AGUARDANDO RESPOSTA", "EM NEGOCIAÇÃO", "REVISÃO COMERCIAL", "BENFEITORIA EM NEGOCIAÇÃO"]:
+                        status_calculado = "Negociação"
+                    elif etapa_gn in ["AGUARDANDO DOCTOS", "AGUARDANDO DOCUMENTOS PENDENTES"]:
+                        status_calculado = "Aguardando doc"
+                    elif etapa_gn in ["ANALISE SEGURO FIANÇA", "ANALISE EXTERNA", "ANALISE DE CRÉDITO"]:
+                        status_calculado = "Analise de Credito"
+                    elif etapa_gn in ["SOLICITAÇÃO DO KIT PROPRIETÁRIO", "DISTRIBUIR CONTRATO", "CONTRATO DISTRIBUIDO", "CONTRATO ASSINADO"]:
+                        status_calculado = "Contratos"
+                    else:
+                        status_calculado = "Em Andamento"
+                else:
+                    status_calculado = "Em Andamento"
+            else:
+                status_calculado = status_visita_original
+            # ------------------------------
+            
+            status_disponiveis.add(status_calculado)
+            
+            if status_filtro != 'Todos' and status_filtro != status_calculado:
+                continue
+            
+            if id_visita and id_visita.lower() not in ['nan', 'none']:
+                visitas_unicas.add(id_visita)
+            
+            visitas.append({
+                'Id_Visita': id_visita,
+                'Id_Imovel': str(row_dict.get('Id_Imovel') or '').strip(),
+                'Endereco': str(row_dict.get('Endereco') or '').title() if row_dict.get('Endereco') else 'Endereço Indisponível',
+                'Segmento': str(row_dict.get('Segmento') or '').title() if row_dict.get('Segmento') else 'Não informado',
+                'Data_Agendamento': row_dict.get('Data_Agendamento') or '', 
+                'Status_Visita': status_calculado, 
+                'Resultado_Visita': row_dict.get('Resultado_Visita') or '',
+                'Id_Atendimento': str(row_dict.get('Id_Atendimento') or '').strip(),
+                'Id_gn': str(row_dict.get('Id_gn') or '').strip(),
+                'Status_gn': row_dict.get('Status_gn') or ''
+            })
+            
+        conn.close()
+    except Exception as e:
+        print(f"Erro ao consultar SQLite (status_visita): {e}")
+
     visitas = sorted(visitas, key=lambda k: k['Data_Agendamento'], reverse=True)
     status_disponiveis = sorted(list(status_disponiveis))
 
@@ -606,44 +657,59 @@ def visitas():
     valor_total_fechado = 0.0
     
     if valor_busca:
-        docs = db.collection(colecao_banco).where(coluna_filtro, '==', valor_busca).stream()
-        
-        str_busca_br = f"/{mes_selecionado:02d}/{ano_selecionado}"
-        str_busca_us = f"{ano_selecionado}-{mes_selecionado:02d}"
-        
-        for doc in docs:
-            dados = doc.to_dict() or {}
-            
-            data_referencia = str(dados.get('Negocio_Data_status', 
-                                  dados.get('Data_Status', 
-                                  dados.get('Gestao_Data_Status', ''))))
-            
-            if str_busca_br in data_referencia or str_busca_us in data_referencia:
-                
-                contrato = str(dados.get('Negocio_Contrato', 
-                               dados.get('Contrato_Codigo', 
-                               dados.get('Gestao_GN', '')))).strip()
-                
-                if contrato and contrato in contratos_unicos:
-                    continue
-                
-                if contrato and contrato.lower() not in ['nan', 'none']:
-                    contratos_unicos.add(contrato)
-                
-                valor_raw = str(dados.get(coluna_valor, '0'))
-                
-                try:
-                    valor_raw = valor_raw.replace('R$', '').strip()
-                    if '.' in valor_raw and ',' in valor_raw:
-                        valor_clean = float(valor_raw.replace('.', '').replace(',', '.'))
-                    elif ',' in valor_raw:
-                        valor_clean = float(valor_raw.replace(',', '.'))
-                    else:
-                        valor_clean = float(valor_raw)
-                except:
-                    valor_clean = 0.0
-                    
-                valor_total_fechado += valor_clean
+        try:
+            conn = obter_conexao_sql()
+            cursor = conn.cursor()
+
+            str_busca_br = f"/{mes_selecionado:02d}/{ano_selecionado}"
+            str_busca_us = f"{ano_selecionado}-{mes_selecionado:02d}"
+
+            query = f'SELECT * FROM "{colecao_banco}" WHERE "{coluna_filtro}" = ?'
+            cursor.execute(query, (valor_busca,))
+            registros_sql = cursor.fetchall()
+
+            for row in registros_sql:
+                dados = dict(row)
+
+                data_referencia = str(
+                    dados.get('Negocio_Data_status')
+                    or dados.get('Data_Status')
+                    or dados.get('Gestao_Data_Status')
+                    or ''
+                )
+
+                if str_busca_br in data_referencia or str_busca_us in data_referencia:
+                    contrato = str(
+                        dados.get('Negocio_Contrato')
+                        or dados.get('Contrato_Codigo')
+                        or dados.get('Gestao_GN')
+                        or ''
+                    ).strip()
+
+                    if contrato and contrato in contratos_unicos:
+                        continue
+
+                    if contrato and contrato.lower() not in ['nan', 'none']:
+                        contratos_unicos.add(contrato)
+
+                    valor_raw = str(dados.get(coluna_valor) or '0')
+
+                    try:
+                        valor_raw = valor_raw.replace('R$', '').strip()
+                        if '.' in valor_raw and ',' in valor_raw:
+                            valor_clean = float(valor_raw.replace('.', '').replace(',', '.'))
+                        elif ',' in valor_raw:
+                            valor_clean = float(valor_raw.replace(',', '.'))
+                        else:
+                            valor_clean = float(valor_raw)
+                    except Exception:
+                        valor_clean = 0.0
+
+                    valor_total_fechado += valor_clean
+
+            conn.close()
+        except Exception as e:
+            print(f"Erro ao consultar SQLite (visitas - {colecao_banco}): {e}")
 
     valor_ganho = valor_total_fechado * taxa_comissao
     valor_ganho_formatado = f"{valor_ganho:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
@@ -871,66 +937,77 @@ def importar_dados():
             return redirect(url_for('main.importar_dados'))
 
         colecao_destino = request.form.get('colecao_destino')
-        nova_colecao = request.form.get('nova_colecao','').strip()
+        nova_colecao = request.form.get('nova_colecao', '').strip()
         colecao_final = nova_colecao if colecao_destino == 'nova' else colecao_destino
 
         if not colecao_final:
             flash('Você precisa selecionar ou digitar o nome de uma tabela destino.', 'floating_danger')
             return redirect(url_for('main.importar_dados'))
 
+        # Valida o nome da tabela SQL para evitar caracteres inválidos
+        if not re.match(r'^[A-Za-z0-9_]+$', colecao_final):
+            flash('Nome de tabela inválido. Use apenas letras, números e underline (_).', 'floating_danger')
+            return redirect(url_for('main.importar_dados'))
+
         try:
-            df = pd.read_excel(arquivo)
-            df = df.fillna('')
-            registros = df.to_dict(orient='records')
-            
-            coluna_id = request.form.get('coluna_id', '').strip()
-            
-            ids_existentes = set()
-            if coluna_id:
-                docs = db.collection(colecao_final).select([]).stream()
-                for doc in docs:
-                    ids_existentes.add(doc.id)
-
-            batch = db.batch()
-            contador_novos = 0
-            contador_ignorados = 0
-            
-            for reg in registros:
-                if coluna_id and coluna_id in reg:
-                    doc_id = str(reg[coluna_id]).strip()
-                    if not doc_id:
-                        continue
-                    if doc_id in ids_existentes:
-                        contador_ignorados += 1
-                        continue
-                    doc_ref = db.collection(colecao_final).document(doc_id)
-                else:
-                    doc_ref = db.collection(colecao_final).document()
-                
-                batch.set(doc_ref, reg)
-                contador_novos += 1
-                
-                if contador_novos > 0 and contador_novos % 500 == 0:
-                    batch.commit()
-                    batch = db.batch()
-            
-            if contador_novos % 500 != 0:
-                batch.commit()
-
-            registrar_log_auditoria(f"IMPORTOU {contador_novos} novos registros para '{colecao_final}' (Ignorou {contador_ignorados} repetidos)")
-            
-            if contador_ignorados > 0:
-                flash(f'Sucesso! {contador_novos} novos cadastros importados. {contador_ignorados} repetidos foram ignorados.', 'floating_info')
+            if arquivo.filename.lower().endswith('.csv'):
+                df = pd.read_csv(arquivo, dtype=str).fillna('')
             else:
-                flash(f'Sucesso! {contador_novos} linhas foram importadas na tabela "{colecao_final}".', 'floating_success')
+                df = pd.read_excel(arquivo, dtype=str).fillna('')
+
+            total_lido = len(df)
+            coluna_id = request.form.get('coluna_id', '').strip()
+            contador_ignorados = 0
+
+            conn = obter_conexao_sql()
+
+            if coluna_id and coluna_id in df.columns:
+                try:
+                    existentes_df = pd.read_sql_query(f'SELECT "{coluna_id}" FROM "{colecao_final}"', conn)
+                    ids_existentes = set(existentes_df[coluna_id].astype(str).str.strip())
+                    df[coluna_id] = df[coluna_id].astype(str).str.strip()
+                    df = df[df[coluna_id] != '']
+                    antes_filtro = len(df)
+                    df = df[~df[coluna_id].isin(ids_existentes)]
+                    contador_ignorados = antes_filtro - len(df)
+                except Exception:
+                    pass
+
+            contador_novos = len(df)
+            if contador_novos > 0:
+                df.to_sql(colecao_final, conn, if_exists='append', index=False)
+
+            conn.close()
+
+            # Se estiver rodando localmente com o arquivo .db local, já recriptografa o .enc automaticamente!
+            if os.path.exists(LOCAL_DB_PATH):
+                try:
+                    criptografar_banco_local()
+                except Exception as enc_err:
+                    print(f"Aviso ao recriptografar banco após importação: {enc_err}")
+
+            registrar_log_auditoria(
+                f"IMPORTOU NO SQL {contador_novos} novos registros para '{colecao_final}' (Ignorou {contador_ignorados} repetidos de {total_lido})"
+            )
+
+            if contador_ignorados > 0:
+                flash(
+                    f'Sucesso no SQL! {contador_novos} novos cadastros importados e criptografados. {contador_ignorados} repetidos foram ignorados.',
+                    'floating_info'
+                )
+            else:
+                flash(
+                    f'Sucesso no SQL! {contador_novos} linhas foram importadas e criptografadas na tabela "{colecao_final}".',
+                    'floating_success'
+                )
 
         except Exception as e:
-            flash(f'Erro ao processar o arquivo Excel: {str(e)}', 'floating_danger')
-            
+            flash(f'Erro ao processar o arquivo Excel para o SQL: {str(e)}', 'floating_danger')
+
         return redirect(url_for('main.importar_dados'))
 
-    colecoes_firebase = [colecao.id for colecao in db.collections()]
-    return render_template('importar_dados.html', colecoes=colecoes_firebase)
+    tabelas_sql = listar_tabelas_sql()
+    return render_template('importar_dados.html', colecoes=tabelas_sql)
 
 @main_bp.route('/comissoes', methods=['GET'])
 def comissoes():
@@ -954,9 +1031,7 @@ def comissoes():
     ano_selecionado = int(request.args.get('ano', ano_padrao))
 
     ultimo_dia = calendar.monthrange(ano_selecionado, mes_selecionado)[1]
-    str_busca_br = f"/{mes_selecionado:02d}/{ano_selecionado}"
-    str_busca_us = f"{ano_selecionado}-{mes_selecionado:02d}"
-
+    
     filial_filtro = request.args.get('filial', '').strip()
     corretor_filtro = request.args.get('corretor', '').strip()
 
@@ -971,6 +1046,7 @@ def comissoes():
     else:
         colaboradores = None
 
+    # Busca a lista base de corretores no Firebase
     usuarios_query = db.collection('usuarios').where('perfil', '==', 'Corretor').where('ativo', '==', True).stream()
     todos_corretores = []
     for doc in usuarios_query:
@@ -992,58 +1068,79 @@ def comissoes():
     valor_fechado_geral = 0.0
     comissao_geral = 0.0
 
-    for portal in colaboradores:
-        if not portal:
-            continue
-        docs = db.collection('dt_ctrl_pagamento_visita').where('Colaborador', '==', portal).stream()
+    # -------------------------------------------------------------
+    # NOVA LÓGICA SQLITE PARA COMISSÕES
+    # -------------------------------------------------------------
+    padrao_data_br = f"%/{mes_selecionado:02d}/{ano_selecionado}%"
+    padrao_data_us = f"%{ano_selecionado}-{mes_selecionado:02d}%"
+    
+    try:
+        conn = obter_conexao_sql()
+        cursor = conn.cursor()
 
-        contratos_unicos = set()
-        valor_total_fechado = 0.0
+        for portal in colaboradores:
+            if not portal:
+                continue
+                
+            query = """
+                SELECT * FROM dt_ctrl_pagamento_visita 
+                WHERE Colaborador = ? 
+                AND (Negocio_Data_status LIKE ? OR Negocio_Data_status LIKE ?)
+            """
+            cursor.execute(query, (portal, padrao_data_br, padrao_data_us))
+            registros_sql = cursor.fetchall()
 
-        for doc in docs:
-            dados = doc.to_dict() or {}
-            data_referencia = str(dados.get('Negocio_Data_status', ''))
+            contratos_unicos = set()
+            valor_total_fechado = 0.0
 
-            if str_busca_br not in data_referencia and str_busca_us not in data_referencia:
+            for row in registros_sql:
+                row_dict = dict(row)
+                contrato = str(
+                    row_dict.get('Negocio_Contrato')
+                    or row_dict.get('Contrato_Codigo')
+                    or row_dict.get('Gestao_GN')
+                    or ''
+                ).strip()
+                if contrato and contrato in contratos_unicos:
+                    continue
+                if contrato and contrato.lower() not in ['nan', 'none']:
+                    contratos_unicos.add(contrato)
+
+                valor_raw = str(row_dict.get('Negocio_Valor_fechado') or '0')
+                try:
+                    valor_raw = valor_raw.replace('R$', '').strip()
+                    if '.' in valor_raw and ',' in valor_raw:
+                        valor_clean = float(valor_raw.replace('.', '').replace(',', '.'))
+                    elif ',' in valor_raw:
+                        valor_clean = float(valor_raw.replace(',', '.'))
+                    else:
+                        valor_clean = float(valor_raw)
+                except Exception:
+                    valor_clean = 0.0
+
+                valor_total_fechado += valor_clean
+
+            if not contratos_unicos:
                 continue
 
-            contrato = str(dados.get('Negocio_Contrato', '')).strip()
-            if contrato and contrato in contratos_unicos:
-                continue
-            if contrato and contrato.lower() not in ['nan', 'none']:
-                contratos_unicos.add(contrato)
+            valor_ganho = valor_total_fechado * 0.20
+            info = mapa_corretor.get(portal, {})
+            resultados.append({
+                'nome': info.get('nome', portal),
+                'email': info.get('email', ''),
+                'filial': info.get('filial', ''),
+                'total_contratos': len(contratos_unicos),
+                'valor_fechado': valor_total_fechado,
+                'comissao': valor_ganho,
+            })
 
-            valor_raw = str(dados.get('Negocio_Valor_fechado', '0'))
-            try:
-                valor_raw = valor_raw.replace('R$', '').strip()
-                if '.' in valor_raw and ',' in valor_raw:
-                    valor_clean = float(valor_raw.replace('.', '').replace(',', '.'))
-                elif ',' in valor_raw:
-                    valor_clean = float(valor_raw.replace(',', '.'))
-                else:
-                    valor_clean = float(valor_raw)
-            except Exception:
-                valor_clean = 0.0
+            total_contratos_geral += len(contratos_unicos)
+            valor_fechado_geral += valor_total_fechado
+            comissao_geral += valor_ganho
 
-            valor_total_fechado += valor_clean
-
-        if not contratos_unicos:
-            continue
-
-        valor_ganho = valor_total_fechado * 0.20
-        info = mapa_corretor.get(portal, {})
-        resultados.append({
-            'nome': info.get('nome', portal),
-            'email': info.get('email', ''),
-            'filial': info.get('filial', ''),
-            'total_contratos': len(contratos_unicos),
-            'valor_fechado': valor_total_fechado,
-            'comissao': valor_ganho,
-        })
-
-        total_contratos_geral += len(contratos_unicos)
-        valor_fechado_geral += valor_total_fechado
-        comissao_geral += valor_ganho
+        conn.close()
+    except Exception as e:
+        print(f"Erro ao consultar SQLite (comissoes): {e}")
 
     resultados.sort(key=lambda x: x.get('nome', ''))
 
